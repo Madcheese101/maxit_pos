@@ -27,6 +27,9 @@ app_license = "bsl-1.0"
 # include js, css files in header of desk.html
 # app_include_css = "/assets/maxit_pos/css/maxit_pos.css"
 # app_include_js = "/assets/maxit_pos/js/maxit_pos.js"
+app_include_js = [
+    "maxit-pos.bundle.js",
+]
 
 # include js, css files in header of web template
 # web_include_css = "/assets/maxit_pos/css/maxit_pos.css"
@@ -44,6 +47,7 @@ app_license = "bsl-1.0"
 
 # include js in doctype views
 # doctype_js = {"doctype" : "public/js/doctype.js"}
+doctype_js = {"POS Profile" : "public/js/doctypes/pos_profile.js"}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}

@@ -1,0 +1,20 @@
+{
+ "content": null,
+ "creation": "2025-03-30 06:25:46.645478",
+ "docstatus": 0,
+ "doctype": "Page",
+ "icon": "MaxIt POS",
+ "idx": 0,
+ "modified": "2025-04-03 02:15:06.797937",
+ "modified_by": "Administrator",
+ "module": "MaxIT POS",
+ "name": "maxit-pos",
+ "owner": "Administrator",
+ "page_name": "maxit-pos",
+ "roles": [],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": ""
+}
