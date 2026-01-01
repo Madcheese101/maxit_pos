@@ -5,10 +5,17 @@ import Pos from '../views/Pos.vue'
 
 const routes = [
   {
+    path: "/",
+    // name: "POS",
+    // component: Pos
+    redirect: '/app/maxit-pos/'
+  },
+  {
     path: '/app/maxit-pos/',
     name: 'POS',
     component: Pos,
     // props: true
+    // redirect: '/'
   },
   // {
   //   path: '/app/maxit-pos/',

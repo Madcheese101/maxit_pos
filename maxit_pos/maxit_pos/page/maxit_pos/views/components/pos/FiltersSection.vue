@@ -20,6 +20,8 @@
                     flat
                     hide-details
                     single-line
+                    v-model="search_term"
+                    @keydown.enter="emit_get_items"
                 ></v-text-field>
             </div>
         </v-col>
@@ -27,6 +29,7 @@
         <v-col cols="3">
             <v-select
                     :label="frappeRef._('Item Group')"
+                    v-model="selectedItemGroup"
                     :items="item_groups"
                     variant="solo"
                     density="compact"
@@ -35,29 +38,38 @@
                 </v-select>
         </v-col>
         <!-- more filters -->
-        <v-col cols="2">
+        <v-col max-width="140" v-if="props.customFilters.length > 0">
             <v-btn
                 color="white"
                 density="comfortable"
                 append-icon="mdi-filter"
                 height="40"
                 flat
-                :disabled="props.customFilters.length === 0"
                 @click="showFiltersDialog()">
                     {{ frappeRef._('Filter') }}{{ active_filters > 0 ? ` (${active_filters})` : '' }}
             </v-btn>
+            <!-- reset filters Button -->
+            <v-btn  v-if="active_filters > 0"
+                color="white"
+                density="comfortable"
+                flat
+                icon="mdi-filter-remove"
+                class="ml-2"
+                @click="reset_filters()"></v-btn>
         </v-col>
     </v-row>
 
 </template>
 
 <script setup>
-    import { ref, toRefs, computed } from 'vue';
+    import { ref, toRefs, computed, watch} from 'vue';
     import _ from "lodash";
-
-    const props = defineProps(['customFilters']);
+    const emit = defineEmits(['GetItems']);
+    const props = defineProps(['customFilters', 'allowedItemGroups']);
     const frappeRef = ref(frappe);
+    const search_term = ref('');
     const item_groups = ref([__("all")]);
+    const selectedItemGroup = ref(__("all"))
     const showDialog = ref(false);
     const filters = ref([]);
     const active_filters = ref(0);
@@ -72,8 +84,21 @@
         }
     }
 
+    const get_item_groups = () => {
+        if (props.allowedItemGroups.length > 0) {
+            props.allowedItemGroups.forEach(row => {
+                item_groups.value.push(row.item_group);
+            })
+            return;
+        }
+        frappe.call('maxit_pos.maxit_pos.page.maxit_pos.api.api.get_item_group_list').then((res) => {
+            item_groups.value.push(...res.message);
+        });
+    }
+
     const applyFilters = (filter_values) => {
         // showDialog.value = false;
+        // get the number of active filters
         active_filters.value = Object.keys(filter_values).length;
 
         filters.value.forEach(dict => {
@@ -81,8 +106,17 @@
                 dict.selected = filter_values[dict.fieldname];
             }
         });
+        emit_get_items();
     }
 
+    const reset_filters = () => {
+        filters.value.forEach(dict => {
+            dict.selected = null;
+        });
+        active_filters.value = 0;
+        emit_get_items();
+    }
+    
     const showFiltersDialog = () => {
         const custom_fields = [];
 
@@ -110,6 +144,22 @@
         d.show();
     }
 
+    const emit_get_items = () => {
+        const item_group = selectedItemGroup.value === __("all") 
+            ? null : selectedItemGroup.value;
+
+        emit('getItems', {
+            search_term: search_term.value,
+            item_group: item_group,
+            filters: filters.value
+        });
+    }
+    
+    watch((selectedItemGroup), (newVal) => {
+        emit_get_items();
+    });
+
     get_filters();
+    get_item_groups();
 
 </script>

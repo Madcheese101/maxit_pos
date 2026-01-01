@@ -22,12 +22,25 @@
           </v-menu>
           <v-btn icon="mdi-logout" variant="text"/>
         </v-toolbar>
+        
         <v-row class="columns-container mt-5">
+          
           <v-col class="right-section" cols="6">
-            <FiltersSection :customFilters="posProfileData.custom_filters"/>
-            <ItemsList/>
+            <FiltersSection :customFilters="posProfileData.custom_filters" 
+              :allowedItemGroups="posProfileData.item_groups"
+              @getItems="get_items"/>
+            <ItemsList :items="items" @addItemToCart="update_cart"/>
+          </v-col>
+
+          <v-col class="left-section" cols="6">
+            <!-- <FiltersSection :customFilters="posProfileData.custom_filters" 
+              :allowedItemGroups="posProfileData.item_groups"
+              @getItems="get_items"/> -->
+            <!-- <InvoiceItemList v-if="cart_items.length > 0" :items="cart_items"/> -->
+            <InvoiceItemList/>
           </v-col>
         </v-row>
+
       </v-main>
     </v-app>
   </template>
@@ -38,12 +51,33 @@
   // const propss = defineProps(['appDefaults']);
   import FiltersSection from './components/pos/FiltersSection.vue';
   import ItemsList from './components/pos/ItemsList.vue';
+  import InvoiceItemList from './components/pos/InvoiceItemList.vue';
   import { usePosStore } from '../store/posStore';
   import { storeToRefs } from 'pinia';
-  import { ref } from 'vue';
+  import { ref, watch} from 'vue';
 
+  const items = ref([]);
   const posStore = usePosStore();
-  const {posProfileData, pos_profile} = storeToRefs(posStore);
+  const {posProfileData, pos_profile, posFrm} = storeToRefs(posStore);
+  const {make_new_invoice, add_item_to_invoice} = posStore;
+
+  const get_items = (filters) => {
+    search_term = filters ? filters.search_term : "";
+    item_group = filters ? filters.item_group : null;
+    custom_filters = filters ? filters.filters : [];
+
+    frappe.call("maxit_pos.maxit_pos.page.maxit_pos.api.api.get_items", {
+        pos_profile_data: posProfileData.value,
+        search_term: search_term,
+        item_group: item_group,
+        custom_filters: custom_filters
+    }).then((res) => {
+        items.value = res.message
+        // make_new_invoice();
+    })
+  }
+  get_items();
+
 </script>
   
 <style scoped>

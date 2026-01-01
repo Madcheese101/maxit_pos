@@ -178,9 +178,9 @@ doctype_js = {"POS Profile" : "public/js/doctypes/pos_profile.js"}
 # Overriding Methods
 # ------------------------------
 #
-# override_whitelisted_methods = {
-# 	"frappe.desk.doctype.event.event.get_events": "maxit_pos.event.get_events"
-# }
+override_whitelisted_methods = {
+	"from erpnext.accounts.doctype.pos_invoice.pos_invoice.get_stock_availability": "maxit_pos.overrides.get_stock_availability"
+}
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
@@ -246,3 +246,21 @@ doctype_js = {"POS Profile" : "public/js/doctypes/pos_profile.js"}
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
 
+fixtures = [
+    {
+        "doctype": "Custom Field",
+        "filters": [
+            
+            [
+                "name",
+                "in",
+                [
+                    "POS Profile-custom_advanced_filters",
+                ]
+            ]
+        ]
+    }
+]
+
+from maxit_pos.overrides import override_methods
+override_methods()

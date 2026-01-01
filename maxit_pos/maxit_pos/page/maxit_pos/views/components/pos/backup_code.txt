@@ -1,0 +1,92 @@
+    <v-table height="800px">
+        <thead>
+            <tr>
+                <th class="text-left">
+                    Name
+                </th>
+                <th class="text-left">
+                    QTY x Rate
+                </th>
+                <th class="text-left">
+                    Amount
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr 
+                v-for="(item, idx) in posFrm.doc.items" v-if="posFrm"
+                :key="idx"
+                @click="click_item(item)"
+            >
+                <td>{{ item.item_code }}</td>
+                <!-- <td>{{ item.qty }}x {{ item.rate }}</td> -->
+                <td>
+                    <v-row>
+                        <v-col cols="2">
+                            <v-text-field
+                            v-model="item.qty"
+                            variant="outlined"
+                            dense
+                            hide-details/>
+                        </v-col>
+                        <v-col cols="2">
+                            <v-text-field
+                            v-model="item.rate"
+                            variant="outlined"
+                            dense
+                            hide-details/>
+                        </v-col>
+                    </v-row>
+                </td>
+                <td>{{ item.amount }}</td>
+            </tr>
+        </tbody>
+    </v-table>
+
+
+
+
+
+<template>
+  <v-data-table
+    :items="posFrm ? posFrm.doc.items : []"
+    :headers="headers"
+    item-value="id"
+    class="elevation-1"
+  >
+    <template v-slot:body="{ items }">
+      <tr v-for="(item, index) in items" :key="item.idx">
+        <td>{{ item.item_name }}</td>
+        <td ><v-select 
+                  v-model="item.uom"
+                  :items="item.uoms"
+                  variant="outlined"
+                  density="compact"
+                  bg-color="white"
+                  flat
+                  @update:modelValue="val=>{update_text(item, 'uom', val)}"/></td>
+        <td>
+          <v-text-field
+            v-model="item.qty"
+            type="number"
+            variant="outlined"
+            dense
+            hide-details
+            @change="update_number(item, 'qty', item.qty, index)"
+          />
+        </td>
+        <td>
+          <v-text-field
+            v-model="item.rate"
+            type="number"
+            variant="outlined"
+            dense
+            hide-details
+            @change="update_number(item, 'rate', item.rate, index)"
+          />
+        </td>
+        <td>{{ item.amount }}</td>
+      </tr>
+    </template>
+  </v-data-table>
+</template>

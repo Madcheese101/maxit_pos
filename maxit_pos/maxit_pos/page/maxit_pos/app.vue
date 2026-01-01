@@ -40,10 +40,12 @@
     const props = defineProps(['posProfileData', 'appDefaults']);
     const posStore = usePosStore();
     const {posProfileData} = storeToRefs(posStore);
-    const {setAppDefaults} = posStore;
+    const {setAppDefaults, make_new_invoice} = posStore;
     
     setAppDefaults(props.posProfileData, props.appDefaults)
-    isLoading.value = false;
+    make_new_invoice().then(() => {
+      isLoading.value = false;
+    })
   </script>
   
   <style>

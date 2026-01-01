@@ -5,7 +5,7 @@
       <VCardText>
         <v-row class="overflow-y-auto" style="max-height: 67vh">
           <v-col
-            v-for="(item, idx) in items"
+            v-for="(item, idx) in props.items"
             :key="idx"
             xl="2"
             lg="3"
@@ -14,7 +14,7 @@
             cols="6"
             min-height="50"
           >
-            <Item :item="item" @click="console.log(item)"/>
+            <Item :item="item" @click="item_clicked(item)"/>
           </v-col>
         </v-row>
         <!-- <v-list lines="two" max-height="500" class="overflow-y-auto">
@@ -50,36 +50,22 @@
 </template>
 
 <script setup>
-    import {ref} from "vue";
+    import {ref, watch} from "vue";
     import Item from "./Item.vue";
-    const items = ref([]);
+    import { usePosStore } from '../../../store/posStore';
+    import {storeToRefs} from 'pinia';
+    
+    const posStore = usePosStore();
+    const props = defineProps(['items']);
+    const emit = defineEmits(['addItemToCart']);
+    const {posProfileData, posFrm} = storeToRefs(posStore);
+    const {update_cart} = posStore;
 
-
-    items.value = [
-      {"item_name": "sang", "item_price": 200, "uom": "piece", "qty": 1},
-      {"item_name": "sang", "item_price": 200, "uom": "piece", "qty": 15},
-      {"item_name": "sang", "item_price": 200, "uom": "piece", "qty": 15},
-      {"item_name": "sang", "item_price": 200, "uom": "piece", "qty": 15},
-      {"item_name": "sang", "item_price": 200, "uom": "piece", "qty": 15},
-      {"item_name": "sang", "item_price": 200, "uom": "piece", "qty": 0},
-      {"item_name": "sang", "item_price": 200, "uom": "piece", "qty": 15},
-      {"item_name": "sang", "item_price": 200, "uom": "piece", "qty": 15},
-      {"item_name": "sang", "item_price": 200, "uom": "piece", "qty": 15},
-      {"item_name": "sang", "item_price": 200, "uom": "piece", "qty": 0},
-      {"item_name": "sang", "item_price": 200, "uom": "piece", "qty": 15},
-      {"item_name": "sang", "item_price": 200, "uom": "piece", "qty": 15},
-      {"item_name": "sang", "item_price": 200, "uom": "piece", "qty": 15},
-      {"item_name": "sang", "item_price": 200, "uom": "piece", "qty": 0},
-      {"item_name": "sang", "item_price": 200, "uom": "piece", "qty": 15},
-      {"item_name": "sang", "item_price": 200, "uom": "piece", "qty": 15},
-      {"item_name": "sang", "item_price": 200, "uom": "piece", "qty": 15},
-      {"item_name": "sang", "item_price": 200, "uom": "piece", "qty": 15},
-      {"item_name": "sang", "item_price": 200, "uom": "piece", "qty": 0},
-      {"item_name": "sang", "item_price": 200, "uom": "piece", "qty": 15},
-      {"item_name": "sang", "item_price": 200, "uom": "piece", "qty": 15},
-      {"item_name": "sang", "item_price": 200, "uom": "piece", "qty": 15},
-      {"item_name": "sang", "item_price": 200, "uom": "piece", "qty": 15},
-      {"item_name": "sang", "item_price": 200, "uom": "piece", "qty": 15},
-      {"item_name": "sang", "item_price": 200, "uom": "piece", "qty": 25},
-    ]
+    const item_clicked = (item) => {
+      update_cart({
+        field: "qty",
+        value: "+1",
+        item: item
+      });
+    }
 </script>

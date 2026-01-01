@@ -8,27 +8,23 @@
                 gradient="to bottom, rgba(0,0,0,0), rgba(0,0,0,0.4)"
                 height="150px"></v-img>
             <v-chip
-                :color="props.item.qty > 0 ? '#e4f5e9' : '#fff0f0'"
+                :color="props.item.actual_qty > 0 ? '#e4f5e9' : '#fff0f0'"
                 variant="flat"
                 class="position-absolute top-0 right-0 mr-2 mt-2"
             >
-            {{ props.item.qty }}
+            {{ props.item.actual_qty }}
             </v-chip>
         <!-- </v-card-item> -->
 
         <!-- Item Details -->
         <v-card-title>
-            <h4 class="m-0">{{ props.item.item_name }}</h4>
+            <h4 class="m-0 text-grey-darken-3">{{ props.item.item_code }}</h4>
         </v-card-title>
         <v-card-subtitle>
-            <h5 class="mt-0">{{ props.item.item_price }} / {{ props.item.uom }}</h5>
+            <h5 class="mt-0 text-grey-darken-4">{{ props.item.price_list_rate }} / {{ props.item.uom }}</h5>
         </v-card-subtitle>
     </v-card>
 </template>
 <script setup>
     const props = defineProps(['item']);
-
-    const itemQuantity = 0; // Replace with your actual quantity
-    const itemName = "Sneakers"; // Replace with your actual item name
-    const itemPrice = "100 AED"; // Replace with your actual item price
 </script>
