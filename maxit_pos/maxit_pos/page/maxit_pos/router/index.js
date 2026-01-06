@@ -8,10 +8,10 @@ const routes = [
     path: "/",
     // name: "POS",
     // component: Pos
-    redirect: '/app/maxit-pos/'
+    redirect: '/desk/maxit-pos/'
   },
   {
-    path: '/app/maxit-pos/',
+    path: '/desk/maxit-pos/',
     name: 'POS',
     component: Pos,
     // props: true
@@ -23,7 +23,7 @@ const routes = [
   //   component: Dashboard
   // },
   {
-    path: '/app/maxit-pos/customers',
+    path: '/desk/maxit-pos/customers',
     name: 'Customers',
     component: Customers
   },

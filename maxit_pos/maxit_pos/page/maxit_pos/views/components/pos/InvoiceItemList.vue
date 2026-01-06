@@ -16,12 +16,12 @@
     <template v-slot:item.uom="{ item }">
       <v-select 
         v-model="item.uom"
-        :items="item.uoms"
+        :items="items_uoms[item.item_code]"
         variant="outlined"
         density="compact"
         bg-color="white"
         flat
-        @update:modelValue="val => update_text(item, 'uom', val)"
+        @update:modelValue="val => update_text(item, 'uom', val, index)"
       />
     </template>
 
@@ -75,6 +75,7 @@
         { title: "", key:"delete"}
     ];
     const selected = ref([]);
+    const props = defineProps(['items_uoms']);
     const posStore = usePosStore();
     const {posProfileData, posFrm} = storeToRefs(posStore);
     const {update_cart, trigger_item_update} = posStore;
@@ -91,7 +92,9 @@
       }
       selected.value = [item];
     }
-    const update_text = async (item, field, value) => {
+    const update_text = async (item, field, value, index) => {
+      // const old = this.posFrm.doc.items[index].uoms
+      // console.log("old", old)
       update_cart({
           field: field,
           value: value,

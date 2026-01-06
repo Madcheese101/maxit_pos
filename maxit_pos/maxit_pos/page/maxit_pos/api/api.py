@@ -1,6 +1,7 @@
 import json
 import frappe
 
+from frappe.query_builder import DocType, Order
 from erpnext.stock.get_item_details import get_conversion_factor
 from frappe.query_builder import Field, functions, Query, DocType
 from erpnext.selling.page.point_of_sale.point_of_sale import (
@@ -86,6 +87,8 @@ def get_items(pos_profile_data, search_term="", item_group=None, custom_filters=
 
     attribute_values_filter = []
     result = []
+    items_uoms = {}
+
     filters = [
         ["disabled", "=", 0],
         ["has_variants", "=", 0],
@@ -98,7 +101,7 @@ def get_items(pos_profile_data, search_term="", item_group=None, custom_filters=
         result = search_by_term(search_term, warehouse, price_list) or []
         filter_result_items(result, pos_profile)
         if result:
-            return result
+            return result, items_uoms
         # if no result then search by name
         filters.append(
             (item_table.name.like(f"%{search_term}%")) | (item_table.item_name.like(f"%{search_term}%"))
@@ -156,11 +159,11 @@ def get_items(pos_profile_data, search_term="", item_group=None, custom_filters=
     
     items_data = query.run(as_dict=True)
     
-    if not items_data: return result
+    if not items_data: return result, items_uoms
     
-    process_items_data(result, items_data, hide_unavailable_items, warehouse, price_list)
+    process_items_data(result, items_uoms, items_data, hide_unavailable_items, warehouse, price_list)
 
-    return result
+    return result, items_uoms
 
 def join_bin(query, warehouse, hide_unavailable_items,item_table):
     bin_table = frappe.qb.DocType("Bin")
@@ -179,29 +182,35 @@ def join_bin(query, warehouse, hide_unavailable_items,item_table):
         )
     return query
 
-def process_items_data(result: list, items_data: list, hide_unavailable_items, warehouse: str, price_list: str):
+def process_items_data(result: list, items_uoms: list, items_data: list, hide_unavailable_items, warehouse: str, price_list: str):
     current_date = frappe.utils.today()
     for item in items_data:
         item.pop("name")
         if item.is_stock_item:
-            item.actual_qty, _ = get_stock_availability(item.item_code, warehouse)
+            item.actual_qty, _, is_negative_stock_allowed = get_stock_availability(item.item_code, warehouse)
         else:
             item.actual_qty = 0
         
         if item.is_stock_item and hide_unavailable_items and item.actual_qty == 0:
             continue
-        item_prices = frappe.get_all(
-            "Item Price",
-            fields=["price_list_rate", "currency", "uom", "batch_no", "valid_from", "valid_upto"],
-            filters={
-                "price_list": price_list,
-                "item_code": item.item_code,
-                "selling": True,
-                "valid_from": ["<=", current_date],
-                "valid_upto": ["in", [None, "", current_date]],
-            },
-            order_by="valid_from desc",
-        )
+        ItemPrice = DocType("Item Price")
+        item_prices = (
+            frappe.qb.from_(ItemPrice)
+            .select(
+                ItemPrice.price_list_rate,
+                ItemPrice.currency,
+                ItemPrice.uom,
+                ItemPrice.batch_no,
+                ItemPrice.valid_from,
+                ItemPrice.valid_upto,
+            )
+            .where(ItemPrice.price_list == price_list)
+            .where(ItemPrice.item_code == item.item_code)
+            .where(ItemPrice.selling == 1)
+            .where((ItemPrice.valid_from <= current_date) | (ItemPrice.valid_from.isnull()))
+            .where((ItemPrice.valid_upto >= current_date) | (ItemPrice.valid_upto.isnull()))
+            .orderby(ItemPrice.valid_from, order=Order.desc)
+        ).run(as_dict=True)
 
         stock_uom_price = next((d for d in item_prices if d.get("uom") == item.stock_uom), {})
         item_uom = item.stock_uom
@@ -225,7 +234,9 @@ def process_items_data(result: list, items_data: list, hide_unavailable_items, w
         if item_uom_price and item_uom != item_uom_price.get("uom"):
             item_uom_price.price_list_rate = item_uom_price.price_list_rate * item_conversion_factor
         
-        item.uoms = [u.uom for u in item.uoms]
+        # item.uoms = [u.uom for u in item.uoms]
+        items_uoms[item.item_code] = [u.uom for u in item.uoms]
+        
         result.append(
             {
                 **item,

@@ -37,7 +37,7 @@
               :allowedItemGroups="posProfileData.item_groups"
               @getItems="get_items"/> -->
             <!-- <InvoiceItemList v-if="cart_items.length > 0" :items="cart_items"/> -->
-            <InvoiceItemList/>
+            <InvoiceItemList :items_uoms="items_uoms"/>
           </v-col>
         </v-row>
 
@@ -57,6 +57,7 @@
   import { ref, watch} from 'vue';
 
   const items = ref([]);
+  const items_uoms = ref([]);
   const posStore = usePosStore();
   const {posProfileData, pos_profile, posFrm} = storeToRefs(posStore);
   const {make_new_invoice, add_item_to_invoice} = posStore;
@@ -72,7 +73,8 @@
         item_group: item_group,
         custom_filters: custom_filters
     }).then((res) => {
-        items.value = res.message
+        items.value = res.message[0];
+        items_uoms.value = res.message[1];
         // make_new_invoice();
     })
   }

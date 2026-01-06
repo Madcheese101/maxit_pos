@@ -19,6 +19,7 @@ frappe.MaxItPOS.Controller = class {
 
     make_app(posProfileData, appDefaults) {
         $('.sticky-top').remove();
+        $('.body-sidebar').remove();
         this.$el = this.$wrapper.get(0);
         const pinia = createPinia()
         const vuetify = createVuetify({

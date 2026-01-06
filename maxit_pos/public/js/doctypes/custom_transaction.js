@@ -54,38 +54,53 @@ erpnext.TransactionController = class customTransactionController extends erpnex
 		if (me.in_apply_price_list == true) return;
 
 		me.in_apply_price_list = true;
-		return this.frm.call({
-			method: "erpnext.stock.get_item_details.apply_price_list",
-			args: {	args: args, doc: me.frm.doc },
-			callback: function(r) {
-				if (!r.exc) {
-					frappe.run_serially([
-						() => {
-							if (r.message.parent.price_list_currency)
-								me.frm.set_value("price_list_currency", r.message.parent.price_list_currency);
-						},
-						() => {
-							if (r.message.parent.plc_conversion_rate)
-								me.frm.set_value("plc_conversion_rate", r.message.parent.plc_conversion_rate);
-						},
-						() => {
-							if(args.items.length) {
-								me._set_values_for_item_list(r.message.children);
-								$.each(r.message.children || [], function(i, d) {
-									me.apply_discount_on_item(d, d.doctype, d.name, 'discount_percentage', is_uom_change);
+		return this.frm
+			.call({
+				method: "erpnext.stock.get_item_details.apply_price_list",
+				args: { ctx: args, doc: me.frm.doc },
+				callback: function (r) {
+					if (!r.exc) {
+						frappe.run_serially([
+							() => {
+								if (r.message.parent.price_list_currency)
+									me.frm.set_value(
+										"price_list_currency",
+										r.message.parent.price_list_currency
+									);
+							},
+							() => {
+								if (r.message.parent.plc_conversion_rate)
+									me.frm.set_value(
+										"plc_conversion_rate",
+										r.message.parent.plc_conversion_rate
+									);
+							},
+							() => {
+								if (args.items.length) {
+									me._set_values_for_item_list(r.message.children);
+									$.each(r.message.children || [], function (i, d) {
+										me.apply_discount_on_item(
+											d,
+											d.doctype,
+											d.name,
+											"discount_percentage",
+											is_uom_change
+										);
 								});
-							}
-						},
-						() => { me.in_apply_price_list = false; }
-					]);
-
-				} else {
-					me.in_apply_price_list = false;
-				}
-			}
-		}).always(() => {
-			me.in_apply_price_list = false;
-		});
+								}
+							},
+							() => {
+								me.in_apply_price_list = false;
+							},
+						]);
+					} else {
+						me.in_apply_price_list = false;
+					}
+				},
+			})
+			.always(() => {
+				me.in_apply_price_list = false;
+			});
 	}
 
     apply_discount_on_item(doc, cdt, cdn, field, is_uom_change=false) {
@@ -177,16 +192,16 @@ erpnext.TransactionController = class customTransactionController extends erpnex
             frappe.call({
                 method: "erpnext.stock.get_item_details.get_item_tax_template",
                 args: {
-                    args: {
-                        item_code: item.item_code,
-                        company: frm.doc.company,
-                        base_net_rate: item.base_net_rate,
-                        tax_category: frm.doc.tax_category,
-                        item_tax_template: item.item_tax_template,
-                        posting_date: frm.doc.posting_date,
-                        bill_date: frm.doc.bill_date,
-                        transaction_date: frm.doc.transaction_date,
-                    }
+                    ctx: {
+							item_code: item.item_code,
+							company: frm.doc.company,
+							base_net_rate: item.base_net_rate,
+							tax_category: frm.doc.tax_category,
+							item_tax_template: item.item_tax_template,
+							posting_date: frm.doc.posting_date,
+							bill_date: frm.doc.bill_date,
+							transaction_date: frm.doc.transaction_date,
+					},
                 },
                 callback: function(r) {
                     const item_tax_template = r.message;

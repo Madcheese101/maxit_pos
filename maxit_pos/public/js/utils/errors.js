@@ -11,7 +11,7 @@ maxit_pos.utils.errors.customer_required = function () {
 maxit_pos.utils.errors.price_required = function () {
     frappe.show_alert({
         message: __("Price is not set for the item."),
-        indicator: "orange",
+        indicator: "red",
     });
     frappe.utils.play_sound("error");
 };
