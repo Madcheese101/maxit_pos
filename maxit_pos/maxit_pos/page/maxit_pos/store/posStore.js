@@ -20,6 +20,21 @@ export const usePosStore = defineStore('posStore', () => {
     const cart_items = ref([]);
 
     // actions
+    const set_pos_profile_data = () => {
+		if (posProfileData.value.company && !posFrm.value.doc.company) posFrm.value.doc.company = posProfileData.value.company;
+		if (
+			(posProfileData.value.name && !posFrm.value.doc.pos_profile) |
+			(posFrm.value.doc.is_return && posProfileData.value.name != posFrm.value.doc.pos_profile)
+		) {
+			posFrm.value.doc.pos_profile = posProfileData.value.name;
+		}
+		posFrm.value.doc.set_warehouse = posProfileData.value.warehouse;
+
+		if (!posFrm.value.doc.company) return;
+
+		return posFrm.value.trigger("set_pos_data");
+	}
+
     const setAppDefaults = (posProfile, appDefaults) => {
         posProfileData.value = posProfile;
         pos_opening.value = appDefaults.pos_opening;
@@ -31,6 +46,7 @@ export const usePosStore = defineStore('posStore', () => {
         customer_groups.value = appDefaults.customer_groups;
         pos_warehouse.value = posProfile.warehouse;
     }
+    
 
     const make_new_invoice = () => {
 		return frappe.run_serially([
@@ -68,21 +84,6 @@ export const usePosStore = defineStore('posStore', () => {
 		frm.refresh(name);
 
 		return frm;
-	}
-
-    const set_pos_profile_data = () => {
-		if (posProfileData.value.company && !posFrm.value.doc.company) posFrm.value.doc.company = posProfileData.value.company;
-		if (
-			(posProfileData.value.name && !posFrm.value.doc.pos_profile) |
-			(posFrm.value.doc.is_return && posProfileData.value.name != posFrm.value.doc.pos_profile)
-		) {
-			posFrm.value.doc.pos_profile = posProfileData.value.name;
-		}
-		posFrm.value.doc.set_warehouse = posProfileData.value.warehouse;
-
-		if (!posFrm.value.doc.company) return;
-
-		return posFrm.value.trigger("set_pos_data");
 	}
 
     const update_cart = async (args) => {
