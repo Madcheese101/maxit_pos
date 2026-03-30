@@ -8,7 +8,7 @@
     ></v-progress-circular> -->
     <v-app>
       <!-- sidebar -->
-      <SideBar/>
+      <SideBar :showPosProfileDependent="showPosProfileDependent"/>
       <!-- Pages Views Container -->
       <v-main class="main-body-container">
         <div class="views-container ">
@@ -35,13 +35,13 @@
     import { usePosStore } from './store/posStore';
     import {storeToRefs} from 'pinia';
     import {ref} from 'vue';
-
     const isLoading = ref(true);
     const props = defineProps(['posProfileData', 'appDefaults']);
     const posStore = usePosStore();
     const {posProfileData} = storeToRefs(posStore);
     const {setAppDefaults, make_new_invoice} = posStore;
-    
+    const showPosProfileDependent = ref(props.posProfileData ? true : false);
+
     setAppDefaults(props.posProfileData, props.appDefaults)
     make_new_invoice().then(() => {
       isLoading.value = false;

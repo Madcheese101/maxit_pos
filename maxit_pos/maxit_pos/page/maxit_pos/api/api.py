@@ -1,6 +1,7 @@
 import json
 import frappe
-
+from frappe import _
+from pypika.terms import Case, ValueWrapper
 from frappe.query_builder import DocType, Order
 from erpnext.stock.get_item_details import get_conversion_factor
 from frappe.query_builder import Field, functions, Query, DocType
@@ -9,6 +10,257 @@ from erpnext.selling.page.point_of_sale.point_of_sale import (
     filter_result_items, 
     get_stock_availability,
 )
+from erpnext.accounts.party import get_party_account
+from erpnext.accounts.utils import get_account_currency
+from erpnext.accounts.doctype.journal_entry.journal_entry import (
+    get_default_bank_cash_account,
+)
+from erpnext.setup.utils import get_exchange_rate
+from erpnext.accounts.doctype.bank_account.bank_account import get_party_bank_account
+
+@frappe.whitelist()
+def save_invoice_as_sales_order(invoice_name):
+    invoice = frappe.get_doc("Sales Invoice", invoice_name)
+
+    sales_order = frappe.new_doc("Sales Order")
+    sales_order.customer = invoice.customer
+    sales_order.company = invoice.company
+    sales_order.transaction_date = frappe.utils.today()
+    # sales_order.po_no = invoice.po_no
+    # sales_order.po_date = invoice.po_date
+    sales_order.currency = invoice.currency
+    sales_order.selling_price_list = invoice.selling_price_list
+    sales_order.price_list_currency = invoice.price_list_currency
+    sales_order.conversion_rate = invoice.conversion_rate
+    sales_order.set_warehouse = invoice.set_warehouse
+    for item in invoice.items:
+        sales_order.append("items", {
+            "delivery_date": frappe.utils.today(),
+            "item_code": item.item_code,
+            "item_name": item.item_name,
+            "description": item.description,
+            "qty": item.qty,
+            "uom": item.uom,
+            "stock_uom": item.stock_uom,
+            "conversion_factor": item.conversion_factor,
+            "rate": item.rate,
+            "price_list_rate": item.price_list_rate,
+            "amount": item.amount,
+            "warehouse": item.warehouse,
+            "batch_no": item.batch_no,
+            "serial_no": item.serial_no,
+            "income_account": item.income_account,
+            "cost_center": item.cost_center,
+        })
+
+    # Copy taxes and charges if any
+    for tax in invoice.taxes:
+        sales_order.append("taxes", {
+            "charge_type": tax.charge_type,
+            "account_head": tax.account_head,
+            "description": tax.description,
+            "rate": tax.rate,
+            "tax_amount": tax.tax_amount,
+            "total": tax.total,
+            "tax_amount_after_discount_amount": tax.tax_amount_after_discount_amount,
+        })
+
+    # Copy other fields as needed
+    sales_order.ignore_permissions = True
+    sales_order.save()
+    return sales_order.name
+
+@frappe.whitelist()
+def cancel_invoice(name):
+    invoice = frappe.get_doc("Sales Invoice", name)
+    if invoice.docstatus == 1:
+        invoice.cancel()
+    return invoice
+
+@frappe.whitelist()
+def delete_invoice(name):
+    invoice = frappe.get_doc("Sales Invoice", name)
+    if invoice.docstatus == 0:
+        invoice.delete()
+
+@frappe.whitelist()
+def pay_invoice(doc, payments):
+    sinv = json.loads(doc)
+    payment_type = "Receive"
+    payments = json.loads(payments)
+    for payment in payments:
+        party_account = get_party_account("Customer", sinv.get("customer"), sinv.get("company"))
+        party_account_currency = get_account_currency(party_account)
+        if party_account_currency != sinv.get("price_list_currency"):
+            frappe.throw(
+                _(
+                    "Currency is not correct, party account currency is {party_account_currency} and transaction currency is {currency}"
+                ).format(party_account_currency=party_account_currency, currency=payment.get("price_list_currency"))
+            )
+
+        bank = get_bank_cash_account(sinv.get("company"), payment.get("mode_of_payment"))
+        company_currency = frappe.get_value("Company", sinv.get("company"), "default_currency")
+        conversion_rate = get_exchange_rate(payment.get("price_list_currency"), company_currency, frappe.utils.today(), "for_selling")
+        paid_amount, received_amount = set_paid_amount_and_received_amount(
+            party_account_currency, bank, payment.get("amount"), payment_type, None, conversion_rate
+        )
+
+        payment_doc = frappe.new_doc("Payment Entry")
+        payment_doc.posting_date = frappe.utils.today()
+        payment_doc.mode_of_payment = payment.get("mode_of_payment")
+        payment_doc.payment_type = payment_type
+        payment_doc.party_type = "Customer"
+        payment_doc.party = sinv.get("customer")
+        payment_doc.paid_from = party_account if payment_type == "Receive" else bank.account
+        payment_doc.paid_to = party_account if payment_type == "Pay" else bank.account
+        payment_doc.paid_from_account_currency = (
+            party_account_currency if payment_type == "Receive" else bank.account_currency
+        )
+        payment_doc.paid_to_account_currency = (
+            party_account_currency if payment_type == "Pay" else bank.account_currency
+        )
+        payment_doc.paid_amount = paid_amount
+        payment_doc.received_amount = received_amount
+        payment_doc.reference_no = sinv.get("name")
+        payment_doc.reference_date = frappe.utils.today()
+        if payment_doc.party_type in ["Customer", "Supplier"]:
+            bank_account = get_party_bank_account(payment_doc.party_type, payment_doc.party)
+            payment_doc.set("bank_account", bank_account)
+            payment_doc.set_bank_account_data()
+
+        payment_doc.append("references", {
+            "reference_doctype": "Sales Invoice",
+            "reference_name": sinv.get("name"),
+            "allocated_amount": paid_amount,
+            "total_amount": sinv.get("grand_total"),
+            "outstanding_amount": sinv.get("outstanding_amount"),
+        })
+        payment_doc.setup_party_account_field()
+        payment_doc.set_missing_values()
+        if party_account and bank:
+            payment_doc.set_amounts()
+        payment_doc.ignore_permissions = True
+        payment_doc.save()
+        payment_doc.submit()
+
+@frappe.whitelist()
+def get_invoice_payment_entries(sales_invoice):
+    entries = frappe.qb.get_query(
+        "Payment Entry",
+        fields=[
+            "name",
+            "posting_date",
+            "mode_of_payment",
+            "paid_amount",
+            "received_amount",
+            "paid_from_account_currency",
+            "paid_to_account_currency",
+        ],
+        filters={
+            "docstatus": 1,
+            "references.reference_name": sales_invoice
+        }
+    ).run(as_dict=True)
+    return entries
+
+def get_bank_cash_account(company, mode_of_payment, bank_account=None):
+    bank = get_default_bank_cash_account(
+        company, "Bank", mode_of_payment=mode_of_payment, account=bank_account
+    )
+
+    if not bank:
+        bank = get_default_bank_cash_account(
+            company, "Cash", mode_of_payment=mode_of_payment, account=bank_account
+        )
+
+    return bank
+
+def set_paid_amount_and_received_amount(
+    party_account_currency,
+    bank,
+    outstanding_amount,
+    payment_type,
+    bank_amount,
+    conversion_rate,
+):
+    paid_amount = received_amount = 0
+    if party_account_currency == bank.account_currency:
+        paid_amount = received_amount = abs(outstanding_amount)
+    elif payment_type == "Receive":
+        paid_amount = abs(outstanding_amount)
+        if bank_amount:
+            received_amount = bank_amount
+        else:
+            received_amount = paid_amount * conversion_rate
+
+    else:
+        received_amount = abs(outstanding_amount)
+        if bank_amount:
+            paid_amount = bank_amount
+        else:
+            # if party account currency and bank currency is different then populate paid amount as well
+            paid_amount = received_amount * conversion_rate
+
+    return paid_amount, received_amount
+
+@frappe.whitelist()
+def get_held_invoices(pos_profile):
+    SalesInvoice = DocType("Sales Invoice")
+    invoices = (frappe.qb.from_(SalesInvoice)
+        .select(
+            SalesInvoice.name,
+            SalesInvoice.customer,
+            SalesInvoice.grand_total,
+            ValueWrapper("Sales Invoice").as_("doctype"),
+        )
+        .where(SalesInvoice.pos_profile == pos_profile)
+        .where(SalesInvoice.docstatus == 0)
+        .where(SalesInvoice.is_return == 0)
+        .where(SalesInvoice.posting_date == frappe.utils.today())
+        .orderby(SalesInvoice.modified, order=Order.desc)
+        .limit(50)
+    ).run(as_dict=1)
+
+    return invoices
+
+@frappe.whitelist()
+def get_sales_orders():
+    SalesOrder = DocType("Sales Order")
+    invoices = (frappe.qb.from_(SalesOrder)
+        .select(
+            SalesOrder.name,
+            SalesOrder.customer,
+            SalesOrder.grand_total,
+            ValueWrapper("Sales Order").as_("doctype")
+        )
+        .where(SalesOrder.docstatus == 1)
+        .where(SalesOrder.per_billed ==0) 
+        .orderby(SalesOrder.modified, order=Order.desc)
+        .limit(50)
+    ).run(as_dict=1)
+
+    return invoices
+
+@frappe.whitelist()
+def get_sales_invoice_list(pos_profile, search_term=""):
+    SalesInvoice = DocType("Sales Invoice")
+    invoices = (frappe.qb.from_(SalesInvoice)
+        .select(
+            SalesInvoice.name,
+            SalesInvoice.customer,
+            SalesInvoice.grand_total,
+        )
+        .where(SalesInvoice.pos_profile == pos_profile)
+        .where(SalesInvoice.docstatus == 1)
+        .where(SalesInvoice.name.like(f"%{search_term}%") | 
+            SalesInvoice.customer.like(f"%{search_term}%")  
+            # | SalesInvoice.mobile_no.like(f"%{search_term}%")
+        )
+        .orderby(SalesInvoice.modified, order=Order.desc)
+        .limit(50)
+    ).run(as_dict=1)
+
+    return invoices
 
 @frappe.whitelist()
 def get_advanced_item_filters_dict(custom_filters):

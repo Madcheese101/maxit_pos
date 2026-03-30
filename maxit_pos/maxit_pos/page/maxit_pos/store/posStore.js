@@ -1,5 +1,5 @@
 import {defineStore} from "pinia"
-import {ref, nextTick} from "vue"
+import {ref, nextTick, triggerRef} from "vue"
 frappe.provide("log_");
 frappe.provide("maxit_pos.utils");
 frappe.provide("maxit_pos.utils.errors");
@@ -18,6 +18,11 @@ export const usePosStore = defineStore('posStore', () => {
     const posFrm = ref();
     const itemsUpdated = ref(0);
     const cart_items = ref([]);
+    const reactiveTotal = ref(0);
+    const reactiveGrandTotal = ref(0);
+    const reactiveTotalQty = ref(0);
+    const reactivePaidAmount = ref(0);
+    const reactiveOutstandingAmount = ref(0);
 
     // actions
     const set_pos_profile_data = () => {
@@ -55,14 +60,54 @@ export const usePosStore = defineStore('posStore', () => {
 			// () => cart.load_invoice(),
 		]);
 	}
+    const process_return = (doctype, name) => {
+        frappe.db.get_doc(doctype, name).then((doc) => {
+            frappe.run_serially([
+                () => make_sales_invoice_frm(doc.doctype),
+                () => make_return_invoice(doc),
+            ]);
+        });
+    }
+    const edit_invoice = (invoice_name) => {
+        return frappe.run_serially([
+            () => make_sales_invoice_frm(),
+            () => sync_draft_invoice_to_frm(invoice_name),
+            () => posFrm.value.refresh(invoice_name),
+            () => posFrm.value.call("reset_mode_of_payments"),
+            // () => posFrm.value.trigger('refresh_totals')
+        ]);
+    }
+    const sales_order_to_invoice = (sales_order) => {
+        return frappe.run_serially([
+            () => make_sales_invoice_frm(),
+            () => load_sales_order(sales_order),
+            () => triggerRef(posFrm),
+        ]);
+    }
+    const load_sales_order = (sales_order) => {
+        if (!sales_order) return Promise.resolve();
 
+        return frappe.call({
+            method: "erpnext.selling.doctype.sales_order.sales_order.make_sales_invoice",
+            args: {
+                source_name: sales_order,
+                target_doc: posFrm.value.doc,
+            },
+            callback: (r) => {
+                if (r.exc || !r.message) return;
+                frappe.model.sync(r.message);
+                posFrm.value.refresh(r.message.name);
+            },
+        });
+    }
     const make_sales_invoice_frm = () => {
-		const doctype = "POS Invoice";
+		const doctype = "Sales Invoice";
 		return new Promise((resolve) => {
 			if (posFrm.value) {
 				posFrm.value = get_new_frm(posFrm.value);
 				posFrm.value.doc.items = [];
 				posFrm.value.doc.is_pos = 1;
+                if (doctype == "Sales Invoice") posFrm.value.doc.is_created_using_pos = 1;
 				resolve();
 			} 
             else {
@@ -70,6 +115,7 @@ export const usePosStore = defineStore('posStore', () => {
 					posFrm.value = get_new_frm();
 					posFrm.value.doc.items = [];
 					posFrm.value.doc.is_pos = 1;
+                    if (doctype == "Sales Invoice") posFrm.value.doc.is_created_using_pos = 1;
 					resolve();
 				});
 			}
@@ -77,7 +123,7 @@ export const usePosStore = defineStore('posStore', () => {
 	}
 
     const get_new_frm = (_frm) => {
-		const doctype = "POS Invoice";
+		const doctype = "Sales Invoice";
 		const page = $("<div>");
 		const frm = _frm || new frappe.ui.form.Form(doctype, page, false);
 		const name = frappe.model.make_new_doc_and_get_name(doctype, true);
@@ -86,6 +132,32 @@ export const usePosStore = defineStore('posStore', () => {
 		return frm;
 	}
 
+    const sync_draft_invoice_to_frm = (invoice) => {
+		return frappe.db.get_doc("Sales Invoice", invoice).then((doc) => {
+			frappe.model.sync(doc);
+		});
+	}
+
+    const make_return_invoice = async (doc) => {
+		return frappe.call({
+			method:
+				doc.doctype == "POS Invoice"
+					? "erpnext.accounts.doctype.pos_invoice.pos_invoice.make_sales_return"
+					: "erpnext.accounts.doctype.sales_invoice.sales_invoice.make_sales_return",
+			args: {
+				source_name: doc.name,
+				target_doc: posFrm.value.doc,
+			},
+			callback: (r) => {
+				frappe.model.sync(r.message);
+				frappe.get_doc(r.message.doctype, r.message.name).__run_link_triggers = false;
+				// this.set_pos_profile_data();
+                
+                // above line sets pos profile data for invoice according to current pos profile
+                // useful when returning an invoice created in different pos profile.
+			},
+		});
+	}
     const update_cart = async (args) => {
         
         let { field, value, item, is_number } = args;        
@@ -164,11 +236,13 @@ export const usePosStore = defineStore('posStore', () => {
     const trigger_new_item_events = async function(item_row, rate_only = false) {
 		await posFrm.value.script_manager.trigger("item_code", item_row.doctype, item_row.name);
 		await posFrm.value.script_manager.trigger("qty", item_row.doctype, item_row.name);
+        triggerRef(posFrm);
 	}
     
     const trigger_item_update = async function(field, doctype, name) {
         if(field==="rate") field = "update_rate";
         await posFrm.value.script_manager.trigger(field, doctype, name);
+        triggerRef(posFrm);
     }
 
     const get_item_from_frm = ({ name, item_code, batch_no, uom, rate }) =>{
@@ -229,7 +303,10 @@ export const usePosStore = defineStore('posStore', () => {
         });
     }
     
-    
+    const setPosOpening = (opening_entry) => {
+        pos_opening.value = opening_entry.name;
+        pos_opening_time.value = opening_entry.period_start_date;
+    }
     
     
     return {
@@ -240,8 +317,13 @@ export const usePosStore = defineStore('posStore', () => {
         posFrm,
         itemsUpdated,
         cart_items,
+        reactiveTotal,
+        reactiveGrandTotal,
+        reactiveTotalQty,
+        reactivePaidAmount,
+        reactiveOutstandingAmount,
         // company,
-        // pos_opening,
+        pos_opening,
         // pos_opening_time,
         // item_stock_map,
         // allow_negative_stock,
@@ -250,7 +332,11 @@ export const usePosStore = defineStore('posStore', () => {
         // actions
         setAppDefaults,
         make_new_invoice,
+        sales_order_to_invoice,
         update_cart,
+        edit_invoice,
+        setPosOpening,
         trigger_item_update,
+        process_return
     }
 })

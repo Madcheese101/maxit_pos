@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory, createMemoryHistory } from 'vue-router'
 import Dashboard from '../views/Dashboard.vue'
 import Customers from '../views/Customers.vue'
+import Orders from '../views/Orders.vue'
 import Pos from '../views/Pos.vue'
 
 const routes = [
@@ -26,6 +27,11 @@ const routes = [
     path: '/desk/maxit-pos/customers',
     name: 'Customers',
     component: Customers
+  },
+  {
+    path: '/desk/maxit-pos/orders',
+    name: 'Orders',
+    component: Orders
   },
 ]
 

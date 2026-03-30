@@ -4,6 +4,8 @@ import router from '../../../maxit_pos/page/maxit_pos/router';
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
+import { VDateInput } from 'vuetify/labs/VDateInput'
+import { VNumberInput } from 'vuetify/labs/VNumberInput'
 import { createApp } from "vue";
 import { createPinia } from 'pinia'
 
@@ -20,6 +22,8 @@ frappe.MaxItPOS.Controller = class {
     make_app(posProfileData, appDefaults) {
         $('.sticky-top').remove();
         $('.body-sidebar').remove();
+        $('.body-sidebar-container').remove();
+        $('.body-sidebar-container').removeClass('expanded');
         this.$el = this.$wrapper.get(0);
         const pinia = createPinia()
         const vuetify = createVuetify({
@@ -27,7 +31,7 @@ frappe.MaxItPOS.Controller = class {
             // theme: {
             //     defaultTheme: 'dark'
             // },
-            components,
+            components: {...components, VDateInput, VNumberInput},
             directives,
         });
         let app = createApp(App, {posProfileData, appDefaults}).use(vuetify).use(router).use(pinia);

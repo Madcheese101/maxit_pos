@@ -214,9 +214,4 @@ erpnext.TransactionController = class customTransactionController extends erpnex
         this.calculate_taxes_and_totals();
         this.calculate_stock_uom_rate(doc, cdt, cdn);
     }
-    refresh_dom(doc, cdt, cdn){
-        let item = frappe.get_doc(cdt, cdn);
-        refresh_field("uom", item.name, item.parentfield);
-        // refresh_field("items", cdt, cdn);
-    }
 }
