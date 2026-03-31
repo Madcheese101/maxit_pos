@@ -18,9 +18,9 @@
       <CardList listType="Returns"/>
     </VCol>
     <!-- Late Returns -->
-     <VCol md="4" lg="4" xs="12">
-      <CardList listType="Late Returns"/>
-     </VCol>
+    <VCol md="4" lg="4" xs="12">
+    <CardList listType="Late Returns"/>
+    </VCol>
   </VRow>
 </template>
   

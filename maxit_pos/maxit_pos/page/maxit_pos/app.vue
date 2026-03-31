@@ -20,11 +20,11 @@
         max-width="100"
         persistent>
         <v-progress-circular
-              :size="50"
-              :width="7"
-              indeterminate
-              color="cyan-accent-2"
-          ></v-progress-circular>
+          :size="50"
+          :width="7"
+          indeterminate
+          color="cyan-accent-2"
+        ></v-progress-circular>
       </v-dialog>
     </v-app>
   </template>

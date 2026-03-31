@@ -1,14 +1,5 @@
 <template>
-    <!-- <v-text-field
-        append-inner-icon="mdi-magnify"
-        density="compact"
-        label="Search templates"
-        variant="solo"
-        hide-details
-        single-line
-        @click:append-inner="onClick"
-    ></v-text-field> -->
-    <v-row height="50" dense>
+    <v-row height="70" dense>
         <!-- Search bar -->
         <v-col cols="4">
             <div >
@@ -28,14 +19,14 @@
         <!-- item group filter -->
         <v-col cols="3">
             <v-select
-                    :label="frappeRef._('Item Group')"
-                    v-model="selectedItemGroup"
-                    :items="item_groups"
-                    variant="solo"
-                    density="compact"
-                    bg-color="white"
-                    flat>
-                </v-select>
+                :label="frappeRef._('Item Group')"
+                v-model="selectedItemGroup"
+                :items="item_groups"
+                variant="solo"
+                density="compact"
+                bg-color="white"
+                flat>
+            </v-select>
         </v-col>
         <!-- more filters -->
         <v-col max-width="140" v-if="props.customFilters.length > 0">

@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory, createMemoryHistory } from 'vue-router'
-import Dashboard from '../views/Dashboard.vue'
+// import Dashboard from '../views/Dashboard.vue'
 import Customers from '../views/Customers.vue'
 import Orders from '../views/Orders.vue'
 import Pos from '../views/Pos.vue'
