@@ -162,7 +162,8 @@ export const usePosStore = defineStore('posStore', () => {
         
         let { field, value, item, is_number } = args;        
         const index = get_item_from_frm(item);
-        const item_row_exists = index >= 0;
+        // const item_row_exists = index >= 0;
+        const item_row_exists = 0;
         const from_selector = field === "qty" && value === "+1";
         const item_row = item_row_exists ? posFrm.value.doc.items[index] : {};
 

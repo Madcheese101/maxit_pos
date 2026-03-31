@@ -179,7 +179,7 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
     make_new_invoice().then(() => {
       // isLoading.value = false;
       activeTab.value = 'pos';
-      console.log("New Invoice Created");
+      customer.value = posFrm.value.doc.customer;
       fetchCustomers()
     })
   }
@@ -217,9 +217,6 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
       }
   }
 
-  const loadFromSalesOrder = () => {
-    
-  }
   const fetch_opening_entry = async () => {
     return frappe.call("erpnext.selling.page.point_of_sale.point_of_sale.check_opening_entry", {
         user: frappe.session.user,
@@ -387,7 +384,7 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
         <v-window v-model="activeTab">
           <v-window-item value="pos">
             <v-row dense>
-              <v-col cols="6">
+              <v-col cols="8">
                 <FiltersSection
                   :customFilters="posProfileData.custom_filters"
                   :allowedItemGroups="posProfileData.item_groups"
@@ -396,7 +393,7 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
                 />
                 <ItemsList :items="items" />
               </v-col>
-              <v-col cols="6">
+              <v-col cols="4">
                 <v-combobox
                   v-model="customer"
                   :items="customers"
@@ -421,46 +418,64 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
                 </v-combobox>
                 <Cart @checkout="prepareCheckout" />
                 <v-card rounded="lg" class="pa-3 mt-3" flat>
-                  <div class="d-grid action-buttons">
-                    <v-btn
-                      color="deep-purple-accent-4"
-                      variant="elevated"
-                      text="Print Last"
-                      @click="printLastInvoice()"
-                    />
-                    <v-btn
-                      color="deep-purple-accent-4"
-                      variant="elevated"
-                      text="Save SO"
-                      :disabled="!hasCartItems"
-                      @click="saveAsSalesOrder()"
-                    />
-                    <v-btn
-                      color="deep-purple-accent-4"
-                      variant="elevated"
-                      text="Save"
-                      :disabled="!hasCartItems"
-                      @click="posFrm.save()"
-                    />
-                    <v-btn
-                      color="deep-purple-accent-4"
-                      variant="elevated"
-                      text="Load"
-                      @click="showLoadInvoiceDialog()"
-                    />
-                    <v-btn
-                      color="deep-purple-accent-4"
-                      variant="elevated"
-                      text="Load SO"
-                      @click="showLoadInvoiceDialog(true)"
-                    />
-                    <v-btn
-                      color="deep-purple-accent-4"
-                      variant="elevated"
-                      text="New"
-                      @click="resetForm()"
-                    />
-                  </div>
+                  <v-row dense>
+                    <v-col>
+                      <v-btn
+                        width="100%"
+                        color="deep-purple-accent-4"
+                        variant="elevated"
+                        text="Print Last Invoice"
+                        @click="printLastInvoice()"
+                      />
+                    </v-col>
+                    <v-col cols="3">
+                      <v-btn
+                        width="100%"
+                        color="deep-purple-accent-4"
+                        variant="elevated"
+                        :text="__('Load')"
+                        @click="showLoadInvoiceDialog()"
+                      />
+                    </v-col>
+                    <v-col cols="3">
+                      <v-btn
+                        width="100%"
+                        color="deep-purple-accent-4"
+                        variant="elevated"
+                        :text="__('Load SO')"
+                        @click="showLoadInvoiceDialog(true)"
+                      />
+                    </v-col>
+                    <v-col cols="3">
+                      <v-btn
+                        width="100%"
+                        color="deep-purple-accent-4"
+                        variant="elevated"
+                        :text="__('Save SO')"
+                        :disabled="!hasCartItems"
+                        @click="saveAsSalesOrder()"
+                      />
+                    </v-col>
+                    <v-col cols="3">
+                      <v-btn
+                        width="100%"
+                        color="deep-purple-accent-4"
+                        variant="elevated"
+                        :text="__('Save')"
+                        :disabled="!hasCartItems"
+                        @click="posFrm.save()"
+                      />
+                    </v-col>
+                    <v-col cols="3">
+                      <v-btn
+                        width="100%"
+                        color="deep-purple-accent-4"
+                        variant="elevated"
+                        :text="__('New')"
+                        @click="resetForm()"
+                      />
+                    </v-col>
+                  </v-row>
                 </v-card>
               </v-col>
             </v-row>
