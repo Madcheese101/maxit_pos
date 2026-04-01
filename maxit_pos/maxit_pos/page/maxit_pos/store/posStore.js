@@ -312,6 +312,49 @@ export const usePosStore = defineStore('posStore', () => {
         pos_opening_time.value = opening_entry.period_start_date;
     }
     
+    const close_pos = async () => {
+        if (!pos_opening.value) {
+            frappe.msgprint({
+                title: __('Missing Opening Entry'),
+                indicator: 'orange',
+                message: __('No open POS Opening Entry found for this session.'),
+            });
+            return;
+        }
+
+        frappe.dom.freeze(__('Closing POS and submitting entry...'));
+
+        return frappe.call({
+            method: 'maxit_pos.maxit_pos.page.maxit_pos.api.api.create_and_submit_pos_closing_entry',
+            args: {
+                pos_profile: pos_profile.value,
+                company: posFrm.value.doc.company,
+                pos_opening_entry: pos_opening.value,
+            },
+            freeze: true,
+        }).then((response) => {
+            const closingEntryName = response.message;
+
+            pos_opening.value = '';
+            pos_opening_time.value = null;
+
+            frappe.show_alert({
+                indicator: 'green',
+                message: __('POS Closing Entry {0} submitted successfully', [closingEntryName]),
+            });
+            
+            frappe.dom.unfreeze();
+            window.location.reload();
+        }).catch((error) => {
+            frappe.dom.unfreeze();
+            frappe.msgprint({
+                title: __('POS Closing Failed'),
+                indicator: 'red',
+                message: error?.message || __('Unable to create POS Closing Entry.'),
+            });
+            throw error;
+        });
+    }
     
     return {
         // states
@@ -328,6 +371,7 @@ export const usePosStore = defineStore('posStore', () => {
         reactiveOutstandingAmount,
         // company,
         pos_opening,
+        close_pos,
         // pos_opening_time,
         // item_stock_map,
         // allow_negative_stock,

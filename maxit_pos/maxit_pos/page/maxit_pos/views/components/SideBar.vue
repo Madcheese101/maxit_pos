@@ -28,11 +28,19 @@
           <v-list-item prepend-icon="mdi-store" title="POS" color="#6b3fe7" value="pos" to="/desk/maxit-pos/"></v-list-item>
           <v-list-item prepend-icon="mdi-account-multiple" title="Customers" color="#6b3fe7" value="customers" to="/desk/maxit-pos/customers"></v-list-item>
           <v-list-item prepend-icon="mdi-file-document-outline" title="Orders" value="orders" to="/desk/maxit-pos/orders" v-if="props.showPosProfileDependent"></v-list-item>
+          <v-list-item prepend-icon="mdi-package" title="Items" value="items" to="/desk/maxit-pos/items" v-if="props.showPosProfileDependent"></v-list-item>
         </v-list>
 
         <template #append>
           <v-divider class="border-opacity-100"></v-divider>
           <v-list density="compact" nav class="pb-2">
+            <v-list-item
+              v-if="pos_opening"
+              prepend-icon="mdi-door-closed-lock"
+              :title="__('Close Shift')"
+              value="close-shift"
+              @click="closeShift"
+            ></v-list-item>
             <v-list-item
               prepend-icon="mdi-logout"
               title="Logout"
@@ -46,8 +54,15 @@
 
 <script setup>
     import { computed } from 'vue';
+  import { storeToRefs } from 'pinia';
+  import { usePosStore } from '../../store/posStore';
+
+  const __ = window.__;
 
     const props = defineProps(['showPosProfileDependent']);
+  const posStore = usePosStore();
+  const { pos_opening } = storeToRefs(posStore);
+  const { close_pos } = posStore;
 
     const user = computed(() => {
       const fullName = frappe.user.full_name ? frappe.user.full_name() : frappe.user.name;
@@ -75,6 +90,16 @@
       } catch (error) {
         window.location.href = '/login';
       }
+    };
+
+    const closeShift = () => {
+      frappe.confirm(
+        __('Are you sure you want to close this shift?'),
+        async () => {
+          await close_pos();
+        },
+        () => {}
+      );
     };
 </script>
 

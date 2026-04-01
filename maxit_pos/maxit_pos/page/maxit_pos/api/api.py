@@ -17,6 +17,7 @@ from erpnext.accounts.doctype.journal_entry.journal_entry import (
 )
 from erpnext.setup.utils import get_exchange_rate
 from erpnext.accounts.doctype.bank_account.bank_account import get_party_bank_account
+from erpnext.accounts.doctype.pos_closing_entry.pos_closing_entry import get_invoices
 
 @frappe.whitelist()
 def save_invoice_as_sales_order(invoice_name):
@@ -69,6 +70,114 @@ def save_invoice_as_sales_order(invoice_name):
     sales_order.ignore_permissions = True
     sales_order.save()
     return sales_order.name
+
+
+@frappe.whitelist()
+def create_and_submit_pos_closing_entry(pos_profile, company, pos_opening_entry):
+    opening_entry = frappe.get_doc("POS Opening Entry", pos_opening_entry)
+
+    if opening_entry.status != "Open":
+        frappe.throw(_("Selected POS Opening Entry should be open."), title=_("Invalid Opening Entry"))
+
+    end_time = frappe.utils.now_datetime()
+    data = get_invoices(opening_entry.period_start_date, end_time, pos_profile, frappe.session.user)
+
+    closing_entry = frappe.new_doc("POS Closing Entry")
+    closing_entry.pos_profile = pos_profile
+    closing_entry.user = frappe.session.user
+    closing_entry.company = company
+    closing_entry.pos_opening_entry = pos_opening_entry
+    closing_entry.period_start_date = opening_entry.period_start_date
+    closing_entry.period_end_date = end_time
+    closing_entry.posting_date = frappe.utils.nowdate()
+    closing_entry.posting_time = frappe.utils.nowtime()
+
+    for detail in opening_entry.balance_details:
+        closing_entry.append(
+            "payment_reconciliation",
+            {
+                "mode_of_payment": detail.mode_of_payment,
+                "opening_amount": detail.opening_amount,
+                "expected_amount": detail.opening_amount,
+                "closing_amount": detail.opening_amount,
+                "difference": 0,
+            },
+        )
+
+    for invoice in data.get("invoices", []):
+        if invoice.get("doctype") == "POS Invoice":
+            closing_entry.append(
+                "pos_invoices",
+                {
+                    "posting_date": invoice.get("posting_date"),
+                    "grand_total": invoice.get("grand_total"),
+                    "customer": invoice.get("customer"),
+                    "is_return": invoice.get("is_return"),
+                    "return_against": invoice.get("return_against"),
+                    "pos_invoice": invoice.get("name"),
+                },
+            )
+        else:
+            closing_entry.append(
+                "sales_invoices",
+                {
+                    "posting_date": invoice.get("posting_date"),
+                    "grand_total": invoice.get("grand_total"),
+                    "customer": invoice.get("customer"),
+                    "is_return": invoice.get("is_return"),
+                    "return_against": invoice.get("return_against"),
+                    "sales_invoice": invoice.get("name"),
+                },
+            )
+
+        closing_entry.grand_total = (closing_entry.grand_total or 0) + (invoice.get("grand_total") or 0)
+        closing_entry.net_total = (closing_entry.net_total or 0) + (invoice.get("net_total") or 0)
+        closing_entry.total_quantity = (closing_entry.total_quantity or 0) + (invoice.get("total_qty") or 0)
+        closing_entry.total_taxes_and_charges = (closing_entry.total_taxes_and_charges or 0) + (
+            invoice.get("total_taxes_and_charges") or 0
+        )
+
+    for payment in data.get("payments", []):
+        existing = next(
+            (
+                row
+                for row in closing_entry.payment_reconciliation
+                if row.mode_of_payment == payment.get("mode_of_payment")
+            ),
+            None,
+        )
+
+        if existing:
+            existing.expected_amount = (existing.expected_amount or 0) + (payment.get("amount") or 0)
+            existing.closing_amount = existing.expected_amount
+            existing.difference = 0
+        else:
+            amount = payment.get("amount") or 0
+            closing_entry.append(
+                "payment_reconciliation",
+                {
+                    "mode_of_payment": payment.get("mode_of_payment"),
+                    "opening_amount": 0,
+                    "expected_amount": amount,
+                    "closing_amount": amount,
+                    "difference": 0,
+                },
+            )
+
+    for tax in data.get("taxes", []):
+        closing_entry.append(
+            "taxes",
+            {
+                "account_head": tax.get("account_head"),
+                "amount": tax.get("tax_amount"),
+            },
+        )
+
+    closing_entry.flags.ignore_permissions = True
+    closing_entry.insert()
+    closing_entry.submit()
+
+    return closing_entry.name
 
 @frappe.whitelist()
 def cancel_invoice(name):
