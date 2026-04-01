@@ -216,7 +216,7 @@
                       { title: __('Date'), key: 'posting_date' },
                       { title: __('Name'), key: 'name' },
                       { title: __('Mode of Payment'), key: 'mode_of_payment' },
-                      { title: __('Amount'), key: 'amount' },
+                      { title: __('Amount'), key: 'paid_amount' },
                       { title: __('Print'), key: 'print', sortable: false }
                     ]"
                     :items="paymentEntries"
@@ -461,6 +461,7 @@
         },
       }).then((response) => {
         invoices.value = response.message || [];
+        invoice.value = null;
         isLoadingList.value = false;
       })
     };
