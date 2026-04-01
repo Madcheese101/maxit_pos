@@ -1,5 +1,5 @@
 <template>
-    <VCard rounded="lg" class="pa-3" min-height="50vh" max-height="75vh" flat>
+    <VCard rounded="lg" class="pa-3" min-height="40vh" max-height="75vh" flat>
         <div class="text-subtitle-1 mb-2">{{ __('Invoice Items') }}</div>
 
         <div class="cart-scroll-container">
@@ -110,7 +110,7 @@
 
         <div class="d-flex justify-space-between align-center">
             <div class="text-subtitle-1">{{ __('Total') }}</div>
-            <div class="text-h6" v-html="frappe_.format(posFrm.doc.total, {'fieldtype': 'Currency'})"></div>
+            <div class="text-h6" v-html="frappe_.format(posFrm?.doc?.total, {'fieldtype': 'Currency'})"></div>
         </div>
 
         <v-btn color="green-lighten-1" class="mt-3" block @click="emit('checkout')">
@@ -163,7 +163,7 @@
 
 <style scoped>
     .cart-scroll-container {
-        height: 50vh;
+        height: 46.5vh;
         overflow-y: auto;
     }
 

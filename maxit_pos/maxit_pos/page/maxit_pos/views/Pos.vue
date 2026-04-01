@@ -27,7 +27,9 @@
   const posPayments = computed(() => posFrm.value?.doc?.payments || [])
   const priceListCurrency = computed(() => posFrm.value?.doc?.price_list_currency || "")
   const hasCartItems = computed(() => (posFrm.value?.doc?.items || []).length > 0)
-  
+  const isReturnInvoice = computed(() => {
+    return posFrm.value?.doc?.is_return || false;
+  });
   
   const searchItems = async (filters) => {
     search_term = filters ? filters.search_term : "";
@@ -368,114 +370,147 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
 </script>
 
 <template>
-    <v-app class="pos-view-container">
-      <v-main class="pa-4 pa-md-6">
-        <v-tabs
-          v-model="activeTab"
-          bg-color="white"
-          color="deep-purple-accent-4"
-          fixed-tabs
-          class="mb-4 rounded-lg"
-        >
-          <v-tab value="pos">{{ __('POS') }}</v-tab>
-          <v-tab value="checkout" :disabled="!hasCartItems">{{ __('Checkout') }}</v-tab>
-        </v-tabs>
+  <v-main class="pos-view pa-3 pa-md-6">
+    <v-row class="pos-shell" align="stretch">
+      <v-col cols="12">
+        <v-card class="pos-panel mb-4" rounded="xl" variant="flat">
+          <v-card-item class="pb-2">
+            <v-tabs
+              v-model="activeTab"
+              color="primary"
+              fixed-tabs
+              class="pos-tabs"
+            >
+              <v-tab value="pos">{{ __('POS') }}
+                <v-chip v-if="isReturnInvoice" class="ml-1" size="x-small" density="comfortable" color="error" variant="tonal">
+                  {{ __('Return') }}
+                </v-chip>
+              </v-tab>
+              <v-tab value="checkout" :disabled="!hasCartItems">{{ __('Checkout') }}</v-tab>
+            </v-tabs>
+          </v-card-item>
+        </v-card>
+      </v-col>
 
+      <v-col cols="12">
         <v-window v-model="activeTab">
           <v-window-item value="pos">
-            <v-row dense>
-              <v-col cols="8">
-                <FiltersSection
-                  :customFilters="posProfileData.custom_filters"
-                  :allowedItemGroups="posProfileData.item_groups"
-                  @getItems="searchItems"
-                  
-                />
-                <ItemsList :items="items" />
-              </v-col>
-              <v-col cols="4">
-                <v-combobox
-                  v-model="customer"
-                  :items="customers"
-                  item-title="name"
-                  item-value="name"
-                  :search="customerSearch"
-                  @update:search="customerSearch = $event"
-                  @update:model-value="updateSelection"
-                  variant="solo"
-                  density="compact"
-                  :loading="loading"
-                  :rules="[customers.length == 0 ? () => 'No customers found' : () => true]"
-                >
-                  <template #append-inner>
-                    <v-btn
-                      icon="mdi-plus"
-                      size="small"
-                      variant="text"
-                      @click.stop="openAddCustomerDialog"
+            <v-row class="pos-content" dense align="stretch">
+              <v-col cols="12" lg="8">
+                <v-card class="pos-panel h-90" rounded="xl" variant="flat" :disabled="isReturnInvoice">
+                  <v-card-item class="pb-1">
+                    <div class="text-subtitle-1 font-weight-bold">{{ __('Browse Items') }}</div>
+                  </v-card-item>
+                  <v-card-text>
+                    <FiltersSection
+                      :customFilters="posProfileData.custom_filters"
+                      :allowedItemGroups="posProfileData.item_groups"
+                      @getItems="searchItems"
                     />
-                  </template>
-                </v-combobox>
-                <Cart @checkout="prepareCheckout" />
-                <v-card rounded="lg" class="pa-3 mt-3" flat>
-                  <v-row dense>
-                    <v-col>
-                      <v-btn
-                        width="100%"
-                        color="deep-purple-accent-4"
-                        variant="elevated"
-                        text="Print Last Invoice"
-                        @click="printLastInvoice()"
-                      />
-                    </v-col>
-                    <v-col cols="3">
-                      <v-btn
-                        width="100%"
-                        color="deep-purple-accent-4"
-                        variant="elevated"
-                        :text="__('Load')"
-                        @click="showLoadInvoiceDialog()"
-                      />
-                    </v-col>
-                    <v-col cols="3">
-                      <v-btn
-                        width="100%"
-                        color="deep-purple-accent-4"
-                        variant="elevated"
-                        :text="__('Load SO')"
-                        @click="showLoadInvoiceDialog(true)"
-                      />
-                    </v-col>
-                    <v-col cols="3">
-                      <v-btn
-                        width="100%"
-                        color="deep-purple-accent-4"
-                        variant="elevated"
-                        :text="__('Save SO')"
-                        :disabled="!hasCartItems"
-                        @click="saveAsSalesOrder()"
-                      />
-                    </v-col>
-                    <v-col cols="3">
-                      <v-btn
-                        width="100%"
-                        color="deep-purple-accent-4"
-                        variant="elevated"
-                        :text="__('Save')"
-                        :disabled="!hasCartItems"
-                        @click="posFrm.save()"
-                      />
-                    </v-col>
-                    <v-col cols="3">
-                      <v-btn
-                        width="100%"
-                        color="deep-purple-accent-4"
-                        variant="elevated"
-                        :text="__('New')"
-                        @click="resetForm()"
-                      />
-                    </v-col>
-                  </v-row>
+                    <ItemsList :items="items"/>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+
+              <v-col cols="12" lg="4">
+                <v-card class="pos-panel h-40" rounded="xl" variant="flat">
+                  <v-card-text>
+                    <v-combobox
+                      v-model="customer"
+                      :items="customers"
+                      item-title="name"
+                      item-value="name"
+                      :search="customerSearch"
+                      @update:search="customerSearch = $event"
+                      @update:model-value="updateSelection"
+                      variant="solo-filled"
+                      density="comfortable"
+                      rounded="lg"
+                      :loading="loading"
+                      :rules="[customers.length == 0 ? () => 'No customers found' : () => true]"
+                      :disabled="isReturnInvoice"
+                    >
+                      <template #append-inner>
+                        <v-btn
+                          icon="mdi-plus"
+                          size="small"
+                          variant="text"
+                          @click.stop="openAddCustomerDialog"
+                        />
+                      </template>
+                    </v-combobox>
+
+                    <Cart @checkout="prepareCheckout" />
+
+                    <v-card class="section-card mt-4" rounded="lg" variant="outlined">
+                      <v-card-text class="pt-4">
+                        <div class="actions-wrap">
+                          <v-btn
+                            block
+                            color="primary"
+                            variant="elevated"
+                            rounded="lg"
+                            prepend-icon="mdi-printer"
+                            @click="printLastInvoice()"
+                          >
+                            {{ __('Print Last Invoice') }}
+                          </v-btn>
+
+                          <v-btn
+                            block
+                            color="secondary"
+                            variant="tonal"
+                            rounded="lg"
+                            @click="showLoadInvoiceDialog()"
+                          >
+                            {{ __('Load') }}
+                          </v-btn>
+
+                          <v-btn
+                            block
+                            color="secondary"
+                            variant="tonal"
+                            rounded="lg"
+                            @click="showLoadInvoiceDialog(true)"
+                          >
+                            {{ __('Load SO') }}
+                          </v-btn>
+
+                          <v-btn
+                            block
+                            color="warning"
+                            variant="tonal"
+                            rounded="lg"
+                            :disabled="!hasCartItems"
+                            @click="saveAsSalesOrder()"
+                          >
+                            {{ __('Save SO') }}
+                          </v-btn>
+
+                          <v-btn
+                            block
+                            color="primary"
+                            variant="tonal"
+                            rounded="lg"
+                            :disabled="!hasCartItems"
+                            @click="posFrm.save()"
+                          >
+                            {{ __('Save') }}
+                          </v-btn>
+
+                          <v-btn
+                            block
+                            color="info"
+                            variant="tonal"
+                            rounded="lg"
+                            @click="resetForm()"
+                          >
+                            {{ __('New') }}
+                          </v-btn>
+                        </div>
+                      </v-card-text>
+                    </v-card>
+                  </v-card-text>
                 </v-card>
               </v-col>
             </v-row>
@@ -483,95 +518,165 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
 
           <v-window-item value="checkout">
             <v-row justify="center">
-              <v-col cols="12" md="9" lg="7">
-                <v-card rounded="lg" class="pa-3 mt-1" flat>
-                  <div class="text-subtitle-1 mb-2">{{ __('Checkout') }}</div>
-                  <v-list class="checkout-list">
-                    <v-list-item
-                      v-for="payment in posPayments"
-                      :key="payment.idx"
-                      class="border-b"
-                    >
-                      <v-row align="center" dense>
-                        <v-col cols="12" sm="5" align-self="center" align="start">
-                          {{ payment.mode_of_payment }}
-                        </v-col>
-                        <v-col cols="9" sm="5" align-self="center" align="end">
-                          <v-number-input
-                            class="mt-2"
-                            v-model="payment.amount"
-                            control-variant="hidden"
-                            variant="outlined"
-                            density="compact"
-                            :precision="2"
-                            :label="priceListCurrency"
-                            @change="changePaymentAmount(payment.item_name)"
-                          />
-                        </v-col>
-                        <v-col cols="3" sm="2" align-self="center" align="end">
-                          <v-btn
-                            icon="mdi-cash-marker"
-                            variant="text"
-                            @click="ChangePayment(payment)"
-                          />
-                        </v-col>
-                      </v-row>
-                    </v-list-item>
-                  </v-list>
+              <v-col cols="12" md="9" lg="8">
+                <v-card class="pos-panel" rounded="xl" variant="flat">
+                  <v-card-item class="pb-1">
+                    <div class="text-overline text-medium-emphasis">{{ __('Invoice Settlement') }}</div>
+                    <div class="text-h6 font-weight-bold">{{ __('Checkout') }}</div>
+                  </v-card-item>
 
-                  <v-divider class="my-3" />
+                  <v-card-text>
+                    <v-card class="section-card" rounded="lg" variant="outlined">
+                      <v-card-text>
+                        <v-list class="checkout-list">
+                          <v-list-item
+                            v-for="payment in posPayments"
+                            :key="payment.idx"
+                            class="border-b"
+                          >
+                            <v-row align="center" dense>
+                              <v-col cols="12" sm="5" align-self="center" align="start">
+                                {{ payment.mode_of_payment }}
+                              </v-col>
+                              <v-col cols="9" sm="5" align-self="center" align="end">
+                                <v-number-input
+                                  class="mt-2"
+                                  v-model="payment.amount"
+                                  control-variant="hidden"
+                                  variant="outlined"
+                                  density="compact"
+                                  :precision="2"
+                                  :label="priceListCurrency"
+                                  @change="changePaymentAmount(payment.item_name)"
+                                />
+                              </v-col>
+                              <v-col cols="3" sm="2" align-self="center" align="end">
+                                <v-btn
+                                  icon="mdi-cash-marker"
+                                  variant="text"
+                                  color="primary"
+                                  @click="ChangePayment(payment)"
+                                />
+                              </v-col>
+                            </v-row>
+                          </v-list-item>
+                        </v-list>
+                      </v-card-text>
+                    </v-card>
 
-                  <v-row dense>
-                    <v-col cols="12" md="8">
-                      <div>{{ __('Customer') }}: {{ posFrm?.doc?.customer_name || '' }}</div>
-                      <div>{{ __('Total') }}: {{ posFrm?.doc?.grand_total || 0 }} {{ posFrm?.doc?.price_list_currency || '' }}</div>
-                      <div>{{ __('Paid Amount') }}: {{ posFrm?.doc?.paid_amount || 0 }} {{ posFrm?.doc?.price_list_currency || '' }}</div>
-                      <div>{{ __('Remaining Amount') }}: {{ posFrm?.doc?.outstanding_amount || 0 }} {{ posFrm?.doc?.price_list_currency || '' }}</div>
-                    </v-col>
-                    <v-col cols="12" md="4" class="d-flex align-end">
-                      <v-btn
-                        block
-                        class="mt-2"
-                        color="deep-purple-accent-4"
-                        variant="elevated"
-                        :disabled="!hasCartItems"
-                        @click="submitInvoice(true)"
-                      >
-                        {{ __('Pay & Print') }}
-                      </v-btn>
-                    </v-col>
-                  </v-row>
+                    <v-row dense class="mt-2">
+                      <v-col cols="12" sm="6" md="3">
+                        <v-card class="stat-card" rounded="lg" variant="tonal" color="primary">
+                          <v-card-text>
+                            <div class="text-caption text-medium-emphasis">{{ __('Customer') }}</div>
+                            <div class="text-body-2 font-weight-bold text-truncate">{{ posFrm?.doc?.customer_name || '' }}</div>
+                          </v-card-text>
+                        </v-card>
+                      </v-col>
+                      <v-col cols="12" sm="6" md="3">
+                        <v-card class="stat-card" rounded="lg" variant="tonal" color="success">
+                          <v-card-text>
+                            <div class="text-caption text-medium-emphasis">{{ __('Total') }}</div>
+                            <div class="text-body-2 font-weight-bold">{{ posFrm?.doc?.grand_total || 0 }} {{ posFrm?.doc?.price_list_currency || '' }}</div>
+                          </v-card-text>
+                        </v-card>
+                      </v-col>
+                      <v-col cols="12" sm="6" md="3">
+                        <v-card class="stat-card" rounded="lg" variant="tonal" color="info">
+                          <v-card-text>
+                            <div class="text-caption text-medium-emphasis">{{ __('Paid Amount') }}</div>
+                            <div class="text-body-2 font-weight-bold">{{ posFrm?.doc?.grand_total - posFrm?.doc?.outstanding_amount || 0 }} {{ posFrm?.doc?.price_list_currency || '' }}</div>
+                          </v-card-text>
+                        </v-card>
+                      </v-col>
+                      <v-col cols="12" sm="6" md="3">
+                        <v-card class="stat-card" rounded="lg" variant="tonal" color="warning">
+                          <v-card-text>
+                            <div class="text-caption text-medium-emphasis">{{ __('Remaining') }}</div>
+                            <div class="text-body-2 font-weight-bold">{{ posFrm?.doc?.outstanding_amount || 0 }} {{ posFrm?.doc?.price_list_currency || '' }}</div>
+                          </v-card-text>
+                        </v-card>
+                      </v-col>
+                    </v-row>
+
+                    <v-row dense class="mt-3">
+                      <v-col cols="12" md="4" class="ms-md-auto">
+                        <v-btn
+                          block
+                          color="primary"
+                          variant="elevated"
+                          rounded="lg"
+                          prepend-icon="mdi-cash-check"
+                          :disabled="!hasCartItems"
+                          @click="submitInvoice(true)"
+                        >
+                          {{ __('Pay & Print') }}
+                        </v-btn>
+                      </v-col>
+                    </v-row>
+                  </v-card-text>
                 </v-card>
               </v-col>
             </v-row>
           </v-window-item>
         </v-window>
+      </v-col>
+    </v-row>
 
-        <LoadInvoiceDialog
-          v-model="LoadInvoiceDialogToggle"
-          :invoices="heldInvoices"
-          @load="load_invoice"
-          @close="clearLoadInvoiceList()"
-        />
-      </v-main>
-    </v-app>
+    <LoadInvoiceDialog
+      v-model="LoadInvoiceDialogToggle"
+      :invoices="heldInvoices"
+      @load="load_invoice"
+      @close="clearLoadInvoiceList()"
+    />
+  </v-main>
 </template>
 
 <style scoped>
-  .container1 {
-    margin-top: 0px;
-  }
-  .pos-view-container{
-    background: #edf2f5;
-  }
+.pos-view {
+  background:
+    radial-gradient(circle at top right, rgba(25, 118, 210, 0.09), transparent 42%),
+    radial-gradient(circle at left bottom, rgba(76, 175, 80, 0.08), transparent 38%);
+}
 
-  .action-buttons {
+.pos-panel {
+  border: 1px solid rgba(120, 144, 156, 0.24);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 251, 255, 0.96));
+  box-shadow: 0 10px 24px rgba(12, 28, 43, 0.08);
+}
+
+.pos-tabs :deep(.v-tab--selected) {
+  font-weight: 700;
+}
+
+.section-card {
+  border-color: rgba(120, 144, 156, 0.28) !important;
+}
+
+.stat-card {
+  border: 1px solid rgba(120, 144, 156, 0.18);
+}
+
+.actions-wrap {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.checkout-list {
+  max-height: 34vh;
+  overflow-y: auto;
+}
+
+@media (max-width: 1264px) {
+  .actions-wrap {
     grid-template-columns: 1fr;
-    gap: 8px;
   }
+}
 
-  .checkout-list {
-    max-height: 34vh;
-    overflow-y: auto;
+@media (max-width: 960px) {
+  .pos-view {
+    padding: 10px;
   }
+}
 </style>

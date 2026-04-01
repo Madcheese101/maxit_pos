@@ -1,5 +1,6 @@
 import {defineStore} from "pinia"
 import {ref, nextTick, triggerRef} from "vue"
+import { tr } from "vuetify/locale";
 frappe.provide("log_");
 frappe.provide("maxit_pos.utils");
 frappe.provide("maxit_pos.utils.errors");
@@ -63,7 +64,7 @@ export const usePosStore = defineStore('posStore', () => {
     const process_return = (doctype, name) => {
         frappe.db.get_doc(doctype, name).then((doc) => {
             frappe.run_serially([
-                () => make_sales_invoice_frm(doc.doctype),
+                () => make_sales_invoice_frm(doc.doctype, 1),
                 () => make_return_invoice(doc),
             ]);
         });
@@ -100,7 +101,7 @@ export const usePosStore = defineStore('posStore', () => {
             },
         });
     }
-    const make_sales_invoice_frm = () => {
+    const make_sales_invoice_frm = (doctype_, is_return=0) => {
 		const doctype = "Sales Invoice";
 		return new Promise((resolve) => {
 			if (posFrm.value) {
@@ -108,6 +109,7 @@ export const usePosStore = defineStore('posStore', () => {
 				posFrm.value.doc.items = [];
 				posFrm.value.doc.is_pos = 1;
                 if (doctype == "Sales Invoice") posFrm.value.doc.is_created_using_pos = 1;
+                if (is_return) posFrm.value.doc.is_return = 1;
 				resolve();
 			} 
             else {
@@ -116,6 +118,7 @@ export const usePosStore = defineStore('posStore', () => {
 					posFrm.value.doc.items = [];
 					posFrm.value.doc.is_pos = 1;
                     if (doctype == "Sales Invoice") posFrm.value.doc.is_created_using_pos = 1;
+                    if (is_return) posFrm.value.doc.is_return = 1;
 					resolve();
 				});
 			}

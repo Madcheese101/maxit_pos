@@ -1,57 +1,78 @@
 <template>
-  <v-dialog v-model="internalModel" max-width="700">
-    <v-card>
-      <v-card-title class="text-h6">
-        Select Invoice
-      </v-card-title>
+  <v-dialog v-model="internalModel" max-width="760">
+    <v-card class="pay-dialog" rounded="xl">
+      <v-card-item class="pb-2">
+        <div class="d-flex align-center justify-space-between gap-2">
+          <div>
+            <div class="text-overline text-medium-emphasis">{{ __('Payment') }}</div>
+            <div class="text-h6 font-weight-bold">{{ __('Allocate Invoice Payment') }}</div>
+          </div>
+          <v-chip color="primary" variant="tonal" size="small">
+            {{ currency }}
+          </v-chip>
+        </div>
+      </v-card-item>
 
-      <v-card-text>
-        <v-table>
+      <v-divider />
+
+      <v-card-text class="pt-4">
+        <v-table class="rounded-lg overflow-hidden payment-table" density="comfortable">
           <thead>
             <tr>
               <th>{{ __('Payment Mode') }}</th>
-              <th>{{ __('Amount') }}</th>
+              <th class="text-right">{{ __('Amount') }}</th>
             </tr>
           </thead>
 
           <tbody>
             <tr v-for="payment in payments" :key="payment.mode_of_payment">
-              <td>{{ payment.mode_of_payment }}</td>
+              <td class="font-weight-medium">{{ payment.mode_of_payment }}</td>
               <td>
-                <v-number-input 
-                  class="mt-3"
+                <v-number-input
                   v-model="payment.amount"
-                  :prefix="pos_profile ? pos_profile.currency : ''"
+                  :prefix="currency || ''"
                   control-variant="hidden"
                   variant="outlined"
-                  density="compact"
+                  density="comfortable"
                   :precision="2"
+                  hide-details
                   @change="setTotal()"
                 />
               </td>
-              <!-- <td>
-                <v-btn
-                  size="small"
-                  color="primary"
-                  @click="payInvoice(payment.name)"
-                >
-                  PAY
-                </v-btn>
-              </td> -->
             </tr>
           </tbody>
         </v-table>
-        <div>
-          <strong>{{__('Total Paid')}}:</strong> {{ totalPaid }} {{ currency }}<br>
-          <strong>{{__('Invoice Outstanding Amount')}}:</strong> {{ outstandingAmount }} {{ currency }}<br>
-          <strong>{{__('Unallocated Amount')}}:</strong> {{ unallocatedAmount }} {{ currency }}
-        </div>
+
+        <v-row class="mt-3" dense>
+          <v-col cols="12" sm="4">
+            <v-sheet class="summary-card" color="primary" rounded="lg" variant="tonal">
+              <div class="text-caption text-medium-emphasis">{{ __('Total Paid') }}</div>
+              <div class="text-body-1 font-weight-bold">{{ totalPaid }} {{ currency }}</div>
+            </v-sheet>
+          </v-col>
+          <v-col cols="12" sm="4">
+            <v-sheet class="summary-card" color="warning" rounded="lg" variant="tonal">
+              <div class="text-caption text-medium-emphasis">{{ __('Outstanding') }}</div>
+              <div class="text-body-1 font-weight-bold">{{ outstandingAmount }} {{ currency }}</div>
+            </v-sheet>
+          </v-col>
+          <v-col cols="12" sm="4">
+            <v-sheet class="summary-card" :color="unallocatedAmount === 0 ? 'success' : 'secondary'" rounded="lg" variant="tonal">
+              <div class="text-caption text-medium-emphasis">{{ __('Unallocated') }}</div>
+              <div class="text-body-1 font-weight-bold">{{ unallocatedAmount }} {{ currency }}</div>
+            </v-sheet>
+          </v-col>
+        </v-row>
       </v-card-text>
 
-      <v-card-actions>
+      <v-card-actions class="px-4 pb-4 pt-0 d-flex gap-2 flex-wrap">
         <v-spacer />
-        <v-btn color="success" block @click="payInvoice">Pay</v-btn>
-        <v-btn text @click="closeDialog">Close</v-btn>
+        <v-btn color="success" variant="elevated" prepend-icon="mdi-cash-check" @click="payInvoice">
+          {{ __('Pay') }}
+        </v-btn>
+        <v-btn variant="tonal" @click="closeDialog">
+          {{ __('Close') }}
+        </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -115,3 +136,19 @@
     unallocatedAmount.value = 0;
   }
 </script>
+
+<style scoped>
+.pay-dialog {
+  border: 1px solid rgba(120, 144, 156, 0.24);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 251, 255, 0.97));
+}
+
+.payment-table {
+  border: 1px solid rgba(120, 144, 156, 0.2);
+}
+
+.summary-card {
+  padding: 12px;
+  border: 1px solid rgba(120, 144, 156, 0.2);
+}
+</style>

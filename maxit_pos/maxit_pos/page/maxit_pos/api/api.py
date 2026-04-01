@@ -89,6 +89,7 @@ def pay_invoice(doc, payments):
     payment_type = "Receive"
     payments = json.loads(payments)
     for payment in payments:
+        if payment.get("amount") <= 0: continue
         party_account = get_party_account("Customer", sinv.get("customer"), sinv.get("company"))
         party_account_currency = get_account_currency(party_account)
         if party_account_currency != sinv.get("price_list_currency"):
@@ -249,6 +250,7 @@ def get_sales_invoice_list(pos_profile, search_term=""):
             SalesInvoice.name,
             SalesInvoice.customer,
             SalesInvoice.grand_total,
+            SalesInvoice.status
         )
         .where(SalesInvoice.pos_profile == pos_profile)
         .where(SalesInvoice.docstatus == 1)
