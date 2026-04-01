@@ -29,7 +29,7 @@
 
 <script setup>
     import { computed, ref, watch } from 'vue'
-    import { usePosStore } from '../../../store/posStore';
+    import { usePosStore } from '../../../../store/posStore';
     import {storeToRefs} from 'pinia';
     // Initialize Store
     const posStore = usePosStore();

@@ -52,7 +52,7 @@
   import FiltersSection from './components/pos/FiltersSection.vue';
   import ItemsList from './components/pos/ItemsList.vue';
   import InvoiceItemList from './components/pos/InvoiceItemList.vue';
-  import { usePosStore } from '../store/posStore';
+  import { usePosStore } from '../../../../store/posStore';
   import { storeToRefs } from 'pinia';
   import { ref, watch} from 'vue';
 
@@ -88,11 +88,5 @@
   }
   .pos-view-container{
     background: #edf2f5;
-  }
-
-  .hover-button:hover {
-    /* background-color: #6b3fe7; */
-    /* color: white !important; */
-    /* color: #6b3fe7; */
   }
 </style>
