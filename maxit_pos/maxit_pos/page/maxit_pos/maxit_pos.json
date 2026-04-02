@@ -3,15 +3,19 @@
  "creation": "2025-03-30 06:25:46.645478",
  "docstatus": 0,
  "doctype": "Page",
- "icon": "MaxIt POS",
+ "icon": "",
  "idx": 0,
- "modified": "2025-04-03 02:15:06.797937",
+ "modified": "2026-04-02 12:56:52.091880",
  "modified_by": "Administrator",
  "module": "MaxIT POS",
  "name": "maxit-pos",
  "owner": "Administrator",
  "page_name": "maxit-pos",
- "roles": [],
+ "roles": [
+  {
+   "role": "Sales User"
+  }
+ ],
  "script": null,
  "standard": "Yes",
  "style": null,
