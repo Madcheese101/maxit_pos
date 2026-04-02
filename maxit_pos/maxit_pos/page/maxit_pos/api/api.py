@@ -398,12 +398,13 @@ def get_advanced_item_filters_dict(custom_filters):
 
 def get_item_filters(filter, filters):
     if filter["field_type"] == "Link":
+        field_options = frappe.get_list(filter["field_options"], pluck="name")
         filters.append({
             "field_type": filter["field_type"],
             "fieldname": filter["item_field_name"],
             "label": filter["item_field"],
             "doctype": filter["field_options"],
-            "options": None,
+            "options": field_options,
             "selected": None
         })
     elif filter["field_type"] == "Select":
@@ -430,6 +431,171 @@ def get_item_filters(filter, filters):
 @frappe.whitelist()
 def get_item_group_list():
     return frappe.get_all("Item Group", filters={"is_group": 0}, pluck="name", group_by="name") or []
+
+def _attach_item_attributes(items):
+    item_codes = [item.get("item_code") for item in items if item.get("item_code")]
+    if not item_codes:
+        return
+
+    ItemVariantAttribute = DocType("Item Variant Attribute")
+    attribute_rows = (
+        frappe.qb.from_(ItemVariantAttribute)
+        .select(
+            ItemVariantAttribute.parent,
+            ItemVariantAttribute.attribute,
+            ItemVariantAttribute.attribute_value,
+        )
+        .where(ItemVariantAttribute.parent.isin(item_codes))
+    ).run(as_dict=True)
+
+    attributes_map = {}
+    for row in attribute_rows:
+        item_code = row.get("parent")
+        attribute_label = row.get("attribute") or ""
+        attribute_value = row.get("attribute_value")
+        if not item_code or not attribute_label:
+            continue
+
+        fieldname = attribute_label.lower().replace(" ", "_")
+        if item_code not in attributes_map:
+            attributes_map[item_code] = {}
+        attributes_map[item_code][fieldname] = attribute_value
+
+    for item in items:
+        item_attributes = attributes_map.get(item.get("item_code"), {})
+        item["attributes"] = item_attributes
+        item["size"] = item_attributes.get("size", "")
+        item["color"] = item_attributes.get("color", "")
+
+        for key, value in item_attributes.items():
+            if key not in item:
+                item[key] = value
+
+def _is_active_browser_filter(filter_dict):
+    if filter_dict.get("field_type") == "Check":
+        return filter_dict.get("selected") is True
+    selected = filter_dict.get("selected")
+    return selected not in (None, "")
+
+def _append_browser_filter(query_filters, attribute_filters, filter_dict):
+    if not _is_active_browser_filter(filter_dict):
+        return
+
+    if filter_dict.get("doctype") == "Item Attribute Value":
+        attribute_filters.append(filter_dict.get("selected"))
+        return
+
+    fieldname = filter_dict.get("fieldname")
+    field_type = filter_dict.get("field_type")
+    selected = filter_dict.get("selected")
+
+    if not fieldname:
+        return
+
+    if field_type == "Check":
+        query_filters.append([fieldname, "=", 1])
+    elif field_type in ("Select", "Link"):
+        query_filters.append([fieldname, "=", selected])
+    else:
+        query_filters.append([fieldname, "like", f"%{selected}%"])
+
+@frappe.whitelist()
+def get_items_browser(pos_profile_data, search_term="", custom_filters=[]):
+    if isinstance(pos_profile_data, str):
+        pos_profile_data = json.loads(pos_profile_data)
+
+    if isinstance(custom_filters, str):
+        custom_filters = json.loads(custom_filters)
+
+    pos_profile_data = frappe._dict(pos_profile_data)
+
+    warehouse = pos_profile_data.warehouse
+    price_list = pos_profile_data.selling_price_list
+    hide_unavailable_items = pos_profile_data.hide_unavailable_items
+    item_table = frappe.qb.DocType("Item")
+
+    attribute_values_filter = []
+    result = []
+    items_uoms = {}
+    filters = [
+        ["disabled", "=", 0],
+        ["has_variants", "=", 0],
+        ["is_sales_item", "=", 1],
+        ["is_fixed_asset", "=", 0],
+    ]
+
+    if search_term:
+        search_term = search_term.strip()
+        filters.append(
+            (item_table.name.like(f"%{search_term}%")) | (item_table.item_name.like(f"%{search_term}%"))
+        )
+
+    query_fields = [
+        "name",
+        "name as item_code",
+        "description",
+        "stock_uom",
+        "image as item_image",
+        "is_stock_item",
+        "sales_uom",
+        "item_group",
+        "item_name",
+        {"uoms": ["uom"]},
+    ]
+
+    extra_item_fields = []
+    for custom_filter in custom_filters or []:
+        _append_browser_filter(filters, attribute_values_filter, custom_filter)
+
+        fieldname = custom_filter.get("fieldname") or custom_filter.get("item_field_name")
+        if not fieldname:
+            continue
+        if custom_filter.get("doctype") == "Item Attribute Value":
+            continue
+        if fieldname in [
+            "name",
+            "item_code",
+            "description",
+            "stock_uom",
+            "item_image",
+            "is_stock_item",
+            "sales_uom",
+            "item_group",
+            "item_name",
+        ]:
+            continue
+        extra_item_fields.append(fieldname)
+
+    query_fields.extend(list(set(extra_item_fields)))
+
+    query = frappe.qb.get_query(
+        "Item",
+        fields=query_fields,
+        filters=filters,
+    )
+
+    query = join_bin(query, warehouse, hide_unavailable_items, item_table)
+
+    if attribute_values_filter:
+        att_table = DocType("Item Variant Attribute")
+        subquery = (
+            frappe.qb
+            .from_(att_table)
+            .select(att_table.parent)
+            .where(att_table.attribute_value.isin(attribute_values_filter))
+            .groupby(att_table.parent)
+            .having(functions.Count("*") == len(attribute_values_filter))
+        )
+        query = query.where(item_table.name.isin(subquery))
+
+    items_data = query.run(as_dict=True)
+    if not items_data:
+        return {"items": result, "items_uoms": items_uoms}
+
+    process_items_data(result, items_uoms, items_data, hide_unavailable_items, warehouse, price_list)
+    _attach_item_attributes(result)
+
+    return {"items": result, "items_uoms": items_uoms}
 
 @frappe.whitelist()
 def get_items(pos_profile_data, search_term="", item_group=None, custom_filters=[]):
