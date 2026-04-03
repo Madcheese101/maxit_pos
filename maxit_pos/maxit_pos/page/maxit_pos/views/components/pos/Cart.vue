@@ -53,6 +53,7 @@
                                 control-variant="hidden"
                                 variant="outlined"
                                 density="compact"
+                                :disabled="!allow_rate_change"
                                 :precision="2"
                                 :label="__('Rate') + ': ' + item.price_list_rate + ' ' + priceListCurrency"
                                 @change="update_number(item, 'rate', item.rate)"
@@ -67,6 +68,7 @@
                                 density="compact"
                                 :precision="2"
                                 :label="__('Discount')"
+                                :disabled="!allow_discount_change"
                                 @change="update_number(item, 'discount_amount', item.discount_amount)"
                             >
                                 <template #append-inner>
@@ -88,6 +90,7 @@
                                 density="compact"
                                 :precision="2"
                                 :label="__('Discount %')"
+                                :disabled="!allow_discount_change"
                                 @change="update_number(item, 'discount_percentage', item.discount_percentage)"
                             >
                                 <template #append-inner>
@@ -128,12 +131,14 @@
     const __ = window.__;
     const frappe_ = frappe;
     const posStore = usePosStore();
-    const {posFrm} = storeToRefs(posStore);
+    const {posFrm, posProfileData} = storeToRefs(posStore);
     const {update_cart} = posStore;
 
     const emit = defineEmits(['checkout']);
     const posCartItems = computed(() => posFrm.value?.doc?.items || [])
     const priceListCurrency = computed(() => posFrm.value?.doc?.price_list_currency || "")
+    const allow_discount_change = computed(() => posProfileData.value?.allow_discount_change)
+    const allow_rate_change = computed(() => posProfileData.value?.allow_rate_change)
 
     const update_number = async (item, field, value) => {
         update_cart({

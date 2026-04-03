@@ -166,7 +166,7 @@
 
   const printInvoice = (invoice) => {
     const doctype = "Sales Invoice";
-    const printFormat = 'Standard';
+    const printFormat = posProfileData.value?.print_format || 'Standard';
     const printUrl = `/printview?doctype=${doctype}&name=${invoice}&
 format=${printFormat}&no_letterhead=1&letterhead=No%20Letterhead&settings=%7B%7D&_lang=en&
 pdf_generator=wkhtmltopdf&trigger_print=1`;
@@ -446,6 +446,7 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
                       <v-card-text class="pt-4">
                         <div class="actions-wrap">
                           <v-btn
+                            v-if="posProfileData?.allow_print_last_invoice"
                             block
                             color="primary"
                             variant="elevated"
