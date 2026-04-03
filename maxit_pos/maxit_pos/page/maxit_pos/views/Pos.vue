@@ -115,10 +115,38 @@
 
   const prepareCheckout = async () => {
     if (!hasCartItems.value) return;
-    await posFrm.value.save();
+    const save_result = await posFrm.value.save();
+    if(save_result.exc) return;
     await posFrm.value.cscript.set_default_payment(posFrm.value.doc.grand_total, true);
     posFrm.value.refresh_field("payments");
     activeTab.value = 'checkout';
+  }
+
+  const validate = () => {
+    posFrm.value.doc.items.forEach((item, index) => {
+      if(!item.item_code) {
+        frappe.show_alert({
+          indicator: "red",
+          message: __("Item code is required for item at row {0}", [item.idx]),
+        });
+        return false;
+      }
+      if(item.rate == undefined || item.rate == 0) {
+        frappe.show_alert({
+          indicator: "red",
+          message: __("Rate is required for item at row {0}", [item.idx]),
+        });
+        return false;
+      }
+      if(item.max_discount && item.discount_percentage > item.max_discount) {
+        frappe.show_alert({
+          indicator: "red",
+          message: __("Discount for item at row {0} cannot exceed {1}%", [item.idx, item.max_discount]),
+        });
+        return false;
+      }
+    });
+    return true;
   }
 
   const changePaymentAmount = async (item_name) => {

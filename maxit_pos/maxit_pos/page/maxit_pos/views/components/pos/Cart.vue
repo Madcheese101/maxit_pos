@@ -15,7 +15,7 @@
                 <v-expansion-panel-title>
                     <v-row align="center" @click.stop dense>
                         <v-col cols="6" align="start" class="text-body-2 pa-0">
-                            {{ item.item_name }}
+                            {{ item.idx }}. {{ item.item_name }}
                         </v-col>
 
                         <v-col cols="2" @click.stop>
