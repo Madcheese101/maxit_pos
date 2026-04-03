@@ -174,7 +174,21 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
   }
 
   const printLastInvoice = () => {
-    console.log("Printing last invoice");
+    frappe.call({
+      method: "maxit_pos.maxit_pos.page.maxit_pos.api.api.get_last_invoice_for_print",
+      args: {
+        pos_profile: pos_profile.value,
+        creator_only: posProfileData.value.print_last_invoice_for_creator_only
+      },
+      freeze: true,
+    }).then((response) => {
+      const last_invoice = response.message;
+      if(last_invoice) printInvoice(last_invoice);
+      else frappe.show_alert({
+        indicator: "blue",
+        message: __("No previous invoice found for this POS Profile."),
+      });
+    });
   }
 
   const resetForm = () => {

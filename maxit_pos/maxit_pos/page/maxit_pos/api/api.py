@@ -71,6 +71,21 @@ def save_invoice_as_sales_order(invoice_name):
     sales_order.save()
     return sales_order.name
 
+@frappe.whitelist()
+def get_last_invoice_for_print(pos_profile, creator_only=False):
+    filters={
+        "pos_profile": pos_profile, 
+        "docstatus": 1,
+        "posting_date": frappe.utils.today(),
+        }
+    if creator_only:
+        filters["owner"] = frappe.session.user
+    try:
+        sales_invoice = frappe.get_last_doc('Sales Invoice', filters=filters)
+    except:
+        sales_invoice = None
+    result = sales_invoice.name if sales_invoice else ''
+    return result
 
 @frappe.whitelist()
 def create_and_submit_pos_closing_entry(pos_profile, company, pos_opening_entry):
