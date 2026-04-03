@@ -139,7 +139,7 @@
     const priceListCurrency = computed(() => posFrm.value?.doc?.price_list_currency || "")
     const allow_discount_change = computed(() => posProfileData.value?.allow_discount_change)
     const allow_rate_change = computed(() => posProfileData.value?.allow_rate_change)
-
+    
     const update_number = async (item, field, value) => {
         update_cart({
             field: field,

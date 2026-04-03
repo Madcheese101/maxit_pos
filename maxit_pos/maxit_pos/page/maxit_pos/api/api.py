@@ -512,6 +512,7 @@ def get_items_browser(pos_profile_data, search_term="", custom_filters=[]):
     warehouse = pos_profile_data.warehouse
     price_list = pos_profile_data.selling_price_list
     hide_unavailable_items = pos_profile_data.hide_unavailable_items
+    allowed_item_groups = pos_profile_data.item_groups or []
     item_table = frappe.qb.DocType("Item")
 
     attribute_values_filter = []
@@ -523,7 +524,8 @@ def get_items_browser(pos_profile_data, search_term="", custom_filters=[]):
         ["is_sales_item", "=", 1],
         ["is_fixed_asset", "=", 0],
     ]
-
+    if allowed_item_groups:
+        filters.append(["item_group", "in", [row.item_group for row in allowed_item_groups]])
     if search_term:
         search_term = search_term.strip()
         filters.append(
@@ -612,6 +614,7 @@ def get_items(pos_profile_data, search_term="", item_group=None, custom_filters=
     price_list = pos_profile_data.selling_price_list
     pos_profile = pos_profile_data.name
     hide_unavailable_items = pos_profile_data.hide_unavailable_items
+    allowed_item_groups = pos_profile_data.item_groups or []
     item_table = frappe.qb.DocType("Item")
 
     attribute_values_filter = []
@@ -624,6 +627,9 @@ def get_items(pos_profile_data, search_term="", item_group=None, custom_filters=
         ["is_sales_item", "=", 1],
         ["is_fixed_asset", "=", 0]
     ]
+
+    if allowed_item_groups:
+        filters.append(["item_group", "in", [row.item_group for row in allowed_item_groups]])
 
     if search_term: 
         # this will look for items by barcode, batch_no, serial_no
