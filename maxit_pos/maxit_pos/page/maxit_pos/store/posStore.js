@@ -209,12 +209,12 @@ export const usePosStore = defineStore('posStore', () => {
         
         if (!posFrm.value.doc.customer) return maxit_pos.utils.errors.customer_required();
         
-        const { item_name, item_code, batch_no, serial_no, rate, uom, stock_uom, uoms } = item;
+        const { item_name, item_code, batch_no, serial_no, rate, uom, stock_uom, uoms, max_discount } = item;
 
         if (!item_code) return;
         if (rate == undefined || rate == 0) return maxit_pos.utils.errors.price_required();
 
-        const new_item = { item_code, item_name, batch_no, rate, amount: rate, uom, uoms, [field]: value, stock_uom, is_selected: false};
+        const new_item = { item_code, item_name, batch_no, rate, amount: rate, uom, uoms, [field]: value, stock_uom, is_selected: false, max_discount };
         
         if (serial_no) {
             await maxit_pos.utils.check_serial_no_availablilty(item_code, 

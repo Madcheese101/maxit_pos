@@ -664,6 +664,7 @@ def get_items(pos_profile_data, search_term="", item_group=None, custom_filters=
 			"sales_uom",
             "item_group",
             "item_name",
+            "max_discount",
             {"uoms": ["uom"]}
         ],
         filters=filters
