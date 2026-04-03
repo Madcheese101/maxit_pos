@@ -123,30 +123,31 @@
   }
 
   const validate = () => {
+    const value = true;
     posFrm.value.doc.items.forEach((item, index) => {
       if(!item.item_code) {
         frappe.show_alert({
           indicator: "red",
           message: __("Item code is required for item at row {0}", [item.idx]),
         });
-        return false;
+        value = false;
       }
       if(item.rate == undefined || item.rate == 0) {
         frappe.show_alert({
           indicator: "red",
           message: __("Rate is required for item at row {0}", [item.idx]),
         });
-        return false;
+        value = false;
       }
       if(item.max_discount && item.discount_percentage > item.max_discount) {
         frappe.show_alert({
           indicator: "red",
           message: __("Discount for item at row {0} cannot exceed {1}%", [item.idx, item.max_discount]),
         });
-        return false;
+        value = false;
       }
     });
-    return true;
+    return value;
   }
 
   const changePaymentAmount = async (item_name) => {
