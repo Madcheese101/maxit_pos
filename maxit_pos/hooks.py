@@ -256,6 +256,10 @@ fixtures = [
                 "in",
                 [
                     "POS Profile-custom_advanced_filters",
+                    "POS Profile-custom_payment_entry_print_format",
+                    "POS Profile-custom_allow_print_last_invoice",
+                    "POS Profile-custom_print_last_invoice_for_creator_only",
+                    "Sales Invoice Item-custom_max_discount_"
                 ]
             ]
         ]
