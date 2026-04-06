@@ -448,6 +448,7 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
                     <FiltersSection
                       :customFilters="posProfileData.custom_filters"
                       :allowedItemGroups="posProfileData.item_groups"
+                      :posProfile="pos_profile"
                       @getItems="searchItems"
                     />
                     <ItemsList :items="items"/>

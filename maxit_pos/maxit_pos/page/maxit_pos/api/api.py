@@ -713,9 +713,69 @@ def get_item_filters(filter, filters):
             "selected": None
         })
 
+
+def _get_pos_item_group_cache_version():
+    version_key = "pos_item_groups::version"
+    version = frappe.cache().get_value(version_key)
+    if not version:
+        version = "v1"
+        frappe.cache().set_value(version_key, version)
+    return version
+
+
+def _build_pos_item_group_cache_key(pos_profile):
+    version = _get_pos_item_group_cache_version()
+    profile_key = str(pos_profile or "default")
+    return f"pos_item_groups::{version}::{profile_key}"
+
+
+def _clear_pos_item_group_cache_for_profile(pos_profile):
+    frappe.cache().delete_value(_build_pos_item_group_cache_key(pos_profile))
+
+
+def _clear_pos_item_group_cache_for_all_profiles():
+    version = frappe.generate_hash(length=10)
+    frappe.cache().set_value("pos_item_groups::version", version)
+    return version
+
+
+def on_pos_profile_cache_invalidate(doc=None, method=None, *args, **kwargs):
+    if doc and getattr(doc, "name", None):
+        _clear_pos_item_group_cache_for_profile(doc.name)
+
+
+def on_item_group_cache_invalidate(doc=None, method=None, *args, **kwargs):
+    _clear_pos_item_group_cache_for_all_profiles()
+
+
 @frappe.whitelist()
-def get_item_group_list(allowed_item_groups):
-    allowed_item_groups = json.loads(allowed_item_groups) if allowed_item_groups else []
+def reset_item_group_cache(pos_profile=None):
+    if pos_profile:
+        _clear_pos_item_group_cache_for_profile(pos_profile)
+        return {
+            "status": "ok",
+            "scope": "profile",
+            "pos_profile": pos_profile,
+        }
+
+    version = _clear_pos_item_group_cache_for_all_profiles()
+    return {
+        "status": "ok",
+        "scope": "all",
+        "version": version,
+    }
+
+@frappe.whitelist()
+def get_item_group_list(allowed_item_groups, pos_profile):
+    if isinstance(allowed_item_groups, str):
+        allowed_item_groups = json.loads(allowed_item_groups)
+
+    allowed_item_groups = allowed_item_groups or []
+    cache_key = _build_pos_item_group_cache_key(pos_profile)
+    cached = frappe.cache().get_value(cache_key)
+    if cached is not None:
+        return cached
+
     data = []
     parents = []
     seen = set()
@@ -745,6 +805,7 @@ def get_item_group_list(allowed_item_groups):
     if not data:
         data = frappe.get_list("Item Group", filters={"is_group": 0}, pluck="name", group_by="name") or []
 
+    frappe.cache().set_value(cache_key, data)
 
     return data
 
@@ -841,7 +902,9 @@ def get_items_browser(pos_profile_data, search_term="", custom_filters=[]):
         ["is_fixed_asset", "=", 0],
     ]
     if allowed_item_groups:
-        filters.append(["item_group", "in", [row.item_group for row in allowed_item_groups]])
+        allowed_groups = get_item_group_list(allowed_item_groups, pos_profile_data.name)
+        filters.append(["item_group", "in", allowed_groups])
+
     if search_term:
         search_term = search_term.strip()
         filters.append(
@@ -944,8 +1007,9 @@ def get_items(pos_profile_data, search_term="", item_group=None, custom_filters=
         ["is_fixed_asset", "=", 0]
     ]
 
-    if allowed_item_groups:
-        filters.append(["item_group", "in", [row.item_group for row in allowed_item_groups]])
+    if allowed_item_groups and not item_group:
+        allowed_groups = get_item_group_list(allowed_item_groups, pos_profile_data.name)
+        filters.append(["item_group", "in", allowed_groups])
 
     if search_term: 
         # this will look for items by barcode, batch_no, serial_no

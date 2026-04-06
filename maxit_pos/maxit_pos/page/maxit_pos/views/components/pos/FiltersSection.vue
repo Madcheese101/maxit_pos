@@ -56,7 +56,7 @@
     import { ref, toRefs, computed, watch} from 'vue';
     import _ from "lodash";
     const emit = defineEmits(['GetItems']);
-    const props = defineProps(['customFilters', 'allowedItemGroups']);
+    const props = defineProps(['customFilters', 'allowedItemGroups', 'posProfile']);
     const frappeRef = ref(frappe);
     const search_term = ref('');
     const item_groups = ref([__("all")]);
@@ -82,7 +82,9 @@
         //     })
         //     return;
         // }
-        frappe.call('maxit_pos.maxit_pos.page.maxit_pos.api.api.get_item_group_list', {allowed_item_groups: props.allowedItemGroups}).then((res) => {
+        frappe.call('maxit_pos.maxit_pos.page.maxit_pos.api.api.get_item_group_list', 
+        {allowed_item_groups: props.allowedItemGroups, pos_profile: props.posProfile}).then((res) => {
+            console.log(res);
             item_groups.value.push(...res.message);
         });
     }
