@@ -123,7 +123,7 @@
   }
 
   const validate = () => {
-    const value = true;
+    var value = true;
     posFrm.value.doc.items.forEach((item, index) => {
       if(!item.item_code) {
         frappe.show_alert({
