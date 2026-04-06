@@ -311,7 +311,7 @@
     import { ref, watch, computed } from "vue";
     import { usePosStore } from '../store/posStore';
     import {storeToRefs} from 'pinia';
-    import { useRouter } from 'vue-router';
+    import { useRouter, useRoute } from 'vue-router';
     import { useDisplay } from 'vuetify';
     import payInvoiceDialog from './components/orders/payInvoiceDialog.vue';
     const frappe_ = frappe;
@@ -327,6 +327,7 @@
     const isLoadingList = ref(false);
     const isLoadingInvoice = ref(false);
     const router = useRouter();
+    const route = useRoute();
     const { smAndDown } = useDisplay();
     const isMobile = computed(() => smAndDown.value);
     const showDetailsOnMobile = ref(false);
@@ -350,6 +351,8 @@
     }));
 
     const invoiceSubtitle = (inv) => `${inv.customer || __('Unknown Customer')} - ${inv.grand_total || 0}`;
+
+    const selectedCustomerFilter = computed(() => (route.query.customer || '').toString());
 
     const returnInvoice = async () =>{
       await process_return('Sales Invoice', invoice.value.name);
@@ -450,6 +453,11 @@
       GetInvoiceDoc(val[0]);
     });
 
+    watch(() => route.query.customer, () => {
+      selected.value = [];
+      getInvoices();
+    });
+
     const getInvoices = () => {
       isLoadingList.value = true;
       frappe.call({
@@ -457,13 +465,16 @@
         freeze: true,
         args: { 
           pos_profile: pos_profile.value,
-          search_term: searchTerm.value || ''
+          search_term: searchTerm.value || '',
+          customer: selectedCustomerFilter.value,
         },
       }).then((response) => {
         invoices.value = response.message || [];
         invoice.value = null;
         isLoadingList.value = false;
-      })
+      }).catch(() => {
+        isLoadingList.value = false;
+      });
     };
 
     getInvoices();

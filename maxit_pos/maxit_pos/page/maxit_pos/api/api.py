@@ -1,4 +1,5 @@
 import json
+from unittest import result
 import frappe
 from frappe import _
 from pypika.terms import Case, ValueWrapper
@@ -367,9 +368,9 @@ def get_sales_orders():
     return invoices
 
 @frappe.whitelist()
-def get_sales_invoice_list(pos_profile, search_term=""):
+def get_sales_invoice_list(pos_profile, search_term="", customer=""):
     SalesInvoice = DocType("Sales Invoice")
-    invoices = (frappe.qb.from_(SalesInvoice)
+    query = (frappe.qb.from_(SalesInvoice)
         .select(
             SalesInvoice.name,
             SalesInvoice.customer,
@@ -378,15 +379,284 @@ def get_sales_invoice_list(pos_profile, search_term=""):
         )
         .where(SalesInvoice.pos_profile == pos_profile)
         .where(SalesInvoice.docstatus == 1)
-        .where(SalesInvoice.name.like(f"%{search_term}%") | 
-            SalesInvoice.customer.like(f"%{search_term}%")  
-            # | SalesInvoice.mobile_no.like(f"%{search_term}%")
-        )
         .orderby(SalesInvoice.modified, order=Order.desc)
         .limit(50)
-    ).run(as_dict=1)
+    )
+
+    if customer:
+        query = query.where(SalesInvoice.customer == customer)
+
+    if search_term:
+        query = query.where(
+            SalesInvoice.name.like(f"%{search_term}%")
+            | SalesInvoice.customer.like(f"%{search_term}%")
+        )
+
+    invoices = query.run(as_dict=1)
 
     return invoices
+
+@frappe.whitelist()
+def get_customers_list(search_term=""):
+    Customer = DocType("Customer")
+    query = (
+        frappe.qb.from_(Customer)
+        .select(
+            Customer.name,
+            Customer.customer_name,
+            Customer.customer_primary_contact,
+            Customer.customer_primary_address,
+            Customer.mobile_no,
+            Customer.email_id,
+        )
+        .orderby(Customer.modified, order=Order.desc)
+        .limit(200)
+    )
+
+    if search_term:
+        query = query.where(
+            Customer.name.like(f"%{search_term}%")
+            | Customer.customer_name.like(f"%{search_term}%")
+            | Customer.mobile_no.like(f"%{search_term}%")
+        )
+
+    customers = query.run(as_dict=1)
+
+    customer_names = [customer.get("name") for customer in customers if customer.get("name")]
+
+    customer_contact_names_map = {name: [] for name in customer_names}
+    customer_address_names_map = {name: [] for name in customer_names}
+
+    if customer_names:
+        dynamic_links = frappe.get_all(
+            "Dynamic Link",
+            filters={
+                "link_doctype": "Customer",
+                "link_name": ["in", customer_names],
+                "parenttype": ["in", ["Contact", "Address"]],
+            },
+            fields=["parent", "parenttype", "link_name"],
+            limit=5000,
+        )
+
+        for link in dynamic_links:
+            customer_name = link.get("link_name")
+            parent_name = link.get("parent")
+            parenttype = link.get("parenttype")
+
+            if not customer_name or not parent_name:
+                continue
+
+            if parenttype == "Contact" and parent_name not in customer_contact_names_map.get(customer_name, []):
+                customer_contact_names_map[customer_name].append(parent_name)
+
+            if parenttype == "Address" and parent_name not in customer_address_names_map.get(customer_name, []):
+                customer_address_names_map[customer_name].append(parent_name)
+
+    contact_names = list(
+        {
+            contact_name
+            for contact_list in customer_contact_names_map.values()
+            for contact_name in contact_list
+        }
+    )
+    address_names = list(
+        {
+            address_name
+            for address_list in customer_address_names_map.values()
+            for address_name in address_list
+        }
+    )
+
+    for customer in customers:
+        primary_contact = customer.get("customer_primary_contact")
+        primary_address = customer.get("customer_primary_address")
+        customer_name = customer.get("name")
+
+        if primary_contact and primary_contact not in customer_contact_names_map.get(customer_name, []):
+            customer_contact_names_map[customer_name].append(primary_contact)
+            contact_names.append(primary_contact)
+
+        if primary_address and primary_address not in customer_address_names_map.get(customer_name, []):
+            customer_address_names_map[customer_name].append(primary_address)
+            address_names.append(primary_address)
+
+    addresses_map = {}
+    if address_names:
+        addresses = frappe.get_all(
+            "Address",
+            filters={"name": ["in", address_names]},
+            fields=["name", "address_line1", "address_line2", "city", "state", "country", "pincode"],
+            limit=500,
+        )
+        addresses_map = {address.get("name"): address for address in addresses}
+
+    invoices_count_map = {}
+    if customer_names:
+        invoice_counts = frappe.qb.get_query(
+            "Sales Invoice",
+            filters={
+                "customer": ["in", customer_names],
+                "docstatus": ["!=", 2],
+            },
+            fields=["customer", {"COUNT": "name", "as": "invoice_count"}],
+            group_by="customer",
+            limit=500,
+        ).run(as_dict=True)
+        invoices_count_map = {
+            row.get("customer"): int(row.get("invoice_count") or 0)
+            for row in invoice_counts
+        }
+
+    enriched_customers = []
+    for customer in customers:
+        customer_name = customer.get("name")
+        address = addresses_map.get(customer.get("customer_primary_address"), {})
+
+        contact_options = sorted(customer_contact_names_map.get(customer_name, []))
+        address_options = sorted(customer_address_names_map.get(customer_name, []))
+
+        full_address = ", ".join(
+            [
+                part
+                for part in [
+                    address.get("address_line1"),
+                    address.get("address_line2"),
+                    address.get("city"),
+                    address.get("state"),
+                    address.get("country"),
+                    address.get("pincode"),
+                ]
+                if part
+            ]
+        )
+
+        enriched_customers.append(
+            {
+                **customer,
+                "address_display": full_address,
+                "linked_invoices": invoices_count_map.get(customer_name, 0),
+                "contact_options": contact_options,
+                "address_options": address_options,
+            }
+        )
+
+    return enriched_customers
+
+@frappe.whitelist()
+def update_customer_name(customer, customer_name=None, customer_primary_contact=None, customer_primary_address=None):
+    if not customer:
+        frappe.throw(_("Customer is required."))
+
+    customer_doc = frappe.get_doc("Customer", customer)
+    customer_links = _get_customer_links(customer)
+
+    contact_value = customer_primary_contact.strip() if isinstance(customer_primary_contact, str) else customer_primary_contact
+    address_value = customer_primary_address.strip() if isinstance(customer_primary_address, str) else customer_primary_address
+
+    if contact_value and contact_value not in customer_links.get("contacts", []) and contact_value != customer_doc.customer_primary_contact:
+        frappe.throw(_("Contact {0} is not linked to Customer {1}.").format(contact_value, customer))
+
+    if address_value and address_value not in customer_links.get("addresses", []) and address_value != customer_doc.customer_primary_address:
+        frappe.throw(_("Address {0} is not linked to Customer {1}.").format(address_value, customer))
+
+    if customer_name is not None:
+        customer_doc.customer_name = customer_name or customer
+
+    if customer_primary_contact is not None:
+        customer_doc.customer_primary_contact = contact_value or None
+
+    if customer_primary_address is not None:
+        customer_doc.customer_primary_address = address_value or None
+
+    customer_doc.save()
+
+    contact_doc = None
+    if customer_doc.customer_primary_contact:
+        contact_doc = frappe.db.get_value(
+            "Contact",
+            customer_doc.customer_primary_contact,
+            ["email_id", "mobile_no", "phone"],
+            as_dict=True,
+        )
+
+    address_doc = None
+    if customer_doc.customer_primary_address:
+        address_doc = frappe.db.get_value(
+            "Address",
+            customer_doc.customer_primary_address,
+            ["address_line1", "address_line2", "city", "state", "country", "pincode"],
+            as_dict=True,
+        )
+
+    address_display = ""
+    if address_doc:
+        address_display = ", ".join(
+            [
+                part
+                for part in [
+                    address_doc.get("address_line1"),
+                    address_doc.get("address_line2"),
+                    address_doc.get("city"),
+                    address_doc.get("state"),
+                    address_doc.get("country"),
+                    address_doc.get("pincode"),
+                ]
+                if part
+            ]
+        )
+
+    contact_options = set(customer_links.get("contacts", []))
+    address_options = set(customer_links.get("addresses", []))
+
+    if customer_doc.customer_primary_contact:
+        contact_options.add(customer_doc.customer_primary_contact)
+
+    if customer_doc.customer_primary_address:
+        address_options.add(customer_doc.customer_primary_address)
+
+    return {
+        "name": customer_doc.name,
+        "customer_name": customer_doc.customer_name,
+        "customer_primary_contact": customer_doc.customer_primary_contact,
+        "customer_primary_address": customer_doc.customer_primary_address,
+        "email_id": (contact_doc or {}).get("email_id", ""),
+        "mobile_no": (contact_doc or {}).get("mobile_no", ""),
+        "phone": (contact_doc or {}).get("phone", ""),
+        "address_display": address_display,
+        "contact_options": sorted(contact_options),
+        "address_options": sorted(address_options),
+    }
+
+def _get_customer_links(customer_name):
+    links = frappe.get_all(
+        "Dynamic Link",
+        filters={
+            "link_doctype": "Customer",
+            "link_name": customer_name,
+            "parenttype": ["in", ["Contact", "Address"]],
+        },
+        fields=["parent", "parenttype"],
+        limit=1000,
+    )
+
+    contact_names = []
+    address_names = []
+
+    for link in links:
+        parent_name = link.get("parent")
+        parenttype = link.get("parenttype")
+
+        if parenttype == "Contact" and parent_name and parent_name not in contact_names:
+            contact_names.append(parent_name)
+
+        if parenttype == "Address" and parent_name and parent_name not in address_names:
+            address_names.append(parent_name)
+
+    return {
+        "contacts": contact_names,
+        "addresses": address_names,
+    }
 
 @frappe.whitelist()
 def get_advanced_item_filters_dict(custom_filters):
