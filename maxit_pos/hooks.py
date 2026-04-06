@@ -152,6 +152,18 @@ doctype_js = {
 # 	}
 # }
 
+doc_events = {
+    "POS Profile": {
+        "on_update": "maxit_pos.maxit_pos.page.maxit_pos.api.api.on_pos_profile_cache_invalidate",
+        "on_trash": "maxit_pos.maxit_pos.page.maxit_pos.api.api.on_pos_profile_cache_invalidate",
+    },
+    "Item Group": {
+        "on_update": "maxit_pos.maxit_pos.page.maxit_pos.api.api.on_item_group_cache_invalidate",
+        "on_trash": "maxit_pos.maxit_pos.page.maxit_pos.api.api.on_item_group_cache_invalidate",
+        "after_rename": "maxit_pos.maxit_pos.page.maxit_pos.api.api.on_item_group_cache_invalidate",
+    },
+}
+
 # Scheduled Tasks
 # ---------------
 
