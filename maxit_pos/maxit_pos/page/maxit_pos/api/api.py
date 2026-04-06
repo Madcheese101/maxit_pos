@@ -713,40 +713,23 @@ def get_item_filters(filter, filters):
             "selected": None
         })
 
-
-def _get_pos_item_group_cache_version():
-    version_key = "pos_item_groups::version"
-    version = frappe.cache().get_value(version_key)
-    if not version:
-        version = "v1"
-        frappe.cache().set_value(version_key, version)
-    return version
-
-
 def _build_pos_item_group_cache_key(pos_profile):
-    version = _get_pos_item_group_cache_version()
     profile_key = str(pos_profile or "default")
-    return f"pos_item_groups::{version}::{profile_key}"
-
+    return f"pos_item_groups::{profile_key}"
 
 def _clear_pos_item_group_cache_for_profile(pos_profile):
     frappe.cache().delete_value(_build_pos_item_group_cache_key(pos_profile))
 
-
 def _clear_pos_item_group_cache_for_all_profiles():
-    version = frappe.generate_hash(length=10)
-    frappe.cache().set_value("pos_item_groups::version", version)
-    return version
-
+    profiles = frappe.get_all("POS Profile", pluck="name")
+    for profile_key in profiles:
+        frappe.cache().delete_value(f"pos_item_groups::{profile_key}")
 
 def on_pos_profile_cache_invalidate(doc=None, method=None, *args, **kwargs):
-    if doc and getattr(doc, "name", None):
-        _clear_pos_item_group_cache_for_profile(doc.name)
-
+    _clear_pos_item_group_cache_for_profile(doc.name)
 
 def on_item_group_cache_invalidate(doc=None, method=None, *args, **kwargs):
     _clear_pos_item_group_cache_for_all_profiles()
-
 
 @frappe.whitelist()
 def reset_item_group_cache(pos_profile=None):
@@ -758,11 +741,10 @@ def reset_item_group_cache(pos_profile=None):
             "pos_profile": pos_profile,
         }
 
-    version = _clear_pos_item_group_cache_for_all_profiles()
+    _clear_pos_item_group_cache_for_all_profiles()
     return {
         "status": "ok",
         "scope": "all",
-        "version": version,
     }
 
 @frappe.whitelist()
@@ -806,7 +788,6 @@ def get_item_group_list(allowed_item_groups, pos_profile):
         data = frappe.get_list("Item Group", filters={"is_group": 0}, pluck="name", group_by="name") or []
 
     frappe.cache().set_value(cache_key, data)
-
     return data
 
 def _attach_item_attributes(items):
