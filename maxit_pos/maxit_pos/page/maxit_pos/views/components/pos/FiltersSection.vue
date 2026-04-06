@@ -76,13 +76,13 @@
     }
 
     const get_item_groups = () => {
-        if (props.allowedItemGroups.length > 0) {
-            props.allowedItemGroups.forEach(row => {
-                item_groups.value.push(row.item_group);
-            })
-            return;
-        }
-        frappe.call('maxit_pos.maxit_pos.page.maxit_pos.api.api.get_item_group_list').then((res) => {
+        // if (props.allowedItemGroups.length > 0) {
+        //     props.allowedItemGroups.forEach(row => {
+        //         item_groups.value.push(row.item_group);
+        //     })
+        //     return;
+        // }
+        frappe.call('maxit_pos.maxit_pos.page.maxit_pos.api.api.get_item_group_list', {allowed_item_groups: props.allowedItemGroups}).then((res) => {
             item_groups.value.push(...res.message);
         });
     }

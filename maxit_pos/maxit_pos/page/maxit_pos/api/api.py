@@ -444,8 +444,39 @@ def get_item_filters(filter, filters):
         })
 
 @frappe.whitelist()
-def get_item_group_list():
-    return frappe.get_all("Item Group", filters={"is_group": 0}, pluck="name", group_by="name") or []
+def get_item_group_list(allowed_item_groups):
+    allowed_item_groups = json.loads(allowed_item_groups) if allowed_item_groups else []
+    data = []
+    parents = []
+    seen = set()
+    
+    def add_group(name):
+        if name and name not in seen:
+            seen.add(name)
+            data.append(name)
+
+    for item_group in allowed_item_groups:
+        if item_group.get("is_group"):
+            parents.append(item_group.get("item_group"))
+        else:
+            add_group(item_group.get("item_group"))
+
+    # Fetch descendants of all parent groups and add only leaf (is_group=0) groups
+    for name in parents:
+        child_groups = frappe.get_list(
+            "Item Group",
+            filters={"name": ['descendants of', name], "is_group": 0},
+            pluck="name"
+        )
+        for cg in child_groups:
+            add_group(cg)
+
+    # If no data, fetch all groups
+    if not data:
+        data = frappe.get_list("Item Group", filters={"is_group": 0}, pluck="name", group_by="name") or []
+
+
+    return data
 
 def _attach_item_attributes(items):
     item_codes = [item.get("item_code") for item in items if item.get("item_code")]
