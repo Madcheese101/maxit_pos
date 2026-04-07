@@ -1034,7 +1034,8 @@ def get_items(pos_profile_data, search_term="", item_group=None, custom_filters=
             "max_discount",
             {"uoms": ["uom"]}
         ],
-        filters=filters
+        filters=filters,
+        limit=500
     )
 
     query = join_bin(query, warehouse, hide_unavailable_items, item_table)
