@@ -84,7 +84,6 @@
         // }
         frappe.call('maxit_pos.maxit_pos.page.maxit_pos.api.api.get_item_group_list', 
         {allowed_item_groups: props.allowedItemGroups, pos_profile: props.posProfile}).then((res) => {
-            console.log(res);
             item_groups.value.push(...res.message);
         });
     }

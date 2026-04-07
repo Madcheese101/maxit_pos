@@ -232,7 +232,6 @@ const fetchItems = async () => {
 
 	const requestId = ++searchRequestId.value;
 	isLoading.value = true;
-    console.log('Fetching items with term:', term, 'and filters:', dynamicFilters.value);
 	try {
 		const response = await frappe.call({
 			method: 'maxit_pos.maxit_pos.page.maxit_pos.api.api.get_items_browser',
