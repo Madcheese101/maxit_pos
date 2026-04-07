@@ -18,7 +18,7 @@
 
         <!-- Item Details -->
         <v-card-title>
-            <h4 class="m-0 text-grey-darken-3">{{ props.item.item_code }}</h4>
+            <h4 class="m-0 text-grey-darken-3">{{ props.item.item_name }}</h4>
         </v-card-title>
         <v-card-subtitle>
             <h5 class="mt-0 text-grey-darken-4">{{ props.item.price_list_rate }} / {{ props.item.uom }}</h5>
