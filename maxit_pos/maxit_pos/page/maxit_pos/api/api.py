@@ -1022,6 +1022,7 @@ def get_items(pos_profile_data, search_term="", item_group=None, custom_filters=
     query = frappe.qb.get_query(
         "Item",
         fields=[
+            "name",
             "name as item_code",
             "description",
             "stock_uom",
@@ -1083,6 +1084,7 @@ def join_bin(query, warehouse, hide_unavailable_items,item_table):
 def process_items_data(result: list, items_uoms: list, items_data: list, hide_unavailable_items, warehouse: str, price_list: str):
     current_date = frappe.utils.today()
     for item in items_data:
+        item.pop("name")
         if item.is_stock_item:
             item.actual_qty, _, is_negative_stock_allowed = get_stock_availability(item.item_code, warehouse)
         else:
