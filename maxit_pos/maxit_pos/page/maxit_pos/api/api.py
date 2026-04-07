@@ -9,7 +9,6 @@ from frappe.query_builder import Field, functions, Query, DocType
 from erpnext.selling.page.point_of_sale.point_of_sale import (
     search_by_term, 
     filter_result_items, 
-    get_stock_availability,
 )
 from erpnext.accounts.party import get_party_account
 from erpnext.accounts.utils import get_account_currency
@@ -857,6 +856,67 @@ def _append_browser_filter(query_filters, attribute_filters, filter_dict):
     else:
         query_filters.append([fieldname, "like", f"%{selected}%"])
 
+def _get_available_stock_map(item_codes, warehouse):
+    if not item_codes or not warehouse:
+        return {}
+
+    Bin = DocType("Bin")
+    rows = (
+        frappe.qb.from_(Bin)
+        .select(
+            Bin.item_code,
+            functions.Coalesce(Bin.actual_qty, 0).as_("actual_qty"),
+            functions.Coalesce(Bin.reserved_qty, 0).as_("reserved_qty"),
+        )
+        .where(Bin.item_code.isin(item_codes))
+        .where(Bin.warehouse == warehouse)
+    ).run(as_dict=True)
+
+    stock_map = {}
+    for row in rows:
+        item_code = row.get("item_code")
+        if not item_code:
+            continue
+
+        available_qty = (row.get("actual_qty") or 0) - (row.get("reserved_qty") or 0)
+        stock_map[item_code] = stock_map.get(item_code, 0) + available_qty
+
+    return stock_map
+
+def _get_item_prices_map(item_codes, price_list, current_date):
+    if not item_codes or not price_list:
+        return {}
+
+    ItemPrice = DocType("Item Price")
+    rows = (
+        frappe.qb.from_(ItemPrice)
+        .select(
+            ItemPrice.item_code,
+            ItemPrice.price_list_rate,
+            ItemPrice.currency,
+            ItemPrice.uom,
+            ItemPrice.batch_no,
+            ItemPrice.valid_from,
+            ItemPrice.valid_upto,
+        )
+        .where(ItemPrice.price_list == price_list)
+        .where(ItemPrice.item_code.isin(item_codes))
+        .where(ItemPrice.selling == 1)
+        .where((ItemPrice.valid_from <= current_date) | (ItemPrice.valid_from.isnull()))
+        .where((ItemPrice.valid_upto >= current_date) | (ItemPrice.valid_upto.isnull()))
+        .orderby(ItemPrice.item_code)
+        .orderby(ItemPrice.valid_from, order=Order.desc)
+    ).run(as_dict=True)
+
+    prices_map = {}
+    for row in rows:
+        item_code = row.get("item_code")
+        if not item_code:
+            continue
+        prices_map.setdefault(item_code, []).append(row)
+
+    return prices_map
+
 @frappe.whitelist()
 def get_items_browser(pos_profile_data, search_term="", custom_filters=[]):
     if isinstance(pos_profile_data, str):
@@ -1007,16 +1067,8 @@ def get_items(pos_profile_data, search_term="", item_group=None, custom_filters=
     if item_group:
         filters.append(["item_group", "=", item_group])
         
-    for filter in custom_filters:
-        if not filter["selected"]: continue
-        # frappe.throw(str(filter))
-
-        if filter["doctype"] == "Item Attribute Value":
-            attribute_values_filter.append(filter["selected"])
-        else:
-            filters.append(
-                [filter["fieldname"], "like", f"%{filter['selected']}%"]
-            )
+    for custom_filter in custom_filters or []:
+        _append_browser_filter(filters, attribute_values_filter, custom_filter)
 
     # base query
     query = frappe.qb.get_query(
@@ -1035,7 +1087,8 @@ def get_items(pos_profile_data, search_term="", item_group=None, custom_filters=
             {"uoms": ["uom"]}
         ],
         filters=filters,
-        limit=500
+        limit=pos_profile_data.max_items_listing or 100,
+        offset=0,
     )
 
     query = join_bin(query, warehouse, hide_unavailable_items, item_table)
@@ -1082,33 +1135,21 @@ def join_bin(query, warehouse, hide_unavailable_items,item_table):
 
 def process_items_data(result: list, items_uoms: list, items_data: list, hide_unavailable_items, warehouse: str, price_list: str):
     current_date = frappe.utils.today()
+    item_codes = [item.get("item_code") for item in items_data if item.get("item_code")]
+    stock_map = _get_available_stock_map(item_codes, warehouse)
+    prices_map = _get_item_prices_map(item_codes, price_list, current_date)
+    conversion_factor_map = {}
+
     for item in items_data:
         item.pop("name")
         if item.is_stock_item:
-            item.actual_qty, _, is_negative_stock_allowed = get_stock_availability(item.item_code, warehouse)
+            item.actual_qty = stock_map.get(item.item_code, 0)
         else:
             item.actual_qty = 0
         
         if item.is_stock_item and hide_unavailable_items and item.actual_qty == 0:
             continue
-        ItemPrice = DocType("Item Price")
-        item_prices = (
-            frappe.qb.from_(ItemPrice)
-            .select(
-                ItemPrice.price_list_rate,
-                ItemPrice.currency,
-                ItemPrice.uom,
-                ItemPrice.batch_no,
-                ItemPrice.valid_from,
-                ItemPrice.valid_upto,
-            )
-            .where(ItemPrice.price_list == price_list)
-            .where(ItemPrice.item_code == item.item_code)
-            .where(ItemPrice.selling == 1)
-            .where((ItemPrice.valid_from <= current_date) | (ItemPrice.valid_from.isnull()))
-            .where((ItemPrice.valid_upto >= current_date) | (ItemPrice.valid_upto.isnull()))
-            .orderby(ItemPrice.valid_from, order=Order.desc)
-        ).run(as_dict=True)
+        item_prices = prices_map.get(item.item_code, [])
 
         stock_uom_price = next((d for d in item_prices if d.get("uom") == item.stock_uom), {})
         item_uom = item.stock_uom
@@ -1124,7 +1165,11 @@ def process_items_data(result: list, items_uoms: list, items_data: list, hide_un
             item_uom = item_prices[0].get("uom")
             item_uom_price = item_prices[0]
 
-        item_conversion_factor = get_conversion_factor(item.item_code, item_uom).get("conversion_factor")
+        conversion_key = (item.item_code, item_uom)
+        item_conversion_factor = conversion_factor_map.get(conversion_key)
+        if item_conversion_factor is None:
+            item_conversion_factor = get_conversion_factor(item.item_code, item_uom).get("conversion_factor") or 1
+            conversion_factor_map[conversion_key] = item_conversion_factor
 
         if item.stock_uom != item_uom:
             item.actual_qty = item.actual_qty // item_conversion_factor
@@ -1133,7 +1178,7 @@ def process_items_data(result: list, items_uoms: list, items_data: list, hide_un
             item_uom_price.price_list_rate = item_uom_price.price_list_rate * item_conversion_factor
         
         # item.uoms = [u.uom for u in item.uoms]
-        items_uoms[item.item_code] = [u.uom for u in item.uoms]
+        items_uoms[item.item_code] = [u.uom for u in item.get("uoms", [])]
         
         result.append(
             {

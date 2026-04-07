@@ -275,7 +275,8 @@ fixtures = [
                     "POS Profile-custom_allow_print_last_invoice",
                     "POS Item Group-custom_is_group",
                     "POS Profile-custom_print_last_invoice_for_creator_only",
-                    "Sales Invoice Item-custom_max_discount_"
+                    "Sales Invoice Item-custom_max_discount_",
+                    "POS Profile-custom_max_items_listing"
                 ]
             ]
         ]

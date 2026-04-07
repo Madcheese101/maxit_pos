@@ -368,7 +368,6 @@
       frappe.confirm(__('Are you sure you want to cancel this invoice?'),
         () => {
             // action to perform if Yes is selected
-            console.log('Invoice cancelled', invoice.value.name);
             frappe.call("maxit_pos.maxit_pos.page.maxit_pos.api.api.cancel_invoice", {
               name: invoice.value.name
             }).then((res) => {
@@ -387,19 +386,16 @@
       frappe.confirm(__('Are you sure you want to delete this invoice? This action cannot be undone.'),
         () => {
             // action to perform if Yes is selected
-            console.log('Invoice deleted', invoice.value.name);
         }, () => {
             // action to perform if No is selected
         });
     };
     const payInvoice = async (payments) => {
-      console.log("Payments to be made:", payments);
       frappe.call("maxit_pos.maxit_pos.page.maxit_pos.api.api.pay_invoice", {
         doc: invoice.value,
         payments: payments
       }).then((res) => {        
         // invoice.value = res.message;
-        console.log("Payment response:", res);
         frappe.show_alert({
           message:__('Payment Successful'),
           indicator:'green'

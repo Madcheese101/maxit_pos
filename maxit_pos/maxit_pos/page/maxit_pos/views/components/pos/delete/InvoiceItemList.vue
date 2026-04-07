@@ -94,7 +94,6 @@
     }
     const update_text = async (item, field, value, index) => {
       // const old = this.posFrm.doc.items[index].uoms
-      // console.log("old", old)
       update_cart({
           field: field,
           value: value,

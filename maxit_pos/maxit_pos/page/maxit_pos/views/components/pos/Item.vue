@@ -18,10 +18,10 @@
 
         <!-- Item Details -->
         <v-card-title>
-            <h4 class="m-0 text-grey-darken-3">{{ props.item.item_name }}</h4>
+            <h5 class="m-0 text-grey-darken-4">{{ props.item.item_name }}</h5>
         </v-card-title>
         <v-card-subtitle>
-            <h5 class="mt-0 text-grey-darken-4">{{ props.item.price_list_rate }} / {{ props.item.uom }}</h5>
+            <h5 class="mt-0 text-grey-darken-4">{{ props.item.price_list_rate }} {{ props.item.currency || '' }} / {{ props.item.uom }}</h5>
         </v-card-subtitle>
     </v-card>
 </template>
