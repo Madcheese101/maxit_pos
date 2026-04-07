@@ -18,6 +18,16 @@
   const activeTab = ref('pos')
   const customerSearch = ref('')
   const items = ref([]);
+  const ITEM_VIEW_MODE_STORAGE_KEY = 'maxit-pos-item-view-mode';
+  const getSavedItemViewMode = () => {
+    try {
+      const savedViewMode = window.localStorage.getItem(ITEM_VIEW_MODE_STORAGE_KEY);
+      return ["grid", "list"].includes(savedViewMode) ? savedViewMode : "grid";
+    } catch (error) {
+      return "grid";
+    }
+  };
+  const itemViewMode = ref(getSavedItemViewMode());
   const customers = ref([])
   const items_uoms = ref([]);
   const heldInvoices = ref([]);
@@ -73,9 +83,16 @@
       }, 300)
   })
 
+  watch(itemViewMode, (value) => {
+    try {
+      window.localStorage.setItem(ITEM_VIEW_MODE_STORAGE_KEY, value);
+    } catch (error) {
+      console.warn('Unable to persist POS item view mode.', error);
+    }
+  })
+
   const openAddCustomerDialog = () => {
   //   frappe.new_doc('Customer')
-    console.log("Create new customer")
     if (frappe.ui?.form?.make_quick_entry) {
       frappe.ui.form.make_quick_entry(
         "Customer",
@@ -441,9 +458,6 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
             <v-row class="pos-content" dense align="stretch">
               <v-col cols="12" lg="8">
                 <v-card class="pos-panel h-90" rounded="xl" variant="flat" :disabled="isReturnInvoice">
-                  <v-card-item class="pb-1">
-                    <div class="text-subtitle-1 font-weight-bold">{{ __('Browse Items') }}</div>
-                  </v-card-item>
                   <v-card-text>
                     <FiltersSection
                       :customFilters="posProfileData.custom_filters"
@@ -451,7 +465,21 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
                       :posProfile="pos_profile"
                       @getItems="searchItems"
                     />
-                    <ItemsList :items="items"/>
+                    <div class="items-toolbar">
+                      <div class="text-caption text-medium-emphasis">{{ __('Item View') }}</div>
+                      <v-btn-toggle
+                        v-model="itemViewMode"
+                        color="primary"
+                        density="comfortable"
+                        mandatory
+                        rounded="lg"
+                        variant="outlined"
+                      >
+                        <v-btn value="grid" icon="mdi-view-grid-outline" :aria-label="__('Card View')" />
+                        <v-btn value="list" icon="mdi-format-list-bulleted" :aria-label="__('List View')" />
+                      </v-btn-toggle>
+                    </div>
+                    <ItemsList :items="items" :view-mode="itemViewMode"/>
                   </v-card-text>
                 </v-card>
               </v-col>
@@ -713,6 +741,14 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
   overflow-y: auto;
 }
 
+.items-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0 16px;
+}
+
 @media (max-width: 1264px) {
   .actions-wrap {
     grid-template-columns: 1fr;
@@ -722,6 +758,11 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
 @media (max-width: 960px) {
   .pos-view {
     padding: 10px;
+  }
+
+  .items-toolbar {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 </style>
