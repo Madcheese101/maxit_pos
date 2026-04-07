@@ -1134,7 +1134,7 @@ def process_items_data(result: list, items_uoms: list, items_data: list, hide_un
             item_uom_price.price_list_rate = item_uom_price.price_list_rate * item_conversion_factor
         
         # item.uoms = [u.uom for u in item.uoms]
-        items_uoms[item.item_code] = [u.uom for u in item.uoms]
+        items_uoms[item.item_code] = [u.uom for u in item.get("uoms", [])]
         
         result.append(
             {
