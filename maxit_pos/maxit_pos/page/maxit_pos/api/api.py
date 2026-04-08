@@ -929,7 +929,7 @@ def get_items_browser(pos_profile_data, search_term="", custom_filters=[]):
 
     warehouse = pos_profile_data.warehouse
     price_list = pos_profile_data.selling_price_list
-    hide_unavailable_items = pos_profile_data.hide_unavailable_items
+    hide_unavailable_items = 0
     allowed_item_groups = pos_profile_data.item_groups or []
     item_table = frappe.qb.DocType("Item")
 
