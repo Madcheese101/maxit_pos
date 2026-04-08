@@ -12,7 +12,7 @@ const get_discount_percentage_from_rate = (row) => {
 frappe.ui.form.on('Sales Invoice Item', {
     async rate(frm, cdt, cdn) {
 		const row = locals[cdt][cdn];
-        if (row.max_discount === undefined || row.max_discount === null || row.max_discount === '') {
+        if (!row.max_discount) {
             return;
         }
 
@@ -23,7 +23,7 @@ frappe.ui.form.on('Sales Invoice Item', {
             // await frm.script_manager.trigger('update_rate', cdt, cdn);
 
             frappe.show_alert({
-                message: __(`Discount percentage cannot be greater than ${row.max_discount} .....%`),
+                message: __(`Discount percentage cannot be greater than ${row.max_discount}%`),
                 indicator: 'orange'
             });
         }
