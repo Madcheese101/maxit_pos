@@ -141,7 +141,7 @@
                   <v-card class="stat-card" rounded="lg" variant="tonal" color="success">
                     <v-card-text>
                       <div class="text-caption text-medium-emphasis">{{ __('Grand Total') }}</div>
-                      <div class="text-body-1 font-weight-bold">{{ invoice.grand_total }}</div>
+                      <div class="text-body-1 font-weight-bold">{{ invoice.grand_total }} {{ invoice.price_list_currency }}</div>
                     </v-card-text>
                   </v-card>
                 </v-col>
@@ -150,7 +150,7 @@
                   <v-card class="stat-card" rounded="lg" variant="tonal" color="warning">
                     <v-card-text>
                       <div class="text-caption text-medium-emphasis">{{ __('Outstanding') }}</div>
-                      <div class="text-body-1 font-weight-bold">{{ invoice.outstanding_amount }}</div>
+                      <div class="text-body-1 font-weight-bold">{{ invoice.outstanding_amount }} {{ invoice.price_list_currency }}</div>
                     </v-card-text>
                   </v-card>
                 </v-col>
@@ -162,8 +162,8 @@
                   <div class="meta-row"><strong>{{ __('Date') }}:</strong> {{ invoice.posting_date || 'N/A' }}</div>
                 </v-col>
                 <v-col cols="12" md="6">
-                  <div class="meta-row"><strong>{{ __('Paid Amount') }}:</strong> {{ invoice.paid_amount || '0' }}</div>
-                  <div class="meta-row"><strong>{{ __('Outstanding Amount') }}:</strong> {{ invoice.outstanding_amount || '0' }}</div>
+                  <div class="meta-row"><strong>{{ __('Paid Amount') }}:</strong> {{ invoice.paid_amount || '0' }} {{ invoice.price_list_currency }}</div>
+                  <div class="meta-row"><strong>{{ __('Outstanding Amount') }}:</strong> {{ invoice.outstanding_amount || '0' }} {{ invoice.price_list_currency }}</div>
                 </v-col>
               </v-row>
 
