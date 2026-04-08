@@ -4,6 +4,7 @@ import Customers from '../views/Customers.vue'
 import Orders from '../views/Orders.vue'
 import Pos from '../views/Pos.vue'
 import Items from '../views/Items.vue'
+import Purchase from '../views/Purchase.vue'
 
 const routes = [
   {
@@ -39,6 +40,11 @@ const routes = [
     name: 'Items',
     component: Items
   },
+  {
+    path: '/desk/maxit-pos/purchase',
+    name: 'Purchase',
+    component: Purchase
+  }
 ]
 
 const router = createRouter({

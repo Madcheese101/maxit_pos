@@ -2,7 +2,7 @@
   <v-main class="orders-view pa-3 pa-md-6">
     <v-row class="orders-shell" align="stretch">
       <v-col v-show="!isMobile || !showDetailsOnMobile" cols="12" md="4" lg="3">
-        <v-card class="orders-panel h-100" rounded="xl" variant="flat">
+        <v-card class="orders-panel h-100" max-height="100vh" rounded="xl" variant="flat">
           <v-card-item class="pb-2">
             <div class="d-flex align-center justify-space-between gap-2 mb-3">
               <div>
@@ -37,9 +37,10 @@
               v-else-if="invoices.length"
               lines="two"
               color="primary"
+              max-height="70vh"
               nav
               rounded="lg"
-              class="orders-list"
+              class="orders-list overflow-y-auto"
               v-model:selected="selected"
             >
               <v-list-item

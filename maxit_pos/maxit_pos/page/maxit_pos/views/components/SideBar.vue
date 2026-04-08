@@ -28,6 +28,7 @@
           <v-list-item prepend-icon="mdi-store" title="POS" color="#6b3fe7" value="pos" to="/desk/maxit-pos/"></v-list-item>
           <v-list-item prepend-icon="mdi-account-multiple" title="Customers" color="#6b3fe7" value="customers" to="/desk/maxit-pos/customers"></v-list-item>
           <v-list-item prepend-icon="mdi-file-document-outline" title="Orders" value="orders" to="/desk/maxit-pos/orders" v-if="props.showPosProfileDependent"></v-list-item>
+          <v-list-item prepend-icon="mdi-cart" title="Purchase" value="purchase" to="/desk/maxit-pos/purchase" v-if="purchaseEnabled"></v-list-item>
           <v-list-item prepend-icon="mdi-package" title="Items" value="items" to="/desk/maxit-pos/items" v-if="props.showPosProfileDependent"></v-list-item>
         </v-list>
 
@@ -59,48 +60,51 @@
 
   const __ = window.__;
 
-    const props = defineProps(['showPosProfileDependent']);
+  const props = defineProps(['showPosProfileDependent']);
   const posStore = usePosStore();
-  const { pos_opening } = storeToRefs(posStore);
+  const { pos_opening, posProfileData } = storeToRefs(posStore);
   const { close_pos } = posStore;
+  const purchaseEnabled = computed(() => {
+      const roles = ['Purchase User', 'Purchase Manager', 'Administrator', 'System Manager'];
+      return roles.some(role => frappe.user.has_role(role)) && posProfileData.value?.allow_purchase;
+  });
+  const user = computed(() => {
+    const fullName = frappe.user.full_name ? frappe.user.full_name() : frappe.user.name;
+    const avatar = frappe.user.image ? frappe.user.image() : '';
+    const email = frappe.user.name || '';
 
-    const user = computed(() => {
-      const fullName = frappe.user.full_name ? frappe.user.full_name() : frappe.user.name;
-      const avatar = frappe.user.image ? frappe.user.image() : '';
-      const email = frappe.user.name || '';
-
-      return {
-        full_name: fullName,
-        avatar,
-        email,
-      };
-    });
-
-    const userInitials = computed(() => {
-      const names = (user.value.full_name || '').trim().split(/\s+/).filter(Boolean);
-      if (!names.length) return 'U';
-      if (names.length === 1) return names[0].slice(0, 2).toUpperCase();
-      return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
-    });
-
-    const logout = async () => {
-      try {
-        // await frappe.logout();
-        await frappe.app.logout();
-      } catch (error) {
-        window.location.href = '/login';
-      }
+    return {
+      full_name: fullName,
+      avatar,
+      email,
     };
+  });
 
-    const closeShift = () => {
-      frappe.confirm(
-        __('Are you sure you want to close this shift?'),
-        async () => {
-          await close_pos();
-        },
-        () => {}
-      );
-    };
+  const userInitials = computed(() => {
+    const names = (user.value.full_name || '').trim().split(/\s+/).filter(Boolean);
+    if (!names.length) return 'U';
+    if (names.length === 1) return names[0].slice(0, 2).toUpperCase();
+    return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+  });
+
+  const logout = async () => {
+    try {
+      // await frappe.logout();
+      await frappe.app.logout();
+    } catch (error) {
+      window.location.href = '/login';
+    }
+  };
+
+  const closeShift = () => {
+    frappe.confirm(
+      __('Are you sure you want to close this shift?'),
+      async () => {
+        await close_pos();
+      },
+      () => {}
+    );
+  };
 </script>
 
 <style scoped>
