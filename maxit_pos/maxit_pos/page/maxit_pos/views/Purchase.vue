@@ -412,6 +412,7 @@
                 supplier_branch: values.supplier_branch,
                 items: values.items,
                 cost_center: posProfileData.value?.cost_center || '',
+                warehouse: posProfileData.value?.warehouse || '',
               },
             }).then((res) => {
               frappe.show_alert({

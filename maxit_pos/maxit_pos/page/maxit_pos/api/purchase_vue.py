@@ -120,6 +120,7 @@ def create_purchase_invoice(invoice, pos_profile, supplier_branch_map):
     pinv.bill_date = invoice.get("posting_date")
     pinv.posting_date = invoice.get("posting_date")
     pinv.update_stock = 1
+    pinv.set_warehouse = pos_profile.get("warehouse")
 
     for item in invoice.get("items", []):
         pinv.append("items", {
@@ -139,7 +140,7 @@ def create_purchase_invoice(invoice, pos_profile, supplier_branch_map):
     return True
 
 @frappe.whitelist()
-def create_return_invoice(supplier_branch, items, cost_center):
+def create_return_invoice(supplier_branch, items, cost_center, warehouse):
     if isinstance(items, str): items = json.loads(items)
     supplier = frappe.db.get_value("Supplier Branch", supplier_branch, "supplier")
     
@@ -151,6 +152,8 @@ def create_return_invoice(supplier_branch, items, cost_center):
     pinv.update_stock = 1
     pinv.posting_date = frappe.utils.today()
     pinv.price_list = "Standard Buying"
+    pinv.set_warehouse = warehouse
+    pinv.naming_series = "ACC-PINV-RET-.YYYY.-"
     for item in items:
         pinv.append("items", {
             "item_code": item.get("item_code"),
