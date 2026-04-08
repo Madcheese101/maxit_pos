@@ -202,6 +202,7 @@
                 <v-card-text>
                   <v-data-table-virtual
                     :headers="[
+                      { title: __('No.'), key: 'idx', width: '70px' },
                       { title: __('Item Code'), key: 'item_code' },
                       { title: __('Item Name'), key: 'item_name' },
                       { title: __('Qty'), key: 'qty' },
@@ -209,8 +210,10 @@
                     :items="invoice.items"
                     item-value="item_name"
                     density="compact"
-                    max-height="290"
-                    class="orders-table"
+                    height="50vh"
+                    max-height="60vh"
+                    fixed-header
+                    class="orders-table overflow-y-auto"
                   />
                 </v-card-text>
               </v-card>
@@ -517,7 +520,6 @@
 
 .orders-table {
   border-radius: 10px;
-  overflow-y: auto;
 }
 
 .stat-card {
