@@ -132,8 +132,8 @@
 
   const prepareCheckout = async () => {
     if (!hasCartItems.value) return;
-    const save_result = await posFrm.value.save();
-    if(save_result.exc) return;
+    const save_error = await posFrm.value.save();
+    if(save_error) return;
     await posFrm.value.cscript.set_default_payment(posFrm.value.doc.grand_total, true);
     posFrm.value.refresh_field("payments");
     activeTab.value = 'checkout';

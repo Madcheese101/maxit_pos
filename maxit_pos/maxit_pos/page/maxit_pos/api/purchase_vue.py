@@ -119,8 +119,9 @@ def create_purchase_invoice(invoice, pos_profile, supplier_branch_map):
     pinv.bill_no = invoice.get("name")
     pinv.bill_date = invoice.get("posting_date")
     pinv.posting_date = invoice.get("posting_date")
-    pinv.update_stock = 1
     pinv.set_warehouse = pos_profile.get("warehouse")
+    pinv.update_stock = 1
+    pinv.set_posting_time = 1
 
     for item in invoice.get("items", []):
         pinv.append("items", {
