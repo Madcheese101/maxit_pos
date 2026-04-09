@@ -428,14 +428,18 @@
 
     const printPaymentEntry = (paymentEntryId) => {
       const printFormat = posProfileData.value?.payment_entry_print_format || 'Standard';
-      const printUrl = `/printview?doctype=Payment%20Entry&name=${paymentEntryId}&format=${printFormat}&no_letterhead=1&letterhead=No%20Letterhead&settings=%7B%7D&_lang=en&pdf_generator=wkhtmltopdf&trigger_print=1`;
+      const letterHead = posProfileData.value?.letter_head || 'No Letterhead';
+      const no_letterhead = letterHead === 'No Letterhead' ? 1 : 0;
+      const printUrl = `/printview?doctype=Payment%20Entry&name=${paymentEntryId}&format=${printFormat}&no_letterhead=${no_letterhead}&letterhead=${letterHead}&settings=%7B%7D&_lang=en&pdf_generator=wkhtmltopdf&trigger_print=1`;
       window.open(printUrl, '_blank');
     };
 
     const printInvoice = () => {
       const doctype = "Sales Invoice";
       const printFormat = posProfileData.value?.print_format || 'Standard';
-      const printUrl = `/printview?doctype=${doctype}&name=${invoice.value.name}&format=${printFormat}&no_letterhead=1&letterhead=No%20Letterhead&settings=%7B%7D&_lang=en&pdf_generator=wkhtmltopdf&trigger_print=1`;
+      const letterHead = posProfileData.value?.letter_head || 'No Letterhead';
+      const no_letterhead = letterHead === 'No Letterhead' ? 1 : 0;
+      const printUrl = `/printview?doctype=${doctype}&name=${invoice.value.name}&format=${printFormat}&no_letterhead=${no_letterhead}&letterhead=${letterHead}&settings=%7B%7D&_lang=en&pdf_generator=wkhtmltopdf&trigger_print=1`;
       window.open(printUrl, '_blank');
     };
 
