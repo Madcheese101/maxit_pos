@@ -126,6 +126,16 @@
 					<template #item.rate="{ item }">
 						<div class="font-weight-bold">{{ item.rate }} {{ item.currency }}</div>
 					</template>
+					<template #item.get_stock_btn="{ item }">
+						<v-btn
+							variant="tonal"
+							color="primary"
+							block
+							@click="getItemStock(item)"
+						>
+							{{ __('Get Stock') }}
+						</v-btn>
+					</template>
                 </v-data-table-virtual>
 
 			</v-card-text>
@@ -159,6 +169,7 @@ const baseHeaders = [
 	// { title: __('Item Group'), key: 'item_group' },
 	{ title: __('Rate'), key: 'rate' },
 	{ title: __('Qty'), key: 'actual_qty' },
+	{ title: __(''), key: 'get_stock_btn', width: '50px', sortable: false },
 ];
 
 const headers = computed(() => {
@@ -186,9 +197,21 @@ const headers = computed(() => {
 		...attributeHeaders,
 		baseHeaders[2],
 		baseHeaders[3],
+		baseHeaders[4],
 	];
 });
 
+const getItemStock = async (item) => {
+	frappe.call({
+		method: 'maxit_pos.maxit_pos.page.maxit_pos.api.items_vue.get_item_stock_from_main_company',
+		args: {
+			item_code: item.item_code,
+			item_name: item.item_name || '',
+		},
+		freeze: true,
+		freeze_message: __('Getting stock...'),
+	})
+};
 const loadDynamicFilters = async () => {
 	const customFilters = posProfileData.value?.custom_filters || [];
 	if (!customFilters.length) {
