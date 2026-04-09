@@ -61,11 +61,35 @@ def sync_invoices(pos_profile):
             continue
         done = create_purchase_invoice(invoice, pos_profile, supplier_branch_map)
         if done: invoices_done.append(invoice.get("name"))
+        if invoices_done:
+            set_invoices_as_paid(invoices_done)
     return len(invoices_done)
+
+def set_invoices_as_paid(invoices):
+    if isinstance(invoices, str):
+        invoices = json.loads(invoices)
+
+    endpoint, headers, timeout = _get_parent_company_request_config("/api/method/invoices_synced")
+    try:        
+        response = requests.post(endpoint, headers=headers, timeout=timeout, json={"invoices": invoices})
+        response.raise_for_status()
+        payload = response.json() or {}
+    except requests.exceptions.Timeout as exc:
+        frappe.throw(f"Timed out while setting invoices as paid on the parent ERPNext site: {exc}")
+    except requests.exceptions.HTTPError as exc:
+        message = _extract_remote_error_message(exc.response)
+        status = exc.response.status_code if exc.response else "unknown"
+        frappe.throw(f"Parent ERPNext request failed (HTTP {status}): {message}")
+    except requests.exceptions.RequestException as exc:
+        frappe.throw(f"Unable to reach the parent ERPNext site: {exc}")
+    except ValueError as exc:
+        frappe.throw(f"Parent ERPNext returned an invalid response: {exc}")
+
+    return payload.get("message", [])
 
 def get_parent_company_sales_invoices():
 
-    endpoint, headers, timeout = _get_parent_company_request_config()
+    endpoint, headers, timeout = _get_parent_company_request_config("/api/method/get_internal_customer_invoices")
 
     try:
         response = requests.get(endpoint, headers=headers, timeout=timeout, params={})
@@ -84,7 +108,7 @@ def get_parent_company_sales_invoices():
 
     return payload.get("message", [])
 
-def _get_parent_company_request_config():
+def _get_parent_company_request_config(endpoint_path):
     config = frappe.get_conf() or {}
     base_url = (config.get("parent_erpnext_url") or "").rstrip("/")
     api_key = config.get("parent_erpnext_api_key")
@@ -102,7 +126,7 @@ def _get_parent_company_request_config():
     except (TypeError, ValueError):
         timeout = 150
 
-    endpoint = f"{base_url}/api/method/get_internal_customer_invoices"
+    endpoint = f"{base_url}{endpoint_path}"
     headers = {
         "Authorization": f"token {api_key}:{api_secret}",
         "Accept": "application/json",
