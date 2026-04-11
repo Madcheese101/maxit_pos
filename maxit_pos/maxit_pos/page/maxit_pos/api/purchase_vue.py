@@ -6,29 +6,29 @@ from frappe.query_builder import Field, functions, Query, DocType, Order
 from pypika.terms import Case, ValueWrapper
 
 @frappe.whitelist()
-def get_purchase_invoice_list(pos_profile, search_term=""):
+def get_purchase_receipt_list(pos_profile, search_term=""):
     if isinstance(pos_profile, str):
         pos_profile = json.loads(pos_profile)
 
-    PurchaseInvoice = DocType("Purchase Invoice")
-    query = (frappe.qb.from_(PurchaseInvoice)
+    PurchaseReceipt = DocType("Purchase Receipt")
+    query = (frappe.qb.from_(PurchaseReceipt)
         .select(
-            PurchaseInvoice.name,
-            PurchaseInvoice.posting_date,
-            PurchaseInvoice.status,
-            PurchaseInvoice.supplier_branch,
-            PurchaseInvoice.bill_no,
-            PurchaseInvoice.bill_date,
+            PurchaseReceipt.name,
+            PurchaseReceipt.posting_date,
+            PurchaseReceipt.status,
+            PurchaseReceipt.supplier_branch,
+            PurchaseReceipt.bill_no,
+            PurchaseReceipt.bill_date,
         )
-        .where(PurchaseInvoice.cost_center == pos_profile.get("cost_center"))
-        .orderby(PurchaseInvoice.modified, order=Order.desc)
+        .where(PurchaseReceipt.cost_center == pos_profile.get("cost_center"))
+        .orderby(PurchaseReceipt.modified, order=Order.desc)
         .limit(50)
     )
 
     if search_term:
         query = query.where(
-            PurchaseInvoice.name.like(f"%{search_term}%")
-            | PurchaseInvoice.bill_no.like(f"%{search_term}%")
+            PurchaseReceipt.name.like(f"%{search_term}%")
+            | PurchaseReceipt.bill_no.like(f"%{search_term}%")
         )
 
     invoices = query.run(as_dict=1)
@@ -55,11 +55,11 @@ def sync_invoices(pos_profile):
         result = json.loads(result)
     
     invoices_map = [inv.get("name") for inv in result]
-    existsing_invoices = frappe.db.get_list("Purchase Invoice", filters={"bill_no": ["in", invoices_map]}, pluck="bill_no")
+    existsing_invoices = frappe.db.get_list("Purchase Receipt", filters={"bill_no": ["in", invoices_map]}, pluck="bill_no")
     for invoice in result:
         if invoice.get("name") in existsing_invoices:
             continue
-        done = create_purchase_invoice(invoice, pos_profile, supplier_branch_map)
+        done = create_purchase_receipt(invoice, pos_profile, supplier_branch_map)
         if done: invoices_done.append(invoice.get("name"))
         if invoices_done:
             set_invoices_as_paid(invoices_done)
@@ -133,22 +133,22 @@ def _get_parent_company_request_config(endpoint_path):
     }
     return endpoint, headers, max(timeout, 1)
 
-def create_purchase_invoice(invoice, pos_profile, supplier_branch_map):
-    # Implement the logic to create a purchase invoice based on the provided data
+def create_purchase_receipt(invoice, pos_profile, supplier_branch_map):
+    # Implement the logic to create a purchase receipt based on the provided data
     # You can use the pos_profile data to set additional fields or configurations
-    pinv = frappe.new_doc("Purchase Invoice")
-    pinv.supplier = supplier_branch_map.get(invoice.get("pos_profile")).supplier
-    pinv.supplier_branch = supplier_branch_map.get(invoice.get("pos_profile")).name
-    pinv.cost_center = pos_profile.get("cost_center")
-    pinv.bill_no = invoice.get("name")
-    pinv.bill_date = invoice.get("posting_date")
-    pinv.posting_date = invoice.get("posting_date")
-    pinv.set_warehouse = pos_profile.get("warehouse")
-    pinv.update_stock = 1
-    pinv.set_posting_time = 1
+    prec = frappe.new_doc("Purchase Receipt")
+    prec.supplier = supplier_branch_map.get(invoice.get("pos_profile")).supplier
+    prec.supplier_branch = supplier_branch_map.get(invoice.get("pos_profile")).name
+    prec.cost_center = pos_profile.get("cost_center")
+    prec.bill_no = invoice.get("name")
+    prec.bill_date = invoice.get("posting_date")
+    prec.posting_date = invoice.get("posting_date")
+    prec.set_warehouse = pos_profile.get("warehouse")
+    # prec.update_stock = 1
+    prec.set_posting_time = 1
 
     for item in invoice.get("items", []):
-        pinv.append("items", {
+        prec.append("items", {
             "item_code": item.get("item_code"),
             "item_name": item.get("item_name"),
             "item_group": item.get("item_group"),
@@ -156,12 +156,12 @@ def create_purchase_invoice(invoice, pos_profile, supplier_branch_map):
             "qty": item.get("qty"),
             "uom": item.get("uom"),
             "conversion_factor": item.get("conversion_factor") or 1,
-            "rate": item.get("rate"),
-            "amount": item.get("amount"),
+            # "rate": item.get("rate"),
+            # "amount": item.get("amount"),
         })
-    pinv.set_missing_values()
-    pinv.save()
-    pinv.submit()
+    prec.set_missing_values()
+    prec.save()
+    prec.submit()
     return True
 
 @frappe.whitelist()
@@ -169,26 +169,26 @@ def create_return_invoice(supplier_branch, items, cost_center, warehouse):
     if isinstance(items, str): items = json.loads(items)
     supplier = frappe.db.get_value("Supplier Branch", supplier_branch, "supplier")
     
-    pinv = frappe.new_doc("Purchase Invoice")
-    pinv.supplier = supplier
-    pinv.supplier_branch = supplier_branch
-    pinv.cost_center = cost_center
-    pinv.is_return = 1
-    pinv.update_stock = 1
-    pinv.posting_date = frappe.utils.today()
-    pinv.price_list = "Standard Buying"
-    pinv.set_warehouse = warehouse
-    pinv.naming_series = "ACC-PINV-RET-.YYYY.-"
+    prec = frappe.new_doc("Purchase Receipt")
+    prec.supplier = supplier
+    prec.supplier_branch = supplier_branch
+    prec.cost_center = cost_center
+    prec.is_return = 1
+    prec.update_stock = 1
+    prec.posting_date = frappe.utils.today()
+    prec.price_list = "Standard Buying"
+    prec.set_warehouse = warehouse
+    prec.naming_series = "ACC-PR-RET-.YYYY.-"
     for item in items:
-        pinv.append("items", {
+        prec.append("items", {
             "item_code": item.get("item_code"),
             "received_qty": item.get("qty") * -1,
             "qty": item.get("qty") * -1,
             "conversion_factor": item.get("conversion_factor", 1),
         })
-    pinv.set_missing_values()
-    pinv.save()
-    pinv.submit()
+    prec.set_missing_values()
+    prec.save()
+    prec.submit()
 
 def _extract_remote_error_message(response):
     if response is None:

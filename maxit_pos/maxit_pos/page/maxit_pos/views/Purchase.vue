@@ -450,7 +450,7 @@
   
   const GetInvoiceDoc = async (invoice_id) => {
     isLoadingInvoice.value = true;
-    frappe.db.get_doc('Purchase Invoice', invoice_id).then((doc) => {
+    frappe.db.get_doc('Purchase Receipt', invoice_id).then((doc) => {
         invoice.value = doc;
         isLoadingInvoice.value = false;
     }).catch(() => {
@@ -459,8 +459,8 @@
   };
 
   const printInvoice = () => {
-    const doctype = "Purchase Invoice";
-    const printFormat = posProfileData.value?.purchase_invoice_print_format || 'Standard';
+    const doctype = "Purchase Receipt";
+    const printFormat = posProfileData.value?.purchase_receipt_print_format || 'Standard';
     const printUrl = `/printview?doctype=${doctype}&name=${invoice.value.name}&format=${printFormat}&no_letterhead=1&letterhead=No%20Letterhead&settings=%7B%7D&_lang=en&pdf_generator=wkhtmltopdf&trigger_print=1`;
     window.open(printUrl, '_blank');
   };
@@ -480,7 +480,7 @@
     if (!purchaseEnabled.value) return;
     isLoadingList.value = true;
     frappe.call({
-      method: "maxit_pos.maxit_pos.page.maxit_pos.api.purchase_vue.get_purchase_invoice_list",
+      method: "maxit_pos.maxit_pos.page.maxit_pos.api.purchase_vue.get_purchase_receipt_list",
       freeze: true,
       args: { 
         pos_profile: posProfileData.value,
