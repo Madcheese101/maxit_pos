@@ -6,4 +6,7 @@ from frappe.model.document import Document
 
 
 class NoteCount(Document):
-	pass
+	def before_save(self):
+		# remove Notes with count 0 from cash table
+		if self.get("cash"):
+			self.set("cash",[d for d in self.cash_table if d.count != 0])

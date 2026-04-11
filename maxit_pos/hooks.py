@@ -280,6 +280,7 @@ fixtures = [
                     "POS Profile-custom_purchase_invoice_print_format",
                     "POS Profile-custom_show_closing_balance",
                     "POS Profile-custom_enable_note_count",
+                    "POS Profile-custom_note_count_print_format",
                     "Sales Invoice Item-custom_max_discount_",
                     "Purchase Invoice-custom_supplier_branch",
                     "Purchase Receipt-custom_supplier_branch",

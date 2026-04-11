@@ -25,10 +25,11 @@
 
         <v-list density="compact" nav>
           <!-- <v-list-item prepend-icon="mdi-view-dashboard" title="Dashboard" value="dashboard" to="/app/maxit-pos/"></v-list-item> -->
-          <v-list-item prepend-icon="mdi-store" title="POS" color="#6b3fe7" value="pos" to="/desk/maxit-pos/"></v-list-item>
+          <v-list-item prepend-icon="mdi-cash-register" title="POS" color="#6b3fe7" value="pos" to="/desk/maxit-pos/"></v-list-item>
           <v-list-item prepend-icon="mdi-account-multiple" title="Customers" color="#6b3fe7" value="customers" to="/desk/maxit-pos/customers"></v-list-item>
-          <v-list-item prepend-icon="mdi-file-document-outline" title="Orders" value="orders" to="/desk/maxit-pos/orders" v-if="props.showPosProfileDependent"></v-list-item>
+          <v-list-item prepend-icon="mdi-clipboard-text-clock" title="Orders" value="orders" to="/desk/maxit-pos/orders" v-if="props.showPosProfileDependent"></v-list-item>
           <v-list-item prepend-icon="mdi-cart" title="Purchase" value="purchase" to="/desk/maxit-pos/purchase" v-if="purchaseEnabled"></v-list-item>
+          <v-list-item prepend-icon="mdi-cash-lock" title="Close Day" value="close-day" to="/desk/maxit-pos/close-day" v-if="closeDayEnabled"></v-list-item>
           <v-list-item prepend-icon="mdi-package" title="Items" value="items" to="/desk/maxit-pos/items" v-if="props.showPosProfileDependent"></v-list-item>
         </v-list>
 
@@ -67,6 +68,10 @@
   const purchaseEnabled = computed(() => {
       const roles = ['Purchase User', 'Purchase Manager', 'Administrator', 'System Manager'];
       return roles.some(role => frappe.user.has_role(role)) && posProfileData.value?.allow_purchase;
+  });
+  const closeDayEnabled = computed(() => {
+      const roles = ['Accounts User', 'Accounts Manager', 'Administrator', 'System Manager'];
+      return roles.some(role => frappe.user.has_role(role));
   });
   const user = computed(() => {
     const fullName = frappe.user.full_name ? frappe.user.full_name() : frappe.user.name;

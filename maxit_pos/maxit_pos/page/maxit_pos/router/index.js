@@ -5,6 +5,7 @@ import Orders from '../views/Orders.vue'
 import Pos from '../views/Pos.vue'
 import Items from '../views/Items.vue'
 import Purchase from '../views/Purchase.vue'
+import CloseDay from '../views/CloseDay.vue'
 
 const routes = [
   {
@@ -44,6 +45,11 @@ const routes = [
     path: '/desk/maxit-pos/purchase',
     name: 'Purchase',
     component: Purchase
+  },
+  {
+    path: '/desk/maxit-pos/close-day',
+    name: 'CloseDay',
+    component: CloseDay
   }
 ]
 
