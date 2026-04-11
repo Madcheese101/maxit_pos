@@ -282,6 +282,11 @@ fixtures = [
                     "POS Profile-custom_enable_note_count",
                     "Sales Invoice Item-custom_max_discount_",
                     "Purchase Invoice-custom_supplier_branch",
+                    "Purchase Receipt-custom_supplier_branch",
+                    "Purchase Receipt-custom_supplier_invoice",
+                    "Purchase Receipt-custom_supplier_invoice_no",
+                    "Purchase Receipt-custom_column_break_hbo4b",
+                    "Purchase Receipt-custom_supplier_invoice_date"
                 ]
             ]
         ]
