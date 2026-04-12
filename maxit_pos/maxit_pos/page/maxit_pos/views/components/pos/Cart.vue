@@ -1,5 +1,5 @@
 <template>
-    <VCard rounded="lg" class="pa-3" min-height="40vh" max-height="75vh" flat>
+    <VCard rounded="lg" class="pa-3" flat>
         <div class="text-subtitle-1 mb-2">{{ __('Invoice Items') }}</div>
 
         <div class="cart-scroll-container">
@@ -109,7 +109,7 @@
             </v-expansion-panels>
         </div>
 
-        <v-divider class="my-3" />
+        <v-divider class="my-2" />
 
         <div class="d-flex justify-space-between align-center">
             <div class="text-subtitle-1">{{ __('Total') }}</div>

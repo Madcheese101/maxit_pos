@@ -435,8 +435,8 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
   <v-main class="pos-view pa-3 pa-md-6">
     <v-row class="pos-shell" align="stretch">
       <v-col cols="12">
-        <v-card class="pos-panel mb-4" rounded="xl" variant="flat">
-          <v-card-item class="pb-2">
+        <v-card class="pos-panel mb-1" rounded="xl" variant="flat">
+          <v-card-item class="pb-1">
             <v-tabs
               v-model="activeTab"
               color="primary"
@@ -458,8 +458,8 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
         <v-window v-model="activeTab">
           <v-window-item value="pos">
             <v-row class="pos-content" dense align="stretch">
-              <v-col cols="12" lg="8">
-                <v-card class="pos-panel h-90" rounded="xl" variant="flat" :disabled="isReturnInvoice">
+              <v-col cols="12" lg="7">
+                <v-card class="pos-panel" rounded="xl" max-height="100vh" variant="flat" :disabled="isReturnInvoice">
                   <v-card-text>
                     <FiltersSection
                       :customFilters="posProfileData.custom_filters"
@@ -486,8 +486,8 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
                 </v-card>
               </v-col>
 
-              <v-col cols="12" lg="4">
-                <v-card class="pos-panel h-40" rounded="xl" variant="flat">
+              <v-col cols="12" lg="5">
+                <v-card class="pos-panel" rounded="xl" variant="flat">
                   <v-card-text>
                     <v-combobox
                       v-model="customer"
@@ -516,7 +516,7 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
 
                     <Cart @checkout="prepareCheckout" />
 
-                    <v-card class="section-card mt-4" rounded="lg" variant="outlined">
+                    <v-card class="section-card mt-2" rounded="lg" variant="outlined">
                       <v-card-text class="pt-4">
                         <div class="actions-wrap">
                           <v-btn
@@ -594,7 +594,7 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
           <v-window-item value="checkout">
             <v-row justify="center">
               <v-col cols="12" md="9" lg="8">
-                <v-card class="pos-panel" rounded="xl" variant="flat">
+                <v-card class="pos-panel checkout-panel" rounded="xl" variant="flat">
                   <v-card-item class="pb-1">
                     <div class="text-overline text-medium-emphasis">{{ __('Invoice Settlement') }}</div>
                     <div class="text-h6 font-weight-bold">{{ __('Checkout') }}</div>

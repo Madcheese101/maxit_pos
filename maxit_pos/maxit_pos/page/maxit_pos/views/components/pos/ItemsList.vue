@@ -1,10 +1,10 @@
 <template>
-    <VCard rounded="lg" class="ma-auto" min-height="72vh" flat>
+    <VCard rounded="lg" class="ma-auto" max-height="100vh" flat>
       <VCardText class="items-list-shell">
         <v-row
           v-if="props.viewMode === 'grid'"
           class="overflow-y-auto"
-          style="max-height: 67vh"
+          style="max-height: 55vh"
         >
           <v-col
             v-for="(item, idx) in props.items"
@@ -26,7 +26,7 @@
           bg-color="transparent"
           density="compact"
           lines="one"
-          style="max-height: 67vh"
+          max-height="55vh"
         >
           <v-list-item
             v-for="(item, idx) in props.items"

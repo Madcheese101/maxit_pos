@@ -17,7 +17,7 @@
 					<v-window-item value="note-count" v-if="noteCountEnabled">
 						<v-row class="close-day-content" align="stretch" dense>
 							<v-col v-show="!smAndDown || !showDetailsOnMobile" cols="12" md="4" lg="3">
-								<v-card class="close-day-panel h-100" rounded="xl" variant="flat" max-height="78vh">
+								<v-card class="close-day-panel" rounded="xl" variant="flat" max-height="100vh">
 									<v-card-item class="pb-2">
 										<div class="d-flex align-center justify-space-between gap-2 mb-2">
 											<div>
@@ -92,7 +92,7 @@
 											rounded="lg"
 											class="close-day-list overflow-y-auto"
 											density="compact"
-											max-height="64vh"
+											max-height="50vh"
 										>
 											<v-list-item
 												v-for="entry in noteEntries"
@@ -125,7 +125,7 @@
 							</v-col>
 
 							<v-col v-show="!smAndDown || showDetailsOnMobile" cols="12" md="8" lg="9">
-								<v-card class="close-day-panel h-100" rounded="xl" variant="flat" max-height="78vh">
+								<v-card class="close-day-panel h-100" rounded="xl" variant="flat" max-height="100vh">
 									<v-card-item class="pb-0">
 										<div class="d-flex align-center justify-space-between flex-wrap gap-2">
 											<div class="d-flex align-center gap-2">
@@ -216,7 +216,7 @@
 														:items="selectedNoteEntry.cash || []"
 														item-value="note"
 														density="compact"
-														height="36vh"
+														max-height="50vh"
 														fixed-header
 														class="close-day-table overflow-y-auto"
 													/>
@@ -252,7 +252,7 @@
 					<v-window-item value="payment-entry">
 						<v-row class="close-day-content" align="stretch" dense>
 							<v-col v-show="!smAndDown || !showDetailsOnMobile" cols="12" md="4" lg="3">
-								<v-card class="close-day-panel h-100" rounded="xl" variant="flat" max-height="78vh">
+								<v-card class="close-day-panel" rounded="xl" variant="flat" max-height="100vh">
 									<v-card-item class="pb-2">
 										<div class="d-flex align-center justify-space-between gap-2 mb-2">
 											<div>
@@ -260,7 +260,40 @@
 												<div class="text-h6 font-weight-bold">{{ __('Select Payment Entry') }}</div>
 											</div>
 
-											<v-btn icon="mdi-dots-vertical" variant="text" size="small" color="secondary" disabled />
+											<v-menu location="bottom end" offset="8">
+												<template #activator="{ props }">
+													<v-btn
+														v-bind="props"
+														icon="mdi-dots-vertical"
+														variant="text"
+														size="small"
+														color="secondary"
+													/>
+												</template>
+
+												<v-card class="close-day-menu" rounded="lg" variant="flat" min-width="180">
+													<v-card-text class="pa-2 d-flex flex-column ga-2">
+														<v-btn
+															color="primary"
+															variant="text"
+															prepend-icon="mdi-plus-box"
+															size="small"
+															@click="openPaymentEntryDialog"
+														>
+															{{ __('New Payment Entry') }}
+														</v-btn>
+														<v-btn
+															color="secondary"
+															variant="text"
+															prepend-icon="mdi-refresh"
+															size="small"
+															@click="loadPaymentEntries()"
+														>
+															{{ __('Refresh') }}
+														</v-btn>
+													</v-card-text>
+												</v-card>
+											</v-menu>
 										</div>
 
 										<v-text-field
@@ -271,21 +304,30 @@
 											variant="solo-filled"
 											hide-details
 											single-line
+											clearable
 											rounded="lg"
+											@click:prepend-inner="loadPaymentEntries()"
+											@click:clear="loadPaymentEntries()"
+											@keydown.enter="loadPaymentEntries()"
 										/>
 									</v-card-item>
 
 									<v-divider />
 
 									<v-card-text class="pt-2 px-2">
+										<div v-if="isLoadingPaymentList" class="px-2 py-5">
+											<v-skeleton-loader type="list-item-two-line, list-item-two-line, list-item-two-line" />
+										</div>
+
 										<v-list
+											v-else-if="paymentEntries.length"
 											lines="two"
 											color="primary"
 											nav
 											rounded="lg"
 											class="close-day-list overflow-y-auto"
 											density="compact"
-											max-height="64vh"
+											max-height="50vh"
 										>
 											<v-list-item
 												v-for="entry in paymentEntries"
@@ -294,18 +336,23 @@
 												:subtitle="entry.subtitle"
 												rounded="lg"
 												class="mb-1"
-												:active="selectedPaymentEntry?.name === entry.name"
-												@click="selectedPaymentEntry = entry; showDetailsOnMobile = true"
+												:active="selectedPaymentEntryName === entry.name"
+												@click="selectPaymentEntry(entry.name)"
 											>
 												<template #append>
-													<v-chip size="x-small" :color="entry.statusColor" variant="tonal">
-														{{ entry.status }}
-													</v-chip>
+													<div class="d-flex align-center ga-2">
+														<v-chip size="small" color="secondary" variant="outlined">
+															{{ formatAmount(entry.amount) }}
+														</v-chip>
+														<v-chip size="x-small" :color="entry.statusColor" variant="tonal">
+															{{ entry.status }}
+														</v-chip>
+													</div>
 												</template>
 											</v-list-item>
 										</v-list>
 
-										<v-alert v-if="!paymentEntries.length" type="info" variant="tonal" density="compact" class="mt-2">
+										<v-alert v-else type="info" variant="tonal" density="compact" class="mt-2">
 											{{ __('No payment entries found for this filter.') }}
 										</v-alert>
 									</v-card-text>
@@ -313,7 +360,7 @@
 							</v-col>
 
 							<v-col v-show="!smAndDown || showDetailsOnMobile" cols="12" md="8" lg="9">
-								<v-card class="close-day-panel h-100" rounded="xl" variant="flat" max-height="78vh">
+								<v-card class="close-day-panel" rounded="xl" variant="flat" max-height="100vh">
 									<v-card-item class="pb-0">
 										<div class="d-flex align-center justify-space-between flex-wrap gap-2">
 											<div class="d-flex align-center gap-2">
@@ -342,13 +389,15 @@
 											</div>
 
 											<v-chip v-if="selectedPaymentEntry" size="x-small" color="secondary" variant="outlined">
-												{{ __('Date') }}: {{ selectedPaymentEntry.date }}
+												{{ __('Date') }}: {{ selectedPaymentEntry.posting_date }}
 											</v-chip>
 										</div>
 									</v-card-item>
 
 									<v-card-text class="pt-3">
-										<v-alert v-if="!selectedPaymentEntry" type="info" variant="tonal" density="compact">
+										<v-skeleton-loader v-if="isLoadingPaymentDetail" type="table, article" />
+
+										<v-alert v-else-if="!selectedPaymentEntry" type="info" variant="tonal" density="compact">
 											{{ __('Select a payment entry from the left panel to view full details.') }}
 										</v-alert>
 
@@ -357,8 +406,8 @@
 												<v-col cols="12" sm="6" md="4">
 													<v-card class="stat-card" rounded="lg" variant="tonal" color="primary">
 														<v-card-text class="py-2">
-															<div class="text-caption text-medium-emphasis">{{ __('Cashier') }}</div>
-															<div class="text-body-2 font-weight-bold text-truncate">{{ selectedPaymentEntry.cashier }}</div>
+															<div class="text-caption text-medium-emphasis">{{ __('Mode of Payment') }}</div>
+															<div class="text-body-2 font-weight-bold text-truncate">{{ selectedPaymentEntry.mode_of_payment }}</div>
 														</v-card-text>
 													</v-card>
 												</v-col>
@@ -366,8 +415,8 @@
 												<v-col cols="12" sm="6" md="4">
 													<v-card class="stat-card" rounded="lg" variant="tonal" color="success">
 														<v-card-text class="py-2">
-															<div class="text-caption text-medium-emphasis">{{ __('Terminal') }}</div>
-															<div class="text-body-2 font-weight-bold">{{ selectedPaymentEntry.terminal }}</div>
+															<div class="text-caption text-medium-emphasis">{{ __('Amount') }}</div>
+															<div class="text-body-2 font-weight-bold">{{ formatAmount(selectedPaymentEntry.amount) }}</div>
 														</v-card-text>
 													</v-card>
 												</v-col>
@@ -375,8 +424,8 @@
 												<v-col cols="12" sm="6" md="4">
 													<v-card class="stat-card" rounded="lg" variant="tonal" color="warning">
 														<v-card-text class="py-2">
-															<div class="text-caption text-medium-emphasis">{{ __('Session Date') }}</div>
-															<div class="text-body-2 font-weight-bold">{{ selectedPaymentEntry.date }}</div>
+															<div class="text-caption text-medium-emphasis">{{ __('Note Count') }}</div>
+															<div class="text-body-2 font-weight-bold">{{ selectedPaymentEntry.note_count || __('Not linked') }}</div>
 														</v-card-text>
 													</v-card>
 												</v-col>
@@ -385,21 +434,26 @@
 											<v-row class="mb-1" dense>
 												<v-col cols="12" md="6">
 													<div class="meta-row"><strong>{{ __('Status') }}:</strong> {{ selectedPaymentEntry.status }}</div>
-													<div class="meta-row"><strong>{{ __('Date') }}:</strong> {{ selectedPaymentEntry.date }}</div>
+													<div class="meta-row"><strong>{{ __('Posting Date') }}:</strong> {{ selectedPaymentEntry.posting_date }}</div>
+													<div class="meta-row"><strong>{{ __('POS Profile') }}:</strong> {{ selectedPaymentEntry.pos_profile || __('Not set') }}</div>
+												</v-col>
+												<v-col cols="12" md="6">
+													<div class="meta-row"><strong>{{ __('From Account') }}:</strong> {{ selectedPaymentEntry.paid_from }}</div>
+													<div class="meta-row"><strong>{{ __('To Account') }}:</strong> {{ selectedPaymentEntry.paid_to }}</div>
 												</v-col>
 											</v-row>
 
 											<v-card class="section-card mt-3" rounded="lg" variant="outlined">
 												<v-card-item class="pb-1">
-													<div class="text-subtitle-1 font-weight-bold">{{ __('Payment Methods') }}</div>
+													<div class="text-subtitle-1 font-weight-bold">{{ __('Transfer Details') }}</div>
 												</v-card-item>
 												<v-card-text>
 													<v-data-table-virtual
 														:headers="paymentHeaders"
-														:items="selectedPaymentEntry.items"
-														item-value="mode"
+														:items="selectedPaymentEntry.transfers || []"
+														item-value="mode_of_payment"
 														density="compact"
-														height="36vh"
+														max-height="50vh"
 														fixed-header
 														class="close-day-table overflow-y-auto"
 													/>
@@ -416,6 +470,15 @@
 		</v-row>
 
 		<NoteCountDialog v-model="noteCountDialogOpen" @created="handleNoteCountCreated" :modeOfPayments="modeOfPayments" />
+		<PaymentEntryDialog
+			v-model="paymentEntryDialogOpen"
+			@created="handlePaymentEntriesCreated"
+			:modeOfPayments="modeOfPayments"
+			:noteCountEnabled="noteCountEnabled"
+			:company="posProfileData?.company || ''"
+			:posProfile="posProfileData?.name || ''"
+			:costCenter="posProfileData?.cost_center || ''"
+		/>
 	</v-main>
 </template>
 
@@ -424,6 +487,7 @@
     import {storeToRefs} from 'pinia';
 	import { useDisplay } from 'vuetify';
 	import NoteCountDialog from './components/close_day/NoteCountDialog.vue';
+	import PaymentEntryDialog from './components/close_day/PaymentEntryDialog.vue';
     import { usePosStore } from '../store/posStore';
 	const __ = window.__;
 	const frappe_ = window.frappe;
@@ -435,40 +499,17 @@
 	const showDetailsOnMobile = ref(false);
 	const isLoadingNoteList = ref(false);
 	const isLoadingNoteDetail = ref(false);
+	const isLoadingPaymentList = ref(false);
+	const isLoadingPaymentDetail = ref(false);
 	const noteEntries = ref([]);
 	const selectedNoteEntry = ref(null);
 	const selectedNoteEntryName = ref('');
 	const noteCountDialogOpen = ref(false);
+	const paymentEntryDialogOpen = ref(false);
     const modeOfPayments = ref([]);
-	const paymentEntries = ref([
-		{
-			name: 'PE-0001',
-			subtitle: __('Counter Settlement - Morning'),
-			status: __('Draft'),
-			statusColor: 'info',
-			date: '2026-04-11',
-			cashier: 'Cashier 01',
-			terminal: 'T-01',
-			items: [
-				{ mode: __('Cash'), collected: 1400, expected: 1400 },
-				{ mode: __('Card'), collected: 2300, expected: 2300 },
-			],
-		},
-		{
-			name: 'PE-0002',
-			subtitle: __('Counter Settlement - Evening'),
-			status: __('Submitted'),
-			statusColor: 'success',
-			date: '2026-04-11',
-			cashier: 'Cashier 02',
-			terminal: 'T-02',
-			items: [
-				{ mode: __('Cash'), collected: 1200, expected: 1200 },
-				{ mode: __('Wallet'), collected: 900, expected: 900 },
-			],
-		},
-	]);
-	const selectedPaymentEntry = ref(paymentEntries.value[0] || null);
+	const paymentEntries = ref([]);
+	const selectedPaymentEntry = ref(null);
+	const selectedPaymentEntryName = ref('');
 
 	const noteHeaders = [
 		{ title: __('Note'), key: 'note' },
@@ -486,9 +527,11 @@
 	];
 
 	const paymentHeaders = [
-		{ title: __('Mode'), key: 'mode' },
-		{ title: __('Collected'), key: 'collected' },
-		{ title: __('Expected'), key: 'expected' },
+		{ title: __('Mode of Payment'), key: 'mode_of_payment' },
+		{ title: __('Amount'), key: 'amount' },
+		{ title: __('Note Count'), key: 'note_count' },
+		{ title: __('From Account'), key: 'paid_from' },
+		{ title: __('To Account'), key: 'paid_to' },
 	];
 
 	const closeDayEnabled = computed(() => {
@@ -508,17 +551,119 @@
 			loadNoteCounts();
 		}
 	});
+	watch(paymentSearchTerm, (value) => {
+		if (!value) {
+			loadPaymentEntries();
+		}
+	});
 	onMounted(async () => {
 		await loadNoteCounts();
         await loadModeOfPayments();
+		await loadPaymentEntries();
 	});
 
 	function formatAmount(value) {
 		return Number(value || 0).toFixed(2);
 	}
 
+	function getDocstatusLabel(docstatus) {
+		switch (Number(docstatus)) {
+			case 1:
+				return __('Submitted');
+			case 2:
+				return __('Cancelled');
+			default:
+				return __('Draft');
+		}
+	}
+
+	function getDocstatusColor(docstatus) {
+		switch (Number(docstatus)) {
+			case 1:
+				return 'success';
+			case 2:
+				return 'error';
+			default:
+				return 'info';
+		}
+	}
+
+	function buildNoteSubtitle(entry) {
+		return [entry?.mode_of_payment, entry?.type].filter(Boolean).join(' - ');
+	}
+
+	function parsePaymentEntryRemarks(remarks) {
+		const metadata = {};
+		for (const part of String(remarks || '').split('|').slice(1)) {
+			if (!part.includes(':')) {
+				continue;
+			}
+
+			const [key, ...rest] = part.split(':');
+			metadata[key.trim().toLowerCase().replace(/\s+/g, '_')] = rest.join(':').trim();
+		}
+		return metadata;
+	}
+
+	function normalizeMetadataValue(value) {
+		return value && value !== '-' ? value : '';
+	}
+
+	function getPaymentEntryAmount(entry) {
+		return Number(entry?.paid_amount || entry?.received_amount || entry?.amount || 0);
+	}
+
+	function mapNoteEntry(entry) {
+		if (!entry) {
+			return null;
+		}
+
+		return {
+			...entry,
+			total: Number(entry.total || 0),
+			status: getDocstatusLabel(entry.docstatus),
+			statusColor: getDocstatusColor(entry.docstatus),
+			subtitle: buildNoteSubtitle(entry),
+		};
+	}
+
+	function mapPaymentEntry(entry) {
+		if (!entry) {
+			return null;
+		}
+
+		const metadata = parsePaymentEntryRemarks(entry.remarks);
+		const modeOfPayment = entry.mode_of_payment || normalizeMetadataValue(metadata.mode_of_payment);
+		const noteCount = normalizeMetadataValue(entry.reference_no || entry.note_count || metadata.note_count);
+		const amount = getPaymentEntryAmount(entry);
+
+		return {
+			...entry,
+			mode_of_payment: modeOfPayment,
+			note_count: noteCount,
+			amount,
+			pos_profile: normalizeMetadataValue(entry.pos_profile || metadata.pos_profile),
+			status: getDocstatusLabel(entry.docstatus),
+			statusColor: getDocstatusColor(entry.docstatus),
+			subtitle: [modeOfPayment, noteCount].filter(Boolean).join(' - '),
+			transfers: [
+				{
+					mode_of_payment: modeOfPayment,
+					amount,
+					note_count: noteCount,
+					paid_from: entry.paid_from,
+					paid_to: entry.paid_to,
+				},
+			],
+		};
+	}
+
 	function openNoteCountDialog() {
 		noteCountDialogOpen.value = true;
+	}
+
+	function openPaymentEntryDialog() {
+		paymentEntryDialogOpen.value = true;
 	}
 
 	async function loadNoteCounts() {
@@ -531,7 +676,7 @@
 				},
 			});
 
-			noteEntries.value = response.message || [];
+			noteEntries.value = (response.message || []).map(mapNoteEntry);
 
 			if (!noteEntries.value.length) {
 				selectedNoteEntryName.value = '';
@@ -551,10 +696,62 @@
 		try {
 			const response = await frappe.call({
 				method: 'maxit_pos.maxit_pos.page.maxit_pos.api.close_day_vue.get_mode_of_payments',
-                args: {mode_of_payments: posProfileData.value?.payments || []},
+				args: {
+					mode_of_payments: posProfileData.value?.payments || [],
+					company: posProfileData.value?.company,
+				},
 			});
 			modeOfPayments.value = response.message || [];
 		} finally {}
+	}
+
+	async function loadPaymentEntries() {
+		isLoadingPaymentList.value = true;
+		try {
+			const response = await frappe_.call({
+				method: 'maxit_pos.maxit_pos.page.maxit_pos.api.close_day_vue.get_payment_entry_list',
+				args: {
+					search_term: paymentSearchTerm.value || '',
+					cost_center: posProfileData.value?.cost_center || '',
+				},
+			});
+
+			paymentEntries.value = (response.message || []).map(mapPaymentEntry);
+
+			if (!paymentEntries.value.length) {
+				selectedPaymentEntryName.value = '';
+				selectedPaymentEntry.value = null;
+				return;
+			}
+
+			const existingSelection = paymentEntries.value.some((entry) => entry.name === selectedPaymentEntryName.value);
+			const nameToLoad = existingSelection ? selectedPaymentEntryName.value : paymentEntries.value[0].name;
+			await loadPaymentEntryDetail(nameToLoad);
+		} finally {
+			isLoadingPaymentList.value = false;
+		}
+	}
+
+	async function loadPaymentEntryDetail(name) {
+		if (!name) {
+			selectedPaymentEntryName.value = '';
+			selectedPaymentEntry.value = null;
+			return;
+		}
+
+		isLoadingPaymentDetail.value = true;
+		selectedPaymentEntryName.value = name;
+		try {
+			const response = await frappe.db.get_doc('Payment Entry', name);
+			selectedPaymentEntry.value = mapPaymentEntry(response);
+		} finally {
+			isLoadingPaymentDetail.value = false;
+		}
+	}
+
+	async function selectPaymentEntry(name) {
+		showDetailsOnMobile.value = true;
+		await loadPaymentEntryDetail(name);
 	}
 
 	async function loadNoteDetail(name) {
@@ -567,11 +764,8 @@
 		isLoadingNoteDetail.value = true;
 		selectedNoteEntryName.value = name;
 		try {
-			const response = await frappe_.call({
-				method: 'maxit_pos.maxit_pos.page.maxit_pos.api.close_day_vue.get_note_count_detail',
-				args: { name },
-			});
-			selectedNoteEntry.value = response.message || null;
+			const response = await frappe.db.get_doc('Note Count', name);
+			selectedNoteEntry.value = mapNoteEntry(response);
 		} finally {
 			isLoadingNoteDetail.value = false;
 		}
@@ -590,6 +784,17 @@
 				await loadNoteDetail(createdDoc.name);
 				showDetailsOnMobile.value = true;
 			}
+	}
+
+	async function handlePaymentEntriesCreated(createdDocs) {
+		paymentEntryDialogOpen.value = false;
+		paymentSearchTerm.value = '';
+		await loadPaymentEntries();
+		const firstCreatedDoc = createdDocs?.[0];
+		if (firstCreatedDoc?.name) {
+			await loadPaymentEntryDetail(firstCreatedDoc.name);
+			showDetailsOnMobile.value = true;
+		}
 	}
 
 	function print_note_count(){

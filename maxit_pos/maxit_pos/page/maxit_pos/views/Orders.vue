@@ -2,7 +2,7 @@
   <v-main class="orders-view pa-3 pa-md-6">
     <v-row class="orders-shell" align="stretch">
       <v-col v-show="!isMobile || !showDetailsOnMobile" cols="12" md="4" lg="3">
-        <v-card class="orders-panel h-100" max-height="100vh" rounded="xl" variant="flat">
+        <v-card class="orders-panel " max-height="100vh" rounded="xl" variant="flat">
           <v-card-item class="pb-2">
             <div class="d-flex align-center justify-space-between gap-2 mb-3">
               <div>
@@ -37,7 +37,7 @@
               v-else-if="invoices.length"
               lines="two"
               color="primary"
-              max-height="70vh"
+              max-height="50vh"
               nav
               rounded="lg"
               class="orders-list overflow-y-auto"
@@ -78,7 +78,7 @@
       </v-col>
 
       <v-col v-show="!isMobile || showDetailsOnMobile" cols="12" md="8" lg="9">
-        <v-card class="orders-panel h-100" rounded="xl" variant="flat">
+        <v-card class="orders-panel " rounded="xl" variant="flat" max-height="100vh">
           <v-card-item class="pb-0">
             <div class="d-flex align-center justify-space-between flex-wrap gap-3">
               <div class="d-flex align-center gap-2">
@@ -182,7 +182,7 @@
                     :items="invoice.items"
                     item-value="item_name"
                     density="compact"
-                    max-height="290"
+                    max-height="30vh"
                     class="orders-table"
                   />
                 </v-card-text>
@@ -201,7 +201,7 @@
                     :items="invoice.payments"
                     item-value="mode_of_payment"
                     density="compact"
-                    max-height="220"
+                    max-height="15vh"
                     class="orders-table"
                   />
                 </v-card-text>
@@ -223,7 +223,7 @@
                     :items="paymentEntries"
                     item-value="name"
                     density="compact"
-                    max-height="220"
+                    max-height="30vh"
                     class="orders-table"
                   >
                     <template #item.print="{ item }">

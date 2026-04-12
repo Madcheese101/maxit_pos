@@ -7,8 +7,7 @@
                     density="compact"
                     :placeholder="frappeRef._('Search')"
                     prepend-inner-icon="mdi-magnify"
-                    variant="solo"
-                    flat
+                    variant="outlined"
                     hide-details
                     single-line
                     v-model="search_term"
@@ -22,31 +21,31 @@
                 :label="frappeRef._('Item Group')"
                 v-model="selectedItemGroup"
                 :items="item_groups"
-                variant="solo"
+                variant="outlined"
                 density="compact"
-                bg-color="white"
                 flat>
             </v-select>
         </v-col>
         <!-- more filters -->
         <v-col max-width="140" v-if="props.customFilters.length > 0">
             <v-btn
-                color="white"
+                color="primary"
                 density="comfortable"
                 append-icon="mdi-filter"
                 height="40"
-                flat
+                variant="tonal"
                 @click="showFiltersDialog()">
                     {{ frappeRef._('Filter') }}{{ active_filters > 0 ? ` (${active_filters})` : '' }}
             </v-btn>
             <!-- reset filters Button -->
             <v-btn  v-if="active_filters > 0"
-                color="white"
+                color="error"
                 density="comfortable"
-                flat
                 icon="mdi-filter-remove"
                 class="ml-2"
-                @click="reset_filters()"></v-btn>
+                @click="reset_filters()"
+                variant="tonal"></v-btn>
+                
         </v-col>
     </v-row>
 
