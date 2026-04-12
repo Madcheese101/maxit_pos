@@ -458,7 +458,7 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
         <v-window v-model="activeTab">
           <v-window-item value="pos">
             <v-row class="pos-content" dense align="stretch">
-              <v-col cols="12" lg="7">
+              <v-col cols="12" lg="6">
                 <v-card class="pos-panel" rounded="xl" max-height="100vh" variant="flat" :disabled="isReturnInvoice">
                   <v-card-text>
                     <FiltersSection
@@ -486,7 +486,7 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
                 </v-card>
               </v-col>
 
-              <v-col cols="12" lg="5">
+              <v-col cols="12" lg="6">
                 <v-card class="pos-panel" rounded="xl" variant="flat">
                   <v-card-text>
                     <v-combobox

@@ -11,9 +11,7 @@
       <SideBar :showPosProfileDependent="showPosProfileDependent"/>
       <!-- Pages Views Container -->
       <v-main class="main-body-container">
-        <div class="views-container ">
           <router-view/>
-        </div>
       </v-main>
       <v-dialog
         v-model="isLoading"

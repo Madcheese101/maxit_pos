@@ -285,6 +285,15 @@
 														<v-btn
 															color="secondary"
 															variant="text"
+															prepend-icon="mdi-printer"
+															size="small"
+															@click="openPaymentEntryPrintDialog"
+														>
+															{{ __('Print Report') }}
+														</v-btn>
+														<v-btn
+															color="secondary"
+															variant="text"
 															prepend-icon="mdi-refresh"
 															size="small"
 															@click="loadPaymentEntries()"
@@ -562,6 +571,14 @@
 		await loadPaymentEntries();
 	});
 
+	function getToday() {
+		if (frappe.datetime?.get_today) {
+			return frappe.datetime.get_today();
+		}
+
+		return new Date().toISOString().slice(0, 10);
+	}
+
 	function formatAmount(value) {
 		return Number(value || 0).toFixed(2);
 	}
@@ -664,6 +681,82 @@
 
 	function openPaymentEntryDialog() {
 		paymentEntryDialogOpen.value = true;
+	}
+
+	function openPaymentEntryPrintDialog() {
+		if (!posProfileData.value?.name) {
+			frappe_.msgprint(__('POS Profile is required to print the Close Day report.'));
+			return;
+		}
+
+		const dialog = new frappe.ui.Dialog({
+			title: __('Print Close Day Report'),
+			fields: [
+				{
+					label: __('Posting Date'),
+					fieldname: 'posting_date',
+					fieldtype: 'Date',
+					reqd: true,
+					default: getToday(),
+				},
+			],
+			primary_action_label: __('Print'),
+			primary_action: async (values) => {
+				const postingDate = values?.posting_date;
+				if (!postingDate) {
+					frappe_.show_alert({ message: __('Posting Date is required.'), indicator: 'red' }, 5);
+					return;
+				}
+
+				const printWindow = window.open('', '_blank');
+				if (!printWindow) {
+					frappe_.show_alert({ message: __('Allow pop-ups to print the Close Day report.'), indicator: 'red' }, 5);
+					return;
+				}
+
+				printWindow.document.write(`
+					<html>
+						<head><title>${__('Preparing Close Day Report')}</title></head>
+						<body style="font-family: Arial, sans-serif; padding: 24px;">${__('Preparing report...')}</body>
+					</html>
+				`);
+				printWindow.document.close();
+
+				const primaryButton = dialog.get_primary_btn();
+				primaryButton.prop('disabled', true);
+
+				try {
+					const response = await frappe_.call({
+						method: 'maxit_pos.maxit_pos.page.maxit_pos.api.close_day_vue.get_close_day_payment_report_html',
+						args: {
+							posting_date: postingDate,
+							pos_profile: posProfileData.value?.name || '',
+							company: posProfileData.value?.company || '',
+							cost_center: posProfileData.value?.cost_center || '',
+							letter_head: posProfileData.value?.letter_head || '',
+							mode_of_payments: JSON.stringify(posProfileData.value?.payments || []),
+						},
+					});
+
+					const html = response.message?.html;
+					if (!html) {
+						throw new Error(__('Unable to generate the Close Day report.'));
+					}
+
+					printWindow.document.open();
+					printWindow.document.write(html);
+					printWindow.document.close();
+					dialog.hide();
+				} catch (error) {
+					printWindow.close();
+					frappe_.msgprint(error?.message || __('Unable to generate the Close Day report.'));
+				} finally {
+					primaryButton.prop('disabled', false);
+				}
+			},
+		});
+
+		dialog.show();
 	}
 
 	async function loadNoteCounts() {

@@ -1,112 +1,125 @@
 <template>
-    <VCard rounded="lg" class="pa-3" flat>
+    <VCard rounded="xl" class="cart-card pa-3" flat>
         <div class="text-subtitle-1 mb-2">{{ __('Invoice Items') }}</div>
 
         <div class="cart-scroll-container">
-            <v-expansion-panels
-                class="cart-panels"
-                variant="accordion"
+            <v-data-table
+                v-model:expanded="expanded"
+                :headers="cartHeaders"
+                :items="posCartItems"
+                :items-per-page="cartItemsPerPage"
+                item-value="idx"
+                density="compact"
+                hide-default-footer
+                hide-default-header
+                expand-on-click
+                class="cart-table"
+                height="50vh"
             >
-                <v-expansion-panel
-                    v-for="item in posCartItems"
-                    :key="item.idx"
-                    class="border-b"
-                >
-                <v-expansion-panel-title>
-                    <v-row align="center" @click.stop dense>
-                        <v-col cols="6" align="start" class="text-body-2 pa-0">
-                            {{ item.idx }}. {{ item.item_name }}
-                        </v-col>
+                <template #item.item_name="{ item }">
+                    <div class="cart-item-name">
+                        {{ item.idx }}. {{ item.item_name }}
+                    </div>
+                </template>
 
-                        <v-col cols="2" @click.stop>
-                            <v-number-input
-                                v-model="item.qty"
-                                control-variant="hidden"
-                                variant="outlined"
-                                density="compact"
-                                :precision="2"
-                                label="Qty"
-                                @change="update_number(item, 'qty', item.qty)"
-                            />
-                        </v-col>
+                <template #item.qty="{ item }">
+                    <div class="cart-qty-wrap" @click.stop>
+                        <v-number-input
+                            v-model="item.qty"
+                            control-variant="hidden"
+                            variant="outlined"
+                            density="compact"
+                            :precision="2"
+                            :label="__('Qty')"
+                            hide-details="auto"
+                            class="cart-qty-input"
+                            @change="update_number(item, 'qty', item.qty)"
+                        />
+                    </div>
+                </template>
 
-                        <v-col cols="3">
-                            <div class="text-body-2 pa-0" v-html="frappe_.format(item.amount, {'fieldtype': 'Currency'})"></div>
-                        </v-col>
+                <template #item.amount="{ item }">
+                    <div class="cart-item-amount text-right" v-html="frappe_.format(item.amount, {'fieldtype': 'Currency'})"></div>
+                </template>
 
-                        <v-col cols="1"  @click.stop>
-                            <v-btn
-                                icon="mdi-delete"
-                                variant="text"
-                                density="compact"
-                                @click="deleteItemFromCart(item)"
-                            />
-                        </v-col>
-                    </v-row>
-                </v-expansion-panel-title>
+                <template #item.actions="{ item }">
+                    <v-btn
+                        icon="mdi-delete"
+                        variant="text"
+                        density="compact"
+                        color="error"
+                        @click.stop="deleteItemFromCart(item)"
+                    />
+                </template>
 
-                <v-expansion-panel-text>
-                    <v-row dense>
-                        <v-col cols="6" @click.stop>
-                            <v-number-input
-                                v-model="item.rate"
-                                control-variant="hidden"
-                                variant="outlined"
-                                density="compact"
-                                :disabled="!allow_rate_change"
-                                :precision="2"
-                                :label="__('Rate') + ': ' + item.price_list_rate + ' ' + priceListCurrency"
-                                @change="update_number(item, 'rate', item.rate)"
-                            />
-                        </v-col>
-                        <v-col cols="6" @click.stop>
-                            <v-number-input
-                                v-if="item.discount_type === 'Amount'"
-                                v-model="item.discount_amount"
-                                control-variant="hidden"
-                                variant="outlined"
-                                density="compact"
-                                :precision="2"
-                                :label="__('Discount')"
-                                :disabled="!allow_discount_change"
-                                @change="update_number(item, 'discount_amount', item.discount_amount)"
-                            >
-                                <template #append-inner>
-                                    <v-btn
-                                        size="small"
-                                        variant="text"
-                                        @click.stop="toggleDiscountType(item)"
-                                    >
-                                        {{ priceListCurrency }}
-                                    </v-btn>
-                                </template>
-                            </v-number-input>
-
-                            <v-number-input
-                                v-if="item.discount_type === 'Percentage'"
-                                v-model="item.discount_percentage"
-                                control-variant="hidden"
-                                variant="outlined"
-                                density="compact"
-                                :precision="2"
-                                :label="__('Discount %')"
-                                :disabled="!allow_discount_change"
-                                @change="update_number(item, 'discount_percentage', item.discount_percentage)"
-                            >
-                                <template #append-inner>
-                                    <v-btn
-                                        size="small"
-                                        variant="text"
-                                        @click.stop="toggleDiscountType(item)"
-                                        text="%"
+                <template #expanded-row="{ columns, item }">
+                    <tr class="cart-expanded-row">
+                        <td :colspan="columns.length">
+                            <v-row dense class="pt-2">
+                                <v-col cols="12" md="6" @click.stop>
+                                    <v-number-input
+                                        v-model="item.rate"
+                                        control-variant="hidden"
+                                        variant="outlined"
+                                        density="compact"
+                                        :disabled="!allow_rate_change"
+                                        :precision="2"
+                                        :label="__('Rate') + ': ' + item.price_list_rate + ' ' + priceListCurrency"
+                                        hide-details="auto"
+                                        @change="update_number(item, 'rate', item.rate)"
                                     />
-                                </template>
-                            </v-number-input>
-                        </v-col>
-                    </v-row>
-                </v-expansion-panel-text>
-                </v-expansion-panel>
-            </v-expansion-panels>
+                                </v-col>
+                                <v-col cols="12" md="6" @click.stop>
+                                    <v-number-input
+                                        v-if="item.discount_type === 'Amount'"
+                                        v-model="item.discount_amount"
+                                        control-variant="hidden"
+                                        variant="outlined"
+                                        density="compact"
+                                        :precision="2"
+                                        :label="__('Discount')"
+                                        :disabled="!allow_discount_change"
+                                        hide-details="auto"
+                                        @change="update_number(item, 'discount_amount', item.discount_amount)"
+                                    >
+                                        <template #append-inner>
+                                            <v-btn
+                                                size="small"
+                                                variant="text"
+                                                @click.stop="toggleDiscountType(item)"
+                                            >
+                                                {{ priceListCurrency }}
+                                            </v-btn>
+                                        </template>
+                                    </v-number-input>
+
+                                    <v-number-input
+                                        v-if="item.discount_type === 'Percentage'"
+                                        v-model="item.discount_percentage"
+                                        control-variant="hidden"
+                                        variant="outlined"
+                                        density="compact"
+                                        :precision="2"
+                                        :label="__('Discount %')"
+                                        :disabled="!allow_discount_change"
+                                        hide-details="auto"
+                                        @change="update_number(item, 'discount_percentage', item.discount_percentage)"
+                                    >
+                                        <template #append-inner>
+                                            <v-btn
+                                                size="small"
+                                                variant="text"
+                                                @click.stop="toggleDiscountType(item)"
+                                                text="%"
+                                            />
+                                        </template>
+                                    </v-number-input>
+                                </v-col>
+                            </v-row>
+                        </td>
+                    </tr>
+                </template>
+            </v-data-table>
         </div>
 
         <v-divider class="my-2" />
@@ -123,22 +136,30 @@
 </template>
 
 <script setup>
-    import { computed } from 'vue'
+    import { computed, ref } from 'vue'
     import { usePosStore } from '../../../store/posStore';
     import {storeToRefs} from 'pinia';
     import { VCard } from 'vuetify/components';
-
     const __ = window.__;
     const frappe_ = frappe;
     const posStore = usePosStore();
     const {posFrm, posProfileData} = storeToRefs(posStore);
     const {update_cart} = posStore;
+    const expanded = ref([]);
 
     const emit = defineEmits(['checkout']);
     const posCartItems = computed(() => posFrm.value?.doc?.items || [])
+    const cartItemsPerPage = computed(() => posCartItems.value.length || 1)
     const priceListCurrency = computed(() => posFrm.value?.doc?.price_list_currency || "")
     const allow_discount_change = computed(() => posProfileData.value?.allow_discount_change)
     const allow_rate_change = computed(() => posProfileData.value?.allow_rate_change)
+    const cartHeaders = computed(() => [
+        { title: '', key: 'data-table-expand', sortable: false, width: '42px' },
+        { title: __('Item'), key: 'item_name', sortable: false },
+        { title: __('Qty'), key: 'qty', sortable: false, width: '132px' },
+        { title: __('Amount'), key: 'amount', sortable: false, align: 'end', width: '132px' },
+        { title: '', key: 'actions', sortable: false, align: 'end', width: '52px' },
+    ])
     
     const update_number = async (item, field, value) => {
         update_cart({
@@ -150,6 +171,7 @@
     }
 
     const deleteItemFromCart = async (item) => {
+        expanded.value = expanded.value.filter((value) => value !== item.idx);
         const index = posFrm.value.doc.items.indexOf(item);
         if (index === -1) {
             return;
@@ -167,12 +189,106 @@
 </script>
 
 <style scoped>
-    .cart-scroll-container {
-        height: 46.5vh;
-        overflow-y: auto;
+    .cart-card {
+        border: 1px solid rgba(120, 144, 156, 0.24);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(248, 251, 255, 0.97));
+        box-shadow: 0 8px 20px rgba(12, 28, 43, 0.08);
     }
 
-    .cart-panels {
+    .cart-scroll-container {
+        max-height: 55vh;
+        overflow-y: auto;
+        padding-right: 4px;
+    }
+
+    .cart-table {
         background: transparent;
+    }
+
+    .cart-table :deep(.v-table__wrapper) {
+        overflow: visible;
+    }
+
+    .cart-table :deep(table) {
+        border-collapse: separate;
+        border-spacing: 0 8px;
+    }
+
+    .cart-table :deep(tbody tr) {
+        background: rgba(255, 255, 255, 0.92);
+    }
+
+    .cart-table :deep(tbody tr:not(.cart-expanded-row) td) {
+        border-top: 1px solid rgba(120, 144, 156, 0.2);
+        border-bottom: 1px solid rgba(120, 144, 156, 0.2);
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+
+    .cart-table :deep(tbody tr:not(.cart-expanded-row) td:first-child) {
+        border-left: 1px solid rgba(120, 144, 156, 0.2);
+        border-top-left-radius: 12px;
+        border-bottom-left-radius: 12px;
+    }
+
+    .cart-table :deep(tbody tr:not(.cart-expanded-row) td:last-child) {
+        border-right: 1px solid rgba(120, 144, 156, 0.2);
+        border-top-right-radius: 12px;
+        border-bottom-right-radius: 12px;
+    }
+
+    .cart-item-name {
+        font-size: 0.95rem;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .cart-item-amount {
+        font-size: 0.9rem;
+        color: rgba(60, 75, 90, 0.76);
+    }
+
+    .cart-qty-wrap {
+        width: 112px;
+    }
+
+    .cart-qty-input :deep(.v-input__details) {
+        display: none;
+    }
+
+    .cart-expanded-row td {
+        padding: 0 12px 12px !important;
+        border: 1px solid rgba(120, 144, 156, 0.2);
+        border-top: 0;
+        border-bottom-left-radius: 12px;
+        border-bottom-right-radius: 12px;
+        background: rgba(248, 251, 255, 0.97);
+    }
+
+    .cart-table :deep(.v-data-table__td) {
+        vertical-align: middle;
+    }
+
+    .cart-table :deep(.v-data-table__tr--expanded td) {
+        border-bottom: 0;
+        border-bottom-left-radius: 0 !important;
+        border-bottom-right-radius: 0 !important;
+    }
+
+    .cart-table :deep(.v-btn--icon.v-data-table-expand__content) {
+        color: rgba(60, 75, 90, 0.76);
+    }
+    .v-input.v-input--horizontal.v-input--center-affix.v-input--density-compact.v-theme--light.v-locale--is-ltr.v-input--dirty.v-text-field.v-number-input.cart-qty-input {
+        width: 5vw;
+    }
+    td.v-data-table__td.v-data-table-column--no-padding.v-data-table-column--align-start.v-data-table__td--expanded-row {
+        display: none;
+    }
+    @media (max-width: 960px) {
+        .v-input.v-input--horizontal.v-input--center-affix.v-input--density-compact.v-theme--light.v-locale--is-ltr.v-input--dirty.v-text-field.v-number-input.cart-qty-input {
+            width: 5vw;
+        }
     }
 </style>
