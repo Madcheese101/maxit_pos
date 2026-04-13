@@ -289,6 +289,7 @@ fixtures = [
                     "Purchase Receipt-custom_column_break_hbo4b",
                     "Purchase Receipt-custom_supplier_invoice_date",
                     "Mode of Payment-custom_middle_man_account",
+                    "Payment Entry-custom_note_count"
                 ]
             ]
         ]

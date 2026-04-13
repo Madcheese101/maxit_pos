@@ -251,6 +251,7 @@ def create_payment_entries(doc):
 		payment_entry.mode_of_payment = mode_of_payment
 		payment_entry.paid_from = default_account
 		payment_entry.paid_to = middle_man_account
+		payment_entry.note_count = note_count
 		payment_entry.paid_from_account_currency = paid_to_account_currency
 		payment_entry.paid_to_account_currency = paid_from_account_currency
 		payment_entry.source_exchange_rate = 1
