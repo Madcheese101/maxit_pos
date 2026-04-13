@@ -258,7 +258,7 @@ def create_payment_entries(doc):
 		payment_entry.target_exchange_rate = 1
 		payment_entry.paid_amount = amount
 		payment_entry.received_amount = amount
-		payment_entry.reference_no = note_count
+		payment_entry.reference_no = note_count or "-"
 		payment_entry.reference_date = posting_date
 		payment_entry.remarks = _build_payment_entry_remarks(
 			pos_profile,
