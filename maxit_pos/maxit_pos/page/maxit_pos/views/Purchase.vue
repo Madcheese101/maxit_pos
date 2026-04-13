@@ -274,8 +274,36 @@
   const isMobile = computed(() => smAndDown.value);
   const showDetailsOnMobile = ref(false);
   const isLoadingList = ref(false);
+  const syncJobId = ref(null);
+  let isSyncRealtimeBound = false;
   const posStore = usePosStore();
   const {pos_profile, posProfileData} = storeToRefs(posStore);
+
+  const syncRealtimeHandler = (data) => {
+    if (!data || !syncJobId.value || data.job_id !== syncJobId.value) return;
+
+    syncJobId.value = null;
+    searchTerm.value = '';
+
+    if (data.status === 'success') {
+      getInvoices();
+      frappe.msgprint({
+        title: __('Sync Completed'),
+        indicator: 'green',
+        message: __('Invoices Synced: {0}', [data.synced_count || 0]),
+      });
+      return;
+    }
+
+    frappe.msgprint({
+      title: __('Sync Failed'),
+      indicator: 'red',
+      message: data.message || __('Purchase invoice sync failed.'),
+    });
+  };
+
+  frappe.realtime.on('maxit_pos_purchase_sync_done', function(data) {syncRealtimeHandler(data)});
+  
   const getStatusColor = (status, docstatus) => {
     const normalizedStatus = (status || '').toLowerCase();
 
@@ -310,25 +338,24 @@
         pos_profile: posProfileData.value
       },
     }).then((response) => {
-      searchTerm.value = '';
-      getInvoices();
-      frappe.show_alert({
-        message: __('Sync Completed'),
-        indicator: 'green'
-      }, 5);
-      if(response.message){
+      const payload = response.message || {};
+      isLoadingList.value = false;
+
+      if (payload.status === 'queued' && payload.job_id) {
+        syncJobId.value = payload.job_id;
         frappe.show_alert({
-          message: __('Invoices Synced: {0}', [response.message.join(', ')]),
-          indicator: 'green'
-        }, 10);
-      }
-      else      {
-        frappe.show_alert({
-          message: __('No new invoices to sync'),
+          message: payload.message || __('Sync started in background'),
           indicator: 'blue'
         }, 5);
+        return;
       }
+
+      frappe.show_alert({
+        message: __('Unable to queue sync job'),
+        indicator: 'red'
+      }, 5);
     }).catch(() => {
+      isLoadingList.value = false;
       frappe.show_alert({
         message: __('Sync Failed'),
         indicator: 'red'

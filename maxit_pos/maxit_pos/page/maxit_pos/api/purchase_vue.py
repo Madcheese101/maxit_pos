@@ -37,6 +37,60 @@ def get_purchase_receipt_list(pos_profile, search_term=""):
 
 @frappe.whitelist()
 def sync_invoices(pos_profile):
+    request_user = frappe.session.user
+    job_id = frappe.generate_hash(length=12)
+    if isinstance(pos_profile, str):
+        try:
+            pos_profile = json.loads(pos_profile)
+        except ValueError:
+            frappe.throw(_("Invalid POS profile payload."))
+
+    frappe.enqueue(
+        run_sync_invoices_job,
+        queue="long",
+        timeout=1800,
+        pos_profile=pos_profile,
+        request_user=request_user,
+        jobId=job_id,
+    )
+
+    return {
+        "status": "queued",
+        "job_id": job_id,
+        "message": _("Purchase invoice sync started in background."),
+    }
+
+
+def run_sync_invoices_job(pos_profile, request_user=None, jobId=None):
+    synced_count = 0
+    payload = {
+        "status": "success",
+        "job_id": jobId,
+        "synced_count": 12,
+        "message": _("Purchase invoice sync completed."),
+    }
+    frappe.publish_realtime("maxit_pos_purchase_sync_done__", payload)
+
+    try:
+        synced_count = sync_invoices_(pos_profile)
+        payload["synced_count"] = synced_count
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "Purchase invoice sync failed")
+        payload = {
+            "status": "error",
+            "job_id": jobId,
+            "synced_count": synced_count,
+            "message": _("Purchase invoice sync failed. Please check Error Log."),
+        }
+
+    if request_user:
+        frappe.publish_realtime("maxit_pos_purchase_sync_done", payload, user=request_user)
+    else:
+        frappe.publish_realtime("maxit_pos_purchase_sync_done", payload)
+
+    return payload
+
+def sync_invoices_(pos_profile):
     if isinstance(pos_profile, str):
         pos_profile = json.loads(pos_profile)
     invoices_done = []
@@ -53,7 +107,7 @@ def sync_invoices(pos_profile):
     result = get_parent_company_sales_invoices()
     if isinstance(result, str):
         result = json.loads(result)
-    
+
     invoices_map = [inv.get("name") for inv in result]
     existsing_invoices = frappe.db.get_list("Purchase Receipt", filters={"bill_no": ["in", invoices_map]}, pluck="bill_no")
     for invoice in result:
@@ -61,8 +115,9 @@ def sync_invoices(pos_profile):
             continue
         done = create_purchase_receipt(invoice, pos_profile, supplier_branch_map)
         if done: invoices_done.append(invoice.get("name"))
-        if invoices_done:
-            set_invoices_as_paid(invoices_done)
+    
+    if invoices_done:
+        set_invoices_as_paid(invoices_done)
     return len(invoices_done)
 
 def set_invoices_as_paid(invoices):
@@ -113,7 +168,7 @@ def _get_parent_company_request_config(endpoint_path):
     base_url = (config.get("parent_erpnext_url") or "").rstrip("/")
     api_key = config.get("parent_erpnext_api_key")
     api_secret = config.get("parent_erpnext_api_secret")
-    timeout = config.get("parent_erpnext_timeout") or 150
+    timeout = config.get("parent_erpnext_timeout") or 600
     # frappe.throw(f"{base_url} - {api_key} - {api_secret}")
     if not base_url or not api_key or not api_secret:
         frappe.throw(
