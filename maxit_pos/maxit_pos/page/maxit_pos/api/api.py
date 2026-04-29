@@ -95,7 +95,7 @@ def create_and_submit_pos_closing_entry(pos_profile, company, pos_opening_entry)
         frappe.throw(_("Selected POS Opening Entry should be open."), title=_("Invalid Opening Entry"))
 
     end_time = frappe.utils.now_datetime()
-    data = get_invoices(opening_entry.period_start_date, end_time, pos_profile, frappe.session.user)
+    data = {}
 
     closing_entry = frappe.new_doc("POS Closing Entry")
     closing_entry.pos_profile = pos_profile
