@@ -38,37 +38,37 @@ def check_open_pos_exists(self):
         )
 
 def validate_pos_opening_entry(self):
-		opening_entries = frappe.get_all(
-			"POS Opening Entry",
-			fields=["name", "period_start_date"],
-			filters={
-                "pos_profile": self.pos_profile,
-                "user": frappe.session.user, 
-                "status": "Open"
-            },
-			order_by="period_start_date desc",
-		)
-		if not opening_entries:
-			frappe.throw(
-				title=_("POS Opening Entry Missing"),
-				msg=_("No open POS Opening Entry found for POS Profile {0}.").format(
-					frappe.bold(self.pos_profile)
-				),
-			)
-		if len(opening_entries) > 1:
-			frappe.throw(
-				title=_("Multiple POS Opening Entry"),
-				msg=_(
-					"POS Profile - {0} has multiple open POS Opening Entries. Please close or cancel the existing entries before proceeding."
-				).format(self.pos_profile),
-			)
-		if frappe.utils.get_date_str(opening_entries[0].get("period_start_date")) != frappe.utils.today():
-			frappe.throw(
-				title=_("Outdated POS Opening Entry"),
-				msg=_(
-					"POS Opening Entry - {0} is outdated. Please close the POS and create a new POS Opening Entry."
-				).format(opening_entries[0].get("name")),
-			)
+    opening_entries = frappe.get_all(
+        "POS Opening Entry",
+        fields=["name", "period_start_date"],
+        filters={
+            "pos_profile": self.pos_profile,
+            "user": frappe.session.user, 
+            "status": "Open"
+        },
+        order_by="period_start_date desc",
+    )
+    if not opening_entries:
+        frappe.throw(
+            title=_("POS Opening Entry Missing"),
+            msg=_("No open POS Opening Entry found for POS Profile {0}.").format(
+                frappe.bold(self.pos_profile)
+            ),
+        )
+    # if len(opening_entries) > 1:
+    # 	frappe.throw(
+    # 		title=_("Multiple POS Opening Entry"),
+    # 		msg=_(
+    # 			"POS Profile - {0} has multiple open POS Opening Entries. Please close or cancel the existing entries before proceeding."
+    # 		).format(self.pos_profile),
+    # 	)
+    if frappe.utils.get_date_str(opening_entries[0].get("period_start_date")) != frappe.utils.today():
+        frappe.throw(
+            title=_("Outdated POS Opening Entry"),
+            msg=_(
+                "POS Opening Entry - {0} is outdated. Please close the POS and create a new POS Opening Entry."
+            ).format(opening_entries[0].get("name")),
+        )
 
 def validate_max_discount_(self):
     for d in self.get("items"):
