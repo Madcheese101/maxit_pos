@@ -228,7 +228,11 @@
         modeOfPayments: {
             type: Array,
             default: () => [],
-        }
+        },
+		posProfile: {
+			type: String,
+			default: '',
+		},
 	});
 
 	const emit = defineEmits(['update:modelValue', 'created']);
@@ -388,8 +392,9 @@
 				mode_of_payment: noteCountForm.mode_of_payment,
 				cash: noteCountForm.cash,
 				bank: noteCountForm.bank,
+				pos_profile: props.posProfile,
 			};
-
+			console.log('Submitting Note Count with payload:', payload);
 			const response = await frappe.call({
 				method: 'maxit_pos.maxit_pos.page.maxit_pos.api.close_day_vue.create_note_count',
 				args: {

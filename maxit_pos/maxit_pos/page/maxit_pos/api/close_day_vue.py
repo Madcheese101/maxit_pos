@@ -7,7 +7,6 @@ from frappe.www.printview import get_letter_head
 from erpnext.accounts.utils import get_account_currency, get_balance_on
 
 CASH_NOTES = (5, 10, 20, 50)
-CLOSE_DAY_PAYMENT_REMARK = "Close Day Settlement"
 
 @frappe.whitelist()
 def get_mode_of_payments(mode_of_payments, company=None):
@@ -42,8 +41,10 @@ def get_note_count_options(posting_date=None, mode_of_payments=None):
 	]
 
 @frappe.whitelist()
-def get_note_count_list(search_term=""):
+def get_note_count_list(search_term="", pos_profile=None):
 	filters = {}
+	if pos_profile:
+		filters["pos_profile"] = pos_profile
 	or_filters = []
 	if search_term:
 		search_value = f"%{search_term.strip()}%"
@@ -105,6 +106,7 @@ def create_note_count(doc):
 		frappe.throw(_("Unable to determine the payment type for the selected Mode of Payment."))
 
 	posting_date = payload.get("posting_date") or nowdate()
+	pos_profile = payload.get("pos_profile")
 	cash_rows = []
 	bank_rows = []
 	total = 0
@@ -163,6 +165,7 @@ def create_note_count(doc):
 	note_count.mode_of_payment = mode_of_payment
 	note_count.type = type_
 	note_count.total = flt(total)
+	note_count.pos_profile = pos_profile
 
 	for row in cash_rows:
 		note_count.append("cash", row)
@@ -260,14 +263,8 @@ def create_payment_entries(doc):
 		payment_entry.received_amount = amount
 		payment_entry.reference_no = note_count or "-"
 		payment_entry.reference_date = posting_date
-		payment_entry.remarks = _build_payment_entry_remarks(
-			pos_profile,
-			posting_date,
-			{
-				"mode_of_payment": mode_of_payment,
-				"note_count": note_count,
-			},
-		)
+		payment_entry.pos_profile = pos_profile
+		payment_entry.is_closing_entry = 1
 		payment_entry.flags.ignore_permissions = True
 		payment_entry.set_missing_values()
 		payment_entry.insert()
@@ -280,35 +277,36 @@ def create_payment_entries(doc):
 	return created_entries
 
 @frappe.whitelist()
-def get_payment_entry_list(cost_center, search_term=""):
+def get_payment_entry_list(cost_center=None, search_term="", pos_profile=None):
+	if not cost_center:
+		return []
+
 	filters = {
+		# "docstatus": 1,
 		"cost_center": cost_center,
-		"docstatus": 1,
+		"payment_type": "Internal Transfer",
+		"is_closing_entry": 1,
 	}
+	if pos_profile:
+		filters["pos_profile"] = pos_profile
 	or_filters = []
 	if search_term:
 		search_value = f"%{search_term.strip()}%"
 		or_filters = [
 			["Payment Entry", "name", "like", search_value],
 			["Payment Entry", "mode_of_payment", "like", search_value],
-			["Payment Entry", "reference_no", "like", search_value],
-			["Payment Entry", "paid_from", "like", search_value],
-			["Payment Entry", "paid_to", "like", search_value],
+			["Payment Entry", "note_count", "like", search_value],
 		]
 
-	return frappe.get_all(
+	return frappe.db.get_list(
 		"Payment Entry",
 		fields=[
 			"name",
-			"posting_date",
 			"mode_of_payment",
+			"note_count",
 			"paid_amount",
-			"received_amount",
-			"paid_from",
-			"paid_to",
-			"reference_no",
-			"remarks",
 			"docstatus",
+			"posting_date",
 		],
 		filters=filters,
 		or_filters=or_filters,
@@ -323,16 +321,28 @@ def get_payment_entry_detail(name):
 		"name": doc.name,
 		"posting_date": doc.posting_date,
 		"mode_of_payment": doc.mode_of_payment,
+		"note_count": doc.note_count,
 		"paid_amount": flt(doc.paid_amount),
-		"received_amount": flt(doc.received_amount),
 		"docstatus": doc.docstatus,
-		"reference_no": doc.reference_no,
-		"remarks": doc.remarks,
 		"paid_from": doc.paid_from,
 		"paid_to": doc.paid_to,
-		"cost_center": doc.cost_center,
-		"company": doc.company,
 	}
+
+
+@frappe.whitelist()
+def cancel_payment_entry(name):
+	if not name:
+		frappe.throw(_("Payment Entry is required."))
+
+	doc = frappe.get_doc("Payment Entry", name)
+	if doc.docstatus != 1:
+		frappe.throw(_("Only submitted Payment Entry records can be cancelled."))
+	if doc.payment_type != "Internal Transfer" or not cint(doc.get("is_closing_entry")):
+		frappe.throw(_("Only Close Day payment entries can be cancelled from this screen."))
+
+	doc.flags.ignore_permissions = True
+	doc.cancel()
+	return get_payment_entry_detail(doc.name)
 
 
 @frappe.whitelist()
@@ -361,10 +371,6 @@ def get_close_day_payment_report_html(
 		"html": html,
 		"title": context.get("title"),
 	}
-
-def cancel_note_count(name):
-	doc = frappe.get_doc("Note Count", name)
-	doc.cancel()
 
 
 def _build_close_day_payment_report_context(
@@ -399,7 +405,6 @@ def _build_close_day_payment_report_context(
 		company=company,
 		cost_center=cost_center,
 	)
-	# frappe.throw(str(json.dumps(entry_summary)))
 	company_currency = frappe.get_cached_value("Company", company, "default_currency") if company else None
 	balance_cache = {}
 	rows = []
@@ -470,26 +475,26 @@ def _build_close_day_payment_report_context(
 		},
 	}
 
+
+@frappe.whitelist()
+def cancel_note_count(name):
+	if not name:
+		frappe.throw(_("Note Count is required."))
+	is_used = frappe.db.exists("Payment Entry", {"note_count": name, "docstatus": 1})
+	if is_used:
+		frappe.throw(_("Note Count {0} cannot be cancelled as it is linked to submitted Payment Entry.").format(name))
+	doc = frappe.get_doc("Note Count", name)
+	if doc.docstatus != 1:
+		frappe.throw(_("Only submitted Note Count records can be cancelled."))
+
+	# doc.flags.ignore_permissions = True
+	doc.cancel()
+	return get_note_count_detail(doc.name)
+
 def _parse_payload(doc):
 	if isinstance(doc, str):
 		return json.loads(doc)
 	return doc or {}
-
-
-def _parse_payment_entry_remarks(remarks):
-	metadata = {}
-	for part in str(remarks or "").split("|")[1:]:
-		if ":" not in part:
-			continue
-
-		key, value = part.split(":", 1)
-		metadata[key.strip().lower().replace(" ", "_")] = value.strip()
-
-	return metadata
-
-
-def _normalize_metadata_value(value):
-	return value if value and value != "-" else ""
 
 def _extract_mode_names(mode_of_payments):
 	mode_of_payments = _parse_payload(mode_of_payments)
@@ -519,18 +524,19 @@ def _get_close_day_payment_entry_summary(posting_date, pos_profile, mode_names, 
 		filters["company"] = company
 	if cost_center:
 		filters["cost_center"] = cost_center
+	if pos_profile:
+		filters["pos_profile"] = pos_profile
 	if mode_names:
 		filters["mode_of_payment"] = ("in", mode_names)
 	payment_entries = frappe.get_all(
 		"Payment Entry",
-		fields=["name", "mode_of_payment", "paid_amount", "received_amount", "remarks"],
+		fields=["name", "mode_of_payment", "paid_amount", "received_amount"],
 		filters=filters,
 		order_by="creation asc",
-		limit_page_length=max(len(mode_names or []), 1) * 20,
 	)
 
 	summary = {}
-	
+
 	for entry in payment_entries:
 		mode_of_payment = entry.get("mode_of_payment")
 		if not mode_of_payment:
@@ -642,12 +648,3 @@ def _get_mode_of_payment_meta(mode_of_payments, company=None):
 		)
 
 	return result
-def _build_payment_entry_remarks(pos_profile, posting_date, row):
-	parts = [
-		CLOSE_DAY_PAYMENT_REMARK,
-		f"POS Profile: {pos_profile}",
-		f"Posting Date: {posting_date}",
-		f"Mode of Payment: {row.get('mode_of_payment')}",
-		f"Note Count: {row.get('note_count') or '-'}",
-	]
-	return " | ".join(parts)

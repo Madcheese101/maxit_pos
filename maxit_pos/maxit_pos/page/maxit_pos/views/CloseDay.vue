@@ -16,7 +16,7 @@
 				<v-window v-model="activeTab" class="close-day-window">
 					<v-window-item value="note-count" v-if="noteCountEnabled">
 						<v-row class="close-day-content" align="stretch" dense>
-							<v-col v-show="!smAndDown || !showDetailsOnMobile" cols="12" md="4" lg="3" class="close-day-column">
+							<v-col v-show="!smAndDown || !showDetailsOnMobile" cols="12" md="5" lg="4" class="close-day-column">
 								<v-card class="close-day-panel" rounded="xl" variant="flat">
 									<v-card-item class="pb-2">
 										<div class="d-flex align-center justify-space-between gap-2 mb-2">
@@ -72,7 +72,6 @@
 											clearable
 											rounded="lg"
 											@click:prepend-inner="loadNoteCounts()"
-											@click:clear="loadNoteCounts()"
 											@keydown.enter="loadNoteCounts()"
 										/>
 									</v-card-item>
@@ -97,8 +96,8 @@
 											<v-list-item
 												v-for="entry in noteEntries"
 												:key="entry.name"
-												:title="entry.name"
-												:subtitle="entry.subtitle"
+												:title="entry.mode_of_payment"
+												:subtitle="entry.posting_date"
 												rounded="lg"
 												class="mb-1"
 												:active="selectedNoteEntryName === entry.name"
@@ -124,7 +123,7 @@
 								</v-card>
 							</v-col>
 
-							<v-col v-show="!smAndDown || showDetailsOnMobile" cols="12" md="8" lg="9" class="close-day-column">
+							<v-col v-show="!smAndDown || showDetailsOnMobile" cols="12" md="7" lg="8" class="close-day-column">
 								<v-card class="close-day-panel h-100" rounded="xl" variant="flat">
 									<v-card-item class="pb-0">
 										<div class="d-flex align-center justify-space-between flex-wrap gap-2">
@@ -237,10 +236,10 @@
 											</v-card>
 
 											<div class="actions-wrap mt-4">
-												<v-btn color="primary" variant="elevated" prepend-icon="mdi-printer" size="small" @click="print_note_count()">
+												<v-btn color="primary" variant="elevated" prepend-icon="mdi-printer" size="small" :disabled="!selectedNoteEntry?.name" @click="print_note_count()">
 													{{ __('Print') }}
 												</v-btn>
-												<v-btn color="error" variant="elevated" prepend-icon="mdi-cancel" size="small" @click="cancel_note_count()">
+												<v-btn color="error" variant="elevated" prepend-icon="mdi-cancel" size="small" :disabled="!canCancelSelectedNoteEntry" :loading="isCancellingNoteEntry" @click="cancel_note_count()">
 													{{ __('Cancel') }}
 												</v-btn>
 											</div>
@@ -253,7 +252,7 @@
 
 					<v-window-item value="payment-entry">
 						<v-row class="close-day-content" align="stretch" dense>
-							<v-col v-show="!smAndDown || !showDetailsOnMobile" cols="12" md="4" lg="3" class="close-day-column">
+							<v-col v-show="!smAndDown || !showDetailsOnMobile" cols="12" md="5" lg="4" class="close-day-column">
 								<v-card class="close-day-panel" rounded="xl" variant="flat">
 									<v-card-item class="pb-2">
 										<div class="d-flex align-center justify-space-between gap-2 mb-2">
@@ -318,7 +317,6 @@
 											clearable
 											rounded="lg"
 											@click:prepend-inner="loadPaymentEntries()"
-											@click:clear="loadPaymentEntries()"
 											@keydown.enter="loadPaymentEntries()"
 										/>
 									</v-card-item>
@@ -343,8 +341,8 @@
 											<v-list-item
 												v-for="entry in paymentEntries"
 												:key="entry.name"
-												:title="entry.name"
-												:subtitle="entry.subtitle"
+												:title="entry.mode_of_payment"
+												:subtitle="entry.posting_date"
 												rounded="lg"
 												class="mb-1"
 												:active="selectedPaymentEntryName === entry.name"
@@ -370,7 +368,7 @@
 								</v-card>
 							</v-col>
 
-							<v-col v-show="!smAndDown || showDetailsOnMobile" cols="12" md="8" lg="9" class="close-day-column">
+							<v-col v-show="!smAndDown || showDetailsOnMobile" cols="12" md="7" lg="8" class="close-day-column">
 								<v-card class="close-day-panel" rounded="xl" variant="flat">
 									<v-card-item class="pb-0">
 										<div class="d-flex align-center justify-space-between flex-wrap gap-2">
@@ -446,7 +444,6 @@
 												<v-col cols="12" md="6">
 													<div class="meta-row"><strong>{{ __('Status') }}:</strong> {{ selectedPaymentEntry.status }}</div>
 													<div class="meta-row"><strong>{{ __('Posting Date') }}:</strong> {{ selectedPaymentEntry.posting_date }}</div>
-													<div class="meta-row"><strong>{{ __('POS Profile') }}:</strong> {{ selectedPaymentEntry.pos_profile || __('Not set') }}</div>
 												</v-col>
 												<v-col cols="12" md="6">
 													<div class="meta-row"><strong>{{ __('From Account') }}:</strong> {{ selectedPaymentEntry.paid_from }}</div>
@@ -454,24 +451,19 @@
 												</v-col>
 											</v-row>
 
-											<v-card class="section-card mt-3" rounded="lg" variant="outlined">
-												<v-card-item class="pb-1">
-													<div class="text-subtitle-1 font-weight-bold">{{ __('Transfer Details') }}</div>
-												</v-card-item>
-												<v-card-text>
-													<div class="close-day-table-wrap close-day-table-wrap--lg" :style="detailsTableWrapStyle">
-														<v-data-table-virtual
-															:headers="paymentHeaders"
-															:items="selectedPaymentEntry.transfers || []"
-															item-value="mode_of_payment"
-															density="compact"
-															:height="detailsTableHeight"
-															fixed-header
-															class="close-day-table"
-														/>
-													</div>
-												</v-card-text>
-											</v-card>
+											<div class="actions-wrap mt-4">
+												<v-btn
+													color="error"
+													variant="elevated"
+													prepend-icon="mdi-cancel"
+													size="small"
+													:disabled="!canCancelSelectedPaymentEntry"
+													:loading="isCancellingPaymentEntry"
+													@click="cancel_payment_entry()"
+												>
+													{{ __('Cancel Payment Entry') }}
+												</v-btn>
+											</div>
 										</template>
 									</v-card-text>
 								</v-card>
@@ -482,7 +474,7 @@
 			</v-col>
 		</v-row>
 
-		<NoteCountDialog v-model="noteCountDialogOpen" @created="handleNoteCountCreated" :modeOfPayments="modeOfPayments" />
+		<NoteCountDialog v-model="noteCountDialogOpen" @created="handleNoteCountCreated" :modeOfPayments="modeOfPayments" :posProfile="posProfileData?.name || ''"/>
 		<PaymentEntryDialog
 			v-model="paymentEntryDialogOpen"
 			@created="handlePaymentEntriesCreated"
@@ -514,6 +506,8 @@
 	const isLoadingNoteDetail = ref(false);
 	const isLoadingPaymentList = ref(false);
 	const isLoadingPaymentDetail = ref(false);
+	const isCancellingNoteEntry = ref(false);
+	const isCancellingPaymentEntry = ref(false);
 	const noteEntries = ref([]);
 	const selectedNoteEntry = ref(null);
 	const selectedNoteEntryName = ref('');
@@ -523,7 +517,19 @@
 	const paymentEntries = ref([]);
 	const selectedPaymentEntry = ref(null);
 	const selectedPaymentEntryName = ref('');
+	const hasInitializedTab = ref(false);
 	const isMobile = computed(() => smAndDown.value);
+	const canCancelSelectedNoteEntry = computed(() => Number(selectedNoteEntry.value?.docstatus) === 1 && !isCancellingNoteEntry.value);
+	const canCancelSelectedPaymentEntry = computed(() => Number(selectedPaymentEntry.value?.docstatus) === 1 && !isCancellingPaymentEntry.value);
+	const profileContextKey = computed(() => JSON.stringify({
+		profileName: posProfileData.value?.name || '',
+		company: posProfileData.value?.company || '',
+		costCenter: posProfileData.value?.cost_center || '',
+		noteCountEnabled: !!posProfileData.value?.enable_note_count,
+		payments: (posProfileData.value?.payments || []).map((row) => row?.mode_of_payment || row?.name || ''),
+	}));
+	let suppressNoteSearchReload = false;
+	let suppressPaymentSearchReload = false;
 
 	const viewportHeightPx = computed(() => viewportHeight.value || window.innerHeight || 800);
 	const listScrollHeight = computed(() => {
@@ -566,40 +572,49 @@
 		{ title: __('Mobile No'), key: 'mobile_no' },
 	];
 
-	const paymentHeaders = [
-		{ title: __('Mode of Payment'), key: 'mode_of_payment' },
-		{ title: __('Amount'), key: 'amount' },
-		{ title: __('Note Count'), key: 'note_count' },
-		{ title: __('From Account'), key: 'paid_from' },
-		{ title: __('To Account'), key: 'paid_to' },
-	];
-
 	const closeDayEnabled = computed(() => {
-	  const roles = ['Accounts User', 'Accounts Manager', 'Administrator', 'System Manager'];
-	  return roles.some(role => frappe.user.has_role(role));
-	  });
+	const roles = ['Accounts User', 'Accounts Manager', 'Administrator', 'System Manager'];
+	return roles.some(role => frappe.user.has_role(role));
+	});
 	const noteCountEnabled = computed(() => {
-	  return closeDayEnabled.value && posProfileData.value?.enable_note_count;
-	  });
+	return closeDayEnabled.value && posProfileData.value?.enable_note_count;
+	});
 	const activeTab = ref(noteCountEnabled.value ? 'note-count' : 'payment-entry');
 	
 	watch(activeTab, () => {
 		showDetailsOnMobile.value = false;
 	});
 	watch(noteSearchTerm, (value) => {
-		if (!value) {
+		if (!value && !suppressNoteSearchReload) {
 			loadNoteCounts();
 		}
 	});
 	watch(paymentSearchTerm, (value) => {
-		if (!value) {
+		if (!value && !suppressPaymentSearchReload) {
 			loadPaymentEntries();
 		}
 	});
+	watch(profileContextKey, async () => {
+		if (!hasInitializedTab.value) {
+			activeTab.value = noteCountEnabled.value ? 'note-count' : 'payment-entry';
+			hasInitializedTab.value = true;
+		} else if (!noteCountEnabled.value && activeTab.value === 'note-count') {
+			activeTab.value = 'payment-entry';
+		}
+
+		if (!posProfileData.value?.name || !posProfileData.value?.cost_center) {
+			modeOfPayments.value = [];
+			paymentEntries.value = [];
+			selectedPaymentEntryName.value = '';
+			selectedPaymentEntry.value = null;
+			return;
+		}
+
+		await loadModeOfPayments();
+		await loadPaymentEntries();
+	}, { immediate: true });
 	onMounted(async () => {
 		await loadNoteCounts();
-        await loadModeOfPayments();
-		await loadPaymentEntries();
 	});
 
 	function getToday() {
@@ -640,23 +655,6 @@
 		return [entry?.mode_of_payment, entry?.type].filter(Boolean).join(' - ');
 	}
 
-	function parsePaymentEntryRemarks(remarks) {
-		const metadata = {};
-		for (const part of String(remarks || '').split('|').slice(1)) {
-			if (!part.includes(':')) {
-				continue;
-			}
-
-			const [key, ...rest] = part.split(':');
-			metadata[key.trim().toLowerCase().replace(/\s+/g, '_')] = rest.join(':').trim();
-		}
-		return metadata;
-	}
-
-	function normalizeMetadataValue(value) {
-		return value && value !== '-' ? value : '';
-	}
-
 	function getPaymentEntryAmount(entry) {
 		return Number(entry?.paid_amount || entry?.received_amount || entry?.amount || 0);
 	}
@@ -680,9 +678,8 @@
 			return null;
 		}
 
-		const metadata = parsePaymentEntryRemarks(entry.remarks);
-		const modeOfPayment = entry.mode_of_payment || normalizeMetadataValue(metadata.mode_of_payment);
-		const noteCount = normalizeMetadataValue(entry.reference_no || entry.note_count || metadata.note_count);
+		const modeOfPayment = entry.mode_of_payment || '';
+		const noteCount = entry.note_count || '';
 		const amount = getPaymentEntryAmount(entry);
 
 		return {
@@ -690,20 +687,16 @@
 			mode_of_payment: modeOfPayment,
 			note_count: noteCount,
 			amount,
-			pos_profile: normalizeMetadataValue(entry.pos_profile || metadata.pos_profile),
 			status: getDocstatusLabel(entry.docstatus),
 			statusColor: getDocstatusColor(entry.docstatus),
 			subtitle: [modeOfPayment, noteCount].filter(Boolean).join(' - '),
-			transfers: [
-				{
-					mode_of_payment: modeOfPayment,
-					amount,
-					note_count: noteCount,
-					paid_from: entry.paid_from,
-					paid_to: entry.paid_to,
-				},
-			],
 		};
+	}
+
+	function confirmDialog(message) {
+		return new Promise((resolve) => {
+			frappe_.confirm(message, () => resolve(true), () => resolve(false));
+		});
 	}
 
 	function openNoteCountDialog() {
@@ -797,6 +790,7 @@
 				method: 'maxit_pos.maxit_pos.page.maxit_pos.api.close_day_vue.get_note_count_list',
 				args: {
 					search_term: noteSearchTerm.value || '',
+					pos_profile: posProfileData.value?.name || '',
 				},
 			});
 
@@ -817,8 +811,13 @@
 	}
 
     async function loadModeOfPayments() {
+		if (!posProfileData.value?.name) {
+			modeOfPayments.value = [];
+			return;
+		}
+
 		try {
-			const response = await frappe.call({
+			const response = await frappe_.call({
 				method: 'maxit_pos.maxit_pos.page.maxit_pos.api.close_day_vue.get_mode_of_payments',
 				args: {
 					mode_of_payments: posProfileData.value?.payments || [],
@@ -830,6 +829,13 @@
 	}
 
 	async function loadPaymentEntries() {
+		if (!posProfileData.value?.name || !posProfileData.value?.cost_center) {
+			paymentEntries.value = [];
+			selectedPaymentEntryName.value = '';
+			selectedPaymentEntry.value = null;
+			return;
+		}
+
 		isLoadingPaymentList.value = true;
 		try {
 			const response = await frappe_.call({
@@ -837,6 +843,7 @@
 				args: {
 					search_term: paymentSearchTerm.value || '',
 					cost_center: posProfileData.value?.cost_center || '',
+					pos_profile: posProfileData.value?.name || '',
 				},
 			});
 
@@ -866,8 +873,11 @@
 		isLoadingPaymentDetail.value = true;
 		selectedPaymentEntryName.value = name;
 		try {
-			const response = await frappe.db.get_doc('Payment Entry', name);
-			selectedPaymentEntry.value = mapPaymentEntry(response);
+			const response = await frappe_.call({
+				method: 'maxit_pos.maxit_pos.page.maxit_pos.api.close_day_vue.get_payment_entry_detail',
+				args: { name },
+			});
+			selectedPaymentEntry.value = mapPaymentEntry(response.message);
 		} finally {
 			isLoadingPaymentDetail.value = false;
 		}
@@ -888,8 +898,11 @@
 		isLoadingNoteDetail.value = true;
 		selectedNoteEntryName.value = name;
 		try {
-			const response = await frappe.db.get_doc('Note Count', name);
-			selectedNoteEntry.value = mapNoteEntry(response);
+			const response = await frappe_.call({
+				method: 'maxit_pos.maxit_pos.page.maxit_pos.api.close_day_vue.get_note_count_detail',
+				args: { name },
+			});
+			selectedNoteEntry.value = mapNoteEntry(response.message);
 		} finally {
 			isLoadingNoteDetail.value = false;
 		}
@@ -902,17 +915,21 @@
 
 	async function handleNoteCountCreated(createdDoc) {
 		noteCountDialogOpen.value = false;
-			noteSearchTerm.value = '';
-			await loadNoteCounts();
-			if (createdDoc?.name) {
-				await loadNoteDetail(createdDoc.name);
-				showDetailsOnMobile.value = true;
-			}
+		suppressNoteSearchReload = true;
+		noteSearchTerm.value = '';
+		suppressNoteSearchReload = false;
+		await loadNoteCounts();
+		if (createdDoc?.name) {
+			await loadNoteDetail(createdDoc.name);
+			showDetailsOnMobile.value = true;
+		}
 	}
 
 	async function handlePaymentEntriesCreated(createdDocs) {
 		paymentEntryDialogOpen.value = false;
+		suppressPaymentSearchReload = true;
 		paymentSearchTerm.value = '';
+		suppressPaymentSearchReload = false;
 		await loadPaymentEntries();
 		const firstCreatedDoc = createdDocs?.[0];
 		if (firstCreatedDoc?.name) {
@@ -923,25 +940,90 @@
 
 	function print_note_count(){
 		const invoice = selectedNoteEntry.value?.name;
+		if (!invoice) {
+			frappe_.msgprint(__('Select a note count to print.'));
+			return;
+		}
+
 		const doctype = "Note Count";
 		const printFormat = posProfileData.value?.note_count_print_format || 'Standard';
 		const letterHead = posProfileData.value?.letter_head || 'No Letterhead';
-		// const no_letterhead = letterHead === 'No Letterhead' ? 1 : 0;
-		const no_letterhead = 1;
-		const printUrl = `/printview?doctype=${doctype}&name=${invoice}&
-format=${printFormat}&no_letterhead=${no_letterhead}&letterhead=${letterHead}&settings=%7B%7D&_lang=en&
-pdf_generator=wkhtmltopdf&trigger_print=1`;
+		const no_letterhead = letterHead === 'No Letterhead' ? '1' : '0';
+		const printUrl = `/printview?${new URLSearchParams({
+			doctype,
+			name: invoice,
+			format: printFormat,
+			no_letterhead,
+			letterhead: letterHead,
+			settings: '{}',
+			_lang: frappe_.boot?.lang || 'en',
+			pdf_generator: 'wkhtmltopdf',
+			trigger_print: '1',
+		}).toString()}`;
 		window.open(printUrl, '_blank');
 	}
-	function cancel_note_count(){
-		frappe_.call({
-			method: 'maxit_pos.maxit_pos.page.maxit_pos.api.close_day_vue.cancel_note_count',
-			args: { name: selectedNoteEntry.value?.name },
-			callback: async (response) => {
-				frappe_.msgprint(__('Note count cancelled successfully.'));
-				await loadNoteCounts();
-			},
-		});
+	async function cancel_note_count(){
+		if (!selectedNoteEntry.value?.name) {
+			frappe_.msgprint(__('Select a note count to cancel.'));
+			return;
+		}
+
+		if (!canCancelSelectedNoteEntry.value) {
+			frappe_.msgprint(__('Only submitted note counts can be cancelled.'));
+			return;
+		}
+
+		const confirmed = await confirmDialog(__('Cancel note count {0}?').replace('{0}', selectedNoteEntry.value.name));
+		if (!confirmed) {
+			return;
+		}
+
+		isCancellingNoteEntry.value = true;
+		try {
+			await frappe_.call({
+				method: 'maxit_pos.maxit_pos.page.maxit_pos.api.close_day_vue.cancel_note_count',
+				args: { name: selectedNoteEntry.value.name },
+			});
+			frappe_.show_alert({ message: __('Note count cancelled successfully.'), indicator: 'green' }, 5);
+			await loadNoteCounts();
+			showDetailsOnMobile.value = true;
+		} catch (error) {
+			frappe_.msgprint(error?.message || __('Unable to cancel note count.'));
+		} finally {
+			isCancellingNoteEntry.value = false;
+		}
+	}
+
+	async function cancel_payment_entry(){
+		if (!selectedPaymentEntry.value?.name) {
+			frappe_.msgprint(__('Select a payment entry to cancel.'));
+			return;
+		}
+
+		if (!canCancelSelectedPaymentEntry.value) {
+			frappe_.msgprint(__('Only submitted payment entries can be cancelled.'));
+			return;
+		}
+
+		const confirmed = await confirmDialog(__('Cancel payment entry {0}?').replace('{0}', selectedPaymentEntry.value.name));
+		if (!confirmed) {
+			return;
+		}
+
+		isCancellingPaymentEntry.value = true;
+		try {
+			await frappe_.call({
+				method: 'maxit_pos.maxit_pos.page.maxit_pos.api.close_day_vue.cancel_payment_entry',
+				args: { name: selectedPaymentEntry.value.name },
+			});
+			frappe_.show_alert({ message: __('Payment entry cancelled successfully.'), indicator: 'green' }, 5);
+			await loadPaymentEntries();
+			showDetailsOnMobile.value = true;
+		} catch (error) {
+			frappe_.msgprint(error?.message || __('Unable to cancel payment entry.'));
+		} finally {
+			isCancellingPaymentEntry.value = false;
+		}
 	}
 </script>
 

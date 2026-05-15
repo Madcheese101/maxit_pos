@@ -11,6 +11,7 @@
   "total",
   "amended_from",
   "column_break_vcvh",
+  "pos_profile",
   "mode_of_payment",
   "type",
   "section_break_bnnc",
@@ -84,13 +85,20 @@
    "label": "Bank",
    "mandatory_depends_on": "eval:doc.type=='Bank'",
    "options": "Bank Count"
+  },
+  {
+   "fieldname": "pos_profile",
+   "fieldtype": "Link",
+   "label": "POS Profile",
+   "options": "POS Profile",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-04-10 22:32:07.637005",
+ "modified": "2026-05-15 05:07:25.205586",
  "modified_by": "Administrator",
  "module": "MaxIT POS",
  "name": "Note Count",
