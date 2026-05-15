@@ -1,8 +1,8 @@
 <template>
-  <v-main class="orders-view pa-3 pa-md-6" v-if="purchaseEnabled">
+  <v-main class="orders-view pa-2 pa-md-4" v-if="purchaseEnabled" :style="layoutVars">
     <v-row class="orders-shell" align="stretch">
-      <v-col v-show="!isMobile || !showDetailsOnMobile" cols="12" md="4" lg="3">
-        <v-card class="orders-panel h-100" max-height="100vh" rounded="xl" variant="flat">
+      <v-col v-show="!isMobile || !showDetailsOnMobile" cols="12" md="4" lg="3" class="orders-column">
+        <v-card class="orders-panel h-100" rounded="xl" variant="flat">
           <v-card-item class="pb-2">
             <div class="d-flex align-center justify-space-between gap-2 mb-3">
               <div>
@@ -60,7 +60,7 @@
 
           <v-divider />
 
-          <v-card-text class="pt-3 px-2">
+          <v-card-text class="pt-3 px-2 orders-list-body">
             <div v-if="isLoadingList" class="px-2 py-5">
               <v-skeleton-loader type="list-item-two-line, list-item-two-line, list-item-two-line" />
             </div>
@@ -69,10 +69,10 @@
               v-else-if="invoices.length"
               lines="two"
               color="primary"
-              max-height="70vh"
               nav
               rounded="lg"
-              class="orders-list overflow-y-auto"
+              class="orders-list"
+              :style="invoiceListStyle"
               v-model:selected="selected"
             >
               <v-list-item
@@ -109,8 +109,8 @@
         </v-card>
       </v-col>
       <!-- Right Section -->
-      <v-col v-show="!isMobile || showDetailsOnMobile" cols="12" md="8" lg="9">
-        <v-card class="orders-panel h-100" max-height="90vh" rounded="xl" variant="flat">
+      <v-col v-show="!isMobile || showDetailsOnMobile" cols="12" md="8" lg="9" class="orders-column">
+        <v-card class="orders-panel h-100" rounded="xl" variant="flat">
           <v-card-item class="pb-0">
             <div class="d-flex align-center justify-space-between flex-wrap gap-3">
               <div class="d-flex align-center gap-2">
@@ -144,7 +144,7 @@
             </div>
           </v-card-item>
 
-          <v-card-text class="pt-4">
+          <v-card-text class="pt-4 details-body">
             <v-skeleton-loader
               v-if="isLoadingInvoice"
               type="table, article, article"
@@ -199,22 +199,23 @@
                 <v-card-item class="pb-1">
                   <div class="text-subtitle-1 font-weight-bold">{{ __('Items') }}</div>
                 </v-card-item>
-                <v-card-text>
-                  <v-data-table-virtual
-                    :headers="[
-                      { title: __('No.'), key: 'idx', width: '70px' },
-                      { title: __('Item Code'), key: 'item_code' },
-                      { title: __('Item Name'), key: 'item_name' },
-                      { title: __('Qty'), key: 'qty' },
-                    ]"
-                    :items="invoice.items"
-                    item-value="item_name"
-                    density="compact"
-                    height="50vh"
-                    max-height="60vh"
-                    fixed-header
-                    class="orders-table overflow-y-auto"
-                  />
+                <v-card-text class="items-section-body">
+                  <div class="items-table-wrap" :style="itemsTableWrapStyle">
+                    <v-data-table-virtual
+                      :headers="[
+                        { title: __('No.'), key: 'idx', width: '70px' },
+                        { title: __('Item Code'), key: 'item_code' },
+                        { title: __('Item Name'), key: 'item_name' },
+                        { title: __('Qty'), key: 'qty' },
+                      ]"
+                      :items="invoice.items"
+                      item-value="item_name"
+                      density="compact"
+                      :height="itemsTableHeight"
+                      fixed-header
+                      class="orders-table"
+                    />
+                  </div>
                 </v-card-text>
               </v-card>
 
@@ -270,7 +271,7 @@
   const searchTerm = ref('');
   const paymentEntries = ref([]);
   const isLoadingInvoice = ref(false);
-  const { smAndDown } = useDisplay();
+  const { smAndDown, height: viewportHeight } = useDisplay();
   const isMobile = computed(() => smAndDown.value);
   const showDetailsOnMobile = ref(false);
   const isLoadingList = ref(false);
@@ -324,6 +325,33 @@
       const roles = ['Purchase User', 'Purchase Manager', 'Administrator', 'System Manager'];
       return roles.some(role => frappe.user.has_role(role)) && posProfileData.value?.allow_purchase;
   });
+
+  const viewportHeightPx = computed(() => viewportHeight.value || window.innerHeight || 800);
+
+  const listScrollHeight = computed(() => {
+    const reserved = isMobile.value ? 230 : 260;
+    return Math.max(220, viewportHeightPx.value - reserved);
+  });
+
+  const itemsTableHeight = computed(() => {
+    const reserved = isMobile.value ? 520 : 500;
+    return Math.max(170, viewportHeightPx.value - reserved);
+  });
+
+  const layoutVars = computed(() => ({
+    '--purchase-list-scroll-height': `${listScrollHeight.value}px`,
+    '--purchase-items-table-height': `${itemsTableHeight.value}px`,
+  }));
+
+  const invoiceListStyle = computed(() => ({
+    height: 'var(--purchase-list-scroll-height)',
+    maxHeight: 'var(--purchase-list-scroll-height)',
+  }));
+
+  const itemsTableWrapStyle = computed(() => ({
+    height: 'var(--purchase-items-table-height)',
+    maxHeight: 'var(--purchase-items-table-height)',
+  }));
 
   const sync = () => {
     frappe.show_alert({
@@ -527,15 +555,63 @@
 
 <style scoped>
 .orders-view {
+  min-height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
+  height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
+  overflow: hidden;
   background:
     radial-gradient(circle at top right, rgba(25, 118, 210, 0.09), transparent 42%),
     radial-gradient(circle at left bottom, rgba(76, 175, 80, 0.08), transparent 38%);
+}
+
+.orders-shell {
+  height: 100%;
+  min-height: 0;
+}
+
+.orders-column {
+  display: flex;
+  min-height: 0;
 }
 
 .orders-panel {
   border: 1px solid rgba(120, 144, 156, 0.24);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 251, 255, 0.96));
   box-shadow: 0 10px 24px rgba(12, 28, 43, 0.08);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.orders-list-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.orders-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.details-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.items-section-body {
+  padding-top: 8px;
+}
+
+.items-table-wrap {
+  min-height: 170px;
+  overflow-y: hidden;
 }
 
 .orders-list :deep(.v-list-item--active) {
@@ -548,6 +624,13 @@
 
 .orders-table {
   border-radius: 10px;
+  height: 100%;
+}
+
+.orders-table :deep(.v-table__wrapper) {
+  height: 100%;
+  max-height: 100%;
+  overflow-y: auto;
 }
 
 .stat-card {
@@ -573,12 +656,25 @@
 
 @media (max-width: 960px) {
   .orders-view {
+    min-height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
+    height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
     padding: 10px;
   }
 
   .actions-wrap {
     display: grid;
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-height: 720px) {
+  .orders-view {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .items-table-wrap {
+    min-height: 150px;
   }
 }
 </style>

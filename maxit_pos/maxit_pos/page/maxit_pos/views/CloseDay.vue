@@ -1,8 +1,8 @@
 <template>
-	<v-main class="close-day-view pa-2 pa-md-4" v-if="closeDayEnabled">
+	<v-main class="close-day-view pa-2 pa-md-4" v-if="closeDayEnabled" :style="layoutVars">
 		<v-row class="close-day-shell" align="stretch" dense>
-			<v-col cols="12">
-				<v-card class="close-day-panel" rounded="xl" variant="flat">
+			<v-col cols="12" class="close-day-tabs-col">
+				<v-card class="close-day-panel close-day-tabs-panel" rounded="xl" variant="flat">
 					<v-card-item class="py-2 px-3 px-md-4">
 						<v-tabs v-model="activeTab" color="primary" fixed-tabs class="close-day-tabs">
 							<v-tab value="note-count" v-if="noteCountEnabled">{{ __('Note Count') }}</v-tab>
@@ -12,12 +12,12 @@
 				</v-card>
 			</v-col>
 
-			<v-col cols="12">
-				<v-window v-model="activeTab">
+			<v-col cols="12" class="close-day-main-col">
+				<v-window v-model="activeTab" class="close-day-window">
 					<v-window-item value="note-count" v-if="noteCountEnabled">
 						<v-row class="close-day-content" align="stretch" dense>
-							<v-col v-show="!smAndDown || !showDetailsOnMobile" cols="12" md="4" lg="3">
-								<v-card class="close-day-panel" rounded="xl" variant="flat" max-height="100vh">
+							<v-col v-show="!smAndDown || !showDetailsOnMobile" cols="12" md="4" lg="3" class="close-day-column">
+								<v-card class="close-day-panel" rounded="xl" variant="flat">
 									<v-card-item class="pb-2">
 										<div class="d-flex align-center justify-space-between gap-2 mb-2">
 											<div>
@@ -79,8 +79,8 @@
 
 									<v-divider />
 
-									<v-card-text class="pt-2 px-2">
-										<div v-if="isLoadingNoteList" class="px-2 py-5">
+									<v-card-text class="pt-2 px-2 close-day-list-body">
+										<div v-if="isLoadingNoteList" class="px-2 py-5 close-day-state-loader">
 											<v-skeleton-loader type="list-item-two-line, list-item-two-line, list-item-two-line" />
 										</div>
 
@@ -90,9 +90,9 @@
 											color="primary"
 											nav
 											rounded="lg"
-											class="close-day-list overflow-y-auto"
+											class="close-day-list"
 											density="compact"
-											max-height="50vh"
+											:style="entryListStyle"
 										>
 											<v-list-item
 												v-for="entry in noteEntries"
@@ -117,15 +117,15 @@
 											</v-list-item>
 										</v-list>
 
-										<v-alert v-else type="info" variant="tonal" density="compact" class="mt-2">
+										<v-alert v-else type="info" variant="tonal" density="compact" class="mt-2 close-day-state-message">
 											{{ __('No note counts found for this filter.') }}
 										</v-alert>
 									</v-card-text>
 								</v-card>
 							</v-col>
 
-							<v-col v-show="!smAndDown || showDetailsOnMobile" cols="12" md="8" lg="9">
-								<v-card class="close-day-panel h-100" rounded="xl" variant="flat" max-height="100vh">
+							<v-col v-show="!smAndDown || showDetailsOnMobile" cols="12" md="8" lg="9" class="close-day-column">
+								<v-card class="close-day-panel h-100" rounded="xl" variant="flat">
 									<v-card-item class="pb-0">
 										<div class="d-flex align-center justify-space-between flex-wrap gap-2">
 											<div class="d-flex align-center gap-2">
@@ -159,7 +159,7 @@
 										</div>
 									</v-card-item>
 
-									<v-card-text class="pt-3">
+									<v-card-text class="pt-3 close-day-details-body">
 										<v-skeleton-loader v-if="isLoadingNoteDetail" type="table, article" />
 
 										<v-alert v-else-if="!selectedNoteEntry" type="info" variant="tonal" density="compact">
@@ -210,27 +210,29 @@
 													</div>
 												</v-card-item>
 												<v-card-text>
-													<v-data-table-virtual
-														v-if="selectedNoteEntry.type === 'Cash'"
-														:headers="noteHeaders"
-														:items="selectedNoteEntry.cash || []"
-														item-value="note"
-														density="compact"
-														max-height="50vh"
-														fixed-header
-														class="close-day-table overflow-y-auto"
-													/>
+													<div v-if="selectedNoteEntry.type === 'Cash'" class="close-day-table-wrap close-day-table-wrap--lg" :style="detailsTableWrapStyle">
+														<v-data-table-virtual
+															:headers="noteHeaders"
+															:items="selectedNoteEntry.cash || []"
+															item-value="note"
+															density="compact"
+															:height="detailsTableHeight"
+															fixed-header
+															class="close-day-table"
+														/>
+													</div>
 
-													<v-data-table-virtual
-														v-else
-														:headers="bankHeaders"
-														:items="selectedNoteEntry.bank || []"
-														item-value="reference_number"
-														density="compact"
-														height="36vh"
-														fixed-header
-														class="close-day-table overflow-y-auto"
-													/>
+													<div v-else class="close-day-table-wrap close-day-table-wrap--lg" :style="detailsTableWrapStyle">
+														<v-data-table-virtual
+															:headers="bankHeaders"
+															:items="selectedNoteEntry.bank || []"
+															item-value="reference_number"
+															density="compact"
+															:height="detailsTableHeight"
+															fixed-header
+															class="close-day-table"
+														/>
+													</div>
 												</v-card-text>
 											</v-card>
 
@@ -251,8 +253,8 @@
 
 					<v-window-item value="payment-entry">
 						<v-row class="close-day-content" align="stretch" dense>
-							<v-col v-show="!smAndDown || !showDetailsOnMobile" cols="12" md="4" lg="3">
-								<v-card class="close-day-panel" rounded="xl" variant="flat" max-height="100vh">
+							<v-col v-show="!smAndDown || !showDetailsOnMobile" cols="12" md="4" lg="3" class="close-day-column">
+								<v-card class="close-day-panel" rounded="xl" variant="flat">
 									<v-card-item class="pb-2">
 										<div class="d-flex align-center justify-space-between gap-2 mb-2">
 											<div>
@@ -323,8 +325,8 @@
 
 									<v-divider />
 
-									<v-card-text class="pt-2 px-2">
-										<div v-if="isLoadingPaymentList" class="px-2 py-5">
+									<v-card-text class="pt-2 px-2 close-day-list-body">
+										<div v-if="isLoadingPaymentList" class="px-2 py-5 close-day-state-loader">
 											<v-skeleton-loader type="list-item-two-line, list-item-two-line, list-item-two-line" />
 										</div>
 
@@ -334,9 +336,9 @@
 											color="primary"
 											nav
 											rounded="lg"
-											class="close-day-list overflow-y-auto"
+											class="close-day-list"
 											density="compact"
-											max-height="50vh"
+											:style="entryListStyle"
 										>
 											<v-list-item
 												v-for="entry in paymentEntries"
@@ -361,15 +363,15 @@
 											</v-list-item>
 										</v-list>
 
-										<v-alert v-else type="info" variant="tonal" density="compact" class="mt-2">
+										<v-alert v-else type="info" variant="tonal" density="compact" class="mt-2 close-day-state-message">
 											{{ __('No payment entries found for this filter.') }}
 										</v-alert>
 									</v-card-text>
 								</v-card>
 							</v-col>
 
-							<v-col v-show="!smAndDown || showDetailsOnMobile" cols="12" md="8" lg="9">
-								<v-card class="close-day-panel" rounded="xl" variant="flat" max-height="100vh">
+							<v-col v-show="!smAndDown || showDetailsOnMobile" cols="12" md="8" lg="9" class="close-day-column">
+								<v-card class="close-day-panel" rounded="xl" variant="flat">
 									<v-card-item class="pb-0">
 										<div class="d-flex align-center justify-space-between flex-wrap gap-2">
 											<div class="d-flex align-center gap-2">
@@ -403,7 +405,7 @@
 										</div>
 									</v-card-item>
 
-									<v-card-text class="pt-3">
+									<v-card-text class="pt-3 close-day-details-body">
 										<v-skeleton-loader v-if="isLoadingPaymentDetail" type="table, article" />
 
 										<v-alert v-else-if="!selectedPaymentEntry" type="info" variant="tonal" density="compact">
@@ -457,15 +459,17 @@
 													<div class="text-subtitle-1 font-weight-bold">{{ __('Transfer Details') }}</div>
 												</v-card-item>
 												<v-card-text>
-													<v-data-table-virtual
-														:headers="paymentHeaders"
-														:items="selectedPaymentEntry.transfers || []"
-														item-value="mode_of_payment"
-														density="compact"
-														max-height="50vh"
-														fixed-header
-														class="close-day-table overflow-y-auto"
-													/>
+													<div class="close-day-table-wrap close-day-table-wrap--lg" :style="detailsTableWrapStyle">
+														<v-data-table-virtual
+															:headers="paymentHeaders"
+															:items="selectedPaymentEntry.transfers || []"
+															item-value="mode_of_payment"
+															density="compact"
+															:height="detailsTableHeight"
+															fixed-header
+															class="close-day-table"
+														/>
+													</div>
 												</v-card-text>
 											</v-card>
 										</template>
@@ -500,7 +504,7 @@
     import { usePosStore } from '../store/posStore';
 	const __ = window.__;
 	const frappe_ = window.frappe;
-	const { smAndDown } = useDisplay();
+	const { smAndDown, height: viewportHeight } = useDisplay();
     const posStore = usePosStore();
     const { posProfileData } = storeToRefs(posStore);
 	const noteSearchTerm = ref('');
@@ -519,6 +523,33 @@
 	const paymentEntries = ref([]);
 	const selectedPaymentEntry = ref(null);
 	const selectedPaymentEntryName = ref('');
+	const isMobile = computed(() => smAndDown.value);
+
+	const viewportHeightPx = computed(() => viewportHeight.value || window.innerHeight || 800);
+	const listScrollHeight = computed(() => {
+		const reserved = isMobile.value ? 320 : 300;
+		return Math.max(220, viewportHeightPx.value - reserved);
+	});
+
+	const detailsTableHeight = computed(() => {
+		const reserved = isMobile.value ? 600 : 540;
+		return Math.max(150, viewportHeightPx.value - reserved);
+	});
+
+	const layoutVars = computed(() => ({
+		'--close-day-list-scroll-height': `${listScrollHeight.value}px`,
+		'--close-day-table-height': `${detailsTableHeight.value}px`,
+	}));
+
+	const entryListStyle = computed(() => ({
+		height: 'var(--close-day-list-scroll-height)',
+		maxHeight: 'var(--close-day-list-scroll-height)',
+	}));
+
+	const detailsTableWrapStyle = computed(() => ({
+		height: 'var(--close-day-table-height)',
+		maxHeight: 'var(--close-day-table-height)',
+	}));
 
 	const noteHeaders = [
 		{ title: __('Note'), key: 'note' },
@@ -916,9 +947,52 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
 
 <style scoped>
 	.close-day-view {
+		min-height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
+		height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
+		overflow: hidden;
 		background:
 			radial-gradient(circle at top right, rgba(25, 118, 210, 0.08), transparent 40%),
 			radial-gradient(circle at left bottom, rgba(76, 175, 80, 0.07), transparent 35%);
+	}
+
+	.close-day-shell {
+		display: flex;
+		flex-direction: column;
+		flex-wrap: nowrap;
+		height: 100%;
+		min-height: 0;
+	}
+
+	.close-day-main-col {
+		flex: 1 1 auto;
+		display: flex;
+		min-height: 0;
+	}
+
+	.close-day-tabs-col {
+		flex: 0 0 auto;
+	}
+
+	.close-day-window {
+		flex: 1;
+		min-height: 0;
+	}
+
+	.close-day-window :deep(.v-window__container),
+	.close-day-window :deep(.v-window-item),
+	.close-day-window :deep(.v-window-item--active) {
+		height: 100%;
+		min-height: 0;
+	}
+
+	.close-day-content {
+		height: 100%;
+		min-height: 0;
+	}
+
+	.close-day-column {
+		display: flex;
+		min-height: 0;
 	}
 
 	.close-day-panel,
@@ -926,6 +1000,51 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
 		border: 1px solid rgba(120, 144, 156, 0.24);
 		background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(248, 251, 255, 0.97));
 		box-shadow: 0 8px 20px rgba(12, 28, 43, 0.08);
+	}
+
+	.close-day-panel {
+		width: 100%;
+		height: 100%;
+		min-height: 0;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.close-day-tabs-panel {
+		height: auto;
+		min-height: auto;
+		display: block;
+	}
+
+	.close-day-list-body {
+		flex: 1;
+		min-height: 0;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+	}
+
+	.close-day-list {
+		flex: 1;
+		min-height: 0;
+		overflow-y: auto;
+	}
+
+	.close-day-state-message,
+	.close-day-state-loader {
+		flex: 0 0 auto;
+	}
+
+	.close-day-details-body {
+		flex: 1;
+		min-height: 0;
+		overflow-y: auto;
+		overflow-x: hidden;
+	}
+
+	.close-day-table-wrap {
+		min-height: 150px;
+		overflow: hidden;
 	}
 
 	.close-day-tabs :deep(.v-tab--selected) {
@@ -942,6 +1061,13 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
 
 	.close-day-table {
 		border-radius: 10px;
+		height: 100%;
+	}
+
+	.close-day-table :deep(.v-table__wrapper) {
+		height: 100%;
+		max-height: 100%;
+		overflow-y: auto;
 	}
 
 	.stat-card,
@@ -961,12 +1087,21 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
 
 	@media (max-width: 960px) {
 		.close-day-view {
+			min-height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
+			height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
 			padding: 10px;
 		}
 
 		.actions-wrap {
 			display: grid;
 			grid-template-columns: 1fr;
+		}
+	}
+
+	@media (max-height: 720px) {
+		.close-day-view {
+			padding-top: 8px;
+			padding-bottom: 8px;
 		}
 	}
 </style>

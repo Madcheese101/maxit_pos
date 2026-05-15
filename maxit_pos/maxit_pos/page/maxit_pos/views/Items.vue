@@ -1,6 +1,6 @@
 <template>
-	<v-main class="items-view pa-3 pa-md-6">
-		<v-card rounded="xl" variant="flat" class="pa-3 pa-md-4">
+	<v-main class="items-view pa-2 pa-md-4" :style="layoutVars">
+		<v-card rounded="xl" variant="flat" class="pa-3 pa-md-4 items-filters-card">
 			<v-row dense>
 				<v-col cols="12" md="4">
 					<v-text-field
@@ -66,7 +66,7 @@
 			</v-row>
 		</v-card>
 
-		<v-card rounded="xl" variant="flat" class="mt-4">
+		<v-card rounded="xl" variant="flat" class="mt-4 items-results-card">
 			<v-card-item>
 				<div class="d-flex justify-space-between align-center flex-wrap ga-2">
 					<div>
@@ -79,12 +79,12 @@
 				</div>
 			</v-card-item>
 
-			<v-card-text>
+			<v-card-text class="items-results-body">
 				<v-alert
 					v-if="errorMessage"
 					type="error"
 					variant="tonal"
-					class="mb-3"
+					class="mb-3 items-state-message"
 				>
 					{{ errorMessage }}
 				</v-alert>
@@ -92,12 +92,14 @@
 				<v-skeleton-loader
 					v-if="isLoading"
 					type="table"
+					class="items-state-loader"
 				/>
 
 				<v-alert
 					v-else-if="!searchTerm.trim()"
 					type="info"
 					variant="tonal"
+					class="items-state-message"
 				>
 					{{ __('Type in search to load items from database.') }}
 				</v-alert>
@@ -106,37 +108,39 @@
 					v-else-if="!rawItems.length"
 					type="warning"
 					variant="tonal"
+					class="items-state-message"
 				>
 					{{ __('No items found for this search/filter combination.') }}
 				</v-alert>
 
-				<v-data-table-virtual
-					v-else
-					:headers="headers"
-					:items="rawItems"
-					item-value="item_code"
-					density="comfortable"
-					class="items-table"
-                    height="75vh"
-                    fixed-header
-				>
-					<template #item.item_name="{ item }">
-						<div class="font-weight-bold">{{ item.item_name }}</div>
-					</template>
-					<template #item.rate="{ item }">
-						<div class="font-weight-bold">{{ item.rate }} {{ item.currency }}</div>
-					</template>
-					<template #item.get_stock_btn="{ item }">
-						<v-btn
-							variant="tonal"
-							color="primary"
-							block
-							@click="getItemStock(item)"
-						>
-							{{ __('Get Stock') }}
-						</v-btn>
-					</template>
-                </v-data-table-virtual>
+				<div v-else class="items-table-wrap">
+					<v-data-table-virtual
+						:headers="headers"
+						:items="rawItems"
+						item-value="item_code"
+						density="comfortable"
+						class="items-table"
+						height="100%"
+						fixed-header
+					>
+						<template #item.item_name="{ item }">
+							<div class="font-weight-bold">{{ item.item_name }}</div>
+						</template>
+						<template #item.rate="{ item }">
+							<div class="font-weight-bold">{{ item.rate }} {{ item.currency }}</div>
+						</template>
+						<template #item.get_stock_btn="{ item }">
+							<v-btn
+								variant="tonal"
+								color="primary"
+								block
+								@click="getItemStock(item)"
+							>
+								{{ __('Get Stock') }}
+							</v-btn>
+						</template>
+					</v-data-table-virtual>
+				</div>
 
 			</v-card-text>
 		</v-card>
@@ -146,6 +150,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
+import { useDisplay } from 'vuetify';
 import { usePosStore } from '../store/posStore';
 
 const frappe_ = window.frappe;
@@ -162,6 +167,18 @@ const errorMessage = ref('');
 const searchRequestId = ref(0);
 let searchTimer = null;
 let filterTimer = null;
+const { smAndDown, height: viewportHeight } = useDisplay();
+const isMobile = computed(() => smAndDown.value);
+
+const viewportHeightPx = computed(() => viewportHeight.value || window.innerHeight || 800);
+const itemsTableHeight = computed(() => {
+	const reserved = isMobile.value ? 420 : 340;
+	return Math.max(150, viewportHeightPx.value - reserved);
+});
+
+const layoutVars = computed(() => ({
+	'--items-table-height': `${itemsTableHeight.value}px`,
+}));
 
 const baseHeaders = [
 	{ title: __('Item Code'), key: 'item_code' },
@@ -345,7 +362,72 @@ watch(
 </script>
 
 <style scoped>
+.items-view {
+	min-height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
+	height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
+	display: flex;
+	flex-direction: column;
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+
+.items-filters-card {
+	flex: 0 0 auto;
+}
+
+.items-results-card {
+	flex: 1;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+}
+
+.items-results-body {
+	flex: 1;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.items-state-message,
+.items-state-loader {
+	flex: 0 0 auto;
+}
+
+.items-table-wrap {
+	flex: 1;
+	min-height: 150px;
+	height: min(var(--items-table-height), 100%);
+	max-height: 100%;
+	overflow: hidden;
+}
+
 .items-table {
 	border-radius: 14px;
+	height: 100%;
+}
+
+.items-table :deep(.v-table__wrapper) {
+	height: 100%;
+	max-height: 100%;
+	overflow-y: auto;
+}
+
+@media (max-width: 960px) {
+	.items-view {
+		padding: 10px;
+	}
+
+	.items-table-wrap {
+		min-height: 130px;
+	}
+}
+
+@media (max-height: 720px) {
+	.items-view {
+		padding-top: 8px;
+		padding-bottom: 8px;
+	}
 }
 </style>

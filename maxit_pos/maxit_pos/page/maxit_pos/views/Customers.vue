@@ -1,8 +1,8 @@
 <template>
   <v-main class="customers-view pa-3 pa-md-6">
     <v-row class="customers-shell" align="stretch">
-      <v-col v-show="!isMobile || !showDetailsOnMobile" cols="12" md="4" lg="3">
-        <v-card class="h-100"  rounded="xl" variant="elevated">
+      <v-col v-show="!isMobile || !showDetailsOnMobile" cols="12" md="4" lg="3" class="customers-column">
+        <v-card class="h-100 customers-card customers-list-panel" rounded="xl" variant="elevated">
           <v-card-item class="pb-2">
             <div class="d-flex align-center justify-space-between gap-2 mb-3">
               <div>
@@ -29,7 +29,7 @@
 
           <v-divider />
 
-          <v-card-text class="pt-3 px-2">
+          <v-card-text class="pt-3 px-2 customers-list-body">
             <div v-if="isLoadingList" class="px-2 py-5">
               <v-skeleton-loader type="list-item-two-line, list-item-two-line, list-item-two-line" />
             </div>
@@ -73,8 +73,8 @@
         </v-card>
       </v-col>
 
-      <v-col v-show="!isMobile || showDetailsOnMobile" cols="12" md="8" lg="9">
-        <v-card class="h-100" rounded="xl" variant="elevated">
+      <v-col v-show="!isMobile || showDetailsOnMobile" cols="12" md="8" lg="9" class="customers-column">
+        <v-card class="h-100 customers-card" rounded="xl" variant="elevated">
           <v-card-item class="pb-0">
             <div class="d-flex align-center justify-space-between flex-wrap gap-3">
               <div class="d-flex align-center gap-2">
@@ -447,9 +447,48 @@ fetchCustomers();
 
 <style scoped>
 .customers-view {
+  min-height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
+  height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
+  overflow: hidden;
   background:
     radial-gradient(circle at top right, rgba(25, 118, 210, 0.09), transparent 42%),
     radial-gradient(circle at left bottom, rgba(76, 175, 80, 0.08), transparent 38%);
+}
+
+.customers-shell {
+  height: 100%;
+  min-height: 0;
+}
+
+.customers-column {
+  display: flex;
+  min-height: 0;
+}
+
+.customers-card {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.customers-list-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.customers-list-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.customers-list {
+  flex: 1;
+  min-height: 0;
+  max-height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px) - 260px);
+  overflow-y: auto;
 }
 
 .customers-panel {
@@ -474,7 +513,13 @@ fetchCustomers();
 
 @media (max-width: 960px) {
   .customers-view {
+    min-height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
+    height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
     padding: 10px;
+  }
+
+  .customers-list {
+    max-height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px) - 220px);
   }
 
   .actions-wrap {
