@@ -97,6 +97,7 @@ export const usePosStore = defineStore('posStore', () => {
             callback: (r) => {
                 if (r.exc || !r.message) return;
                 frappe.model.sync(r.message);
+                posFrm.value.doc.items = [...(r.message.items || [])];
                 posFrm.value.refresh(r.message.name);
             },
         });
