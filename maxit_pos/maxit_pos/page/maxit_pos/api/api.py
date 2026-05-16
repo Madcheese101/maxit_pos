@@ -69,6 +69,7 @@ def save_invoice_as_sales_order(invoice_name):
     # Copy other fields as needed
     sales_order.ignore_permissions = True
     sales_order.save()
+    sales_order.submit()
     return sales_order.name
 
 @frappe.whitelist()
