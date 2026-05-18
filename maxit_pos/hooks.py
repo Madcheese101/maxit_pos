@@ -260,7 +260,8 @@ override_whitelisted_methods = {
 # default_log_clearing_doctypes = {
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
-
+extend_bootinfo = "maxit_pos.boot.extend_boot_info"
+on_session_creation = "maxit_pos.login.on_session_created"
 fixtures = [
     {
         "doctype": "Custom Field",
@@ -291,7 +292,13 @@ fixtures = [
                     "Mode of Payment-custom_middle_man_account",
                     "Payment Entry-custom_note_count",
                     "Payment Entry-custom_pos_profile",
-                    "Payment Entry-custom_is_closing_entry"
+                    "Payment Entry-custom_is_closing_entry",
+                    "Branch-custom_cost_center",
+                    "Branch-custom_branch_custody_account",
+                    "Branch-custom_damaged_warehouse",
+                    "Branch-custom_transfer_warehouse",
+                    "Branch-custom_material_warehouse",
+                    "Branch-custom_column_break_19mks"
                 ]
             ]
         ]
