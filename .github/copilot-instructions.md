@@ -60,6 +60,24 @@ For multi-step tasks, state a brief plan:
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
----
+## 5. Vue Layout And Link Field Rules
 
+- For full-page Vue screens, size the root container to the usable viewport with `100dvh` minus layout offsets.
+- Use flex column layout with `min-height: 0` on the parent panel, body wrapper, and scroll wrapper so only the intended inner section scrolls.
+- For data tables that should fill remaining space, put the table inside a flex child that grows with `flex: 1` and use `fixed-header` with `height="100%"`.
+- Avoid hard-coded table heights when the page structure can determine the available height through flex layout.
+
+## 6. Frappe Link Fields In Vue
+
+- Do not create custom backend APIs just to fetch Link field options when Frappe already provides `frappe.desk.search.search_link`.
+- For Vuetify autocomplete link fields, call `frappe.desk.search.search_link` and map results to `{ value, label, description }`.
+- Keep the selected value as the real linked document name, not the display label.
+- On lookup failures, show a `frappe.msgprint` with a clear title, red indicator, and the actual error message.
+
+## 7. General Simplicity Rule
+
+- Prefer Frappe-native behavior over custom wrappers when the native API already covers the use case.
+- Avoid serializer/helper layers unless they add real business logic or prevent duplication across multiple consumers.
+
+---
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
