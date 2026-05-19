@@ -123,9 +123,7 @@
 						</template>
 
 						<template #item.expense_type="{ item }">
-							<v-btn variant="text" color="secondary" class="px-0 text-none" @click="openDoc('Expense Type', item.expense_type)">
-								{{ item.expense_type }}
-							</v-btn>
+							<span>{{ item.expense_type }}</span>
 						</template>
 
 						<template #item.amount="{ item }">
@@ -136,19 +134,6 @@
 							<v-chip size="small" :color="getStatusColor(item.docstatus)" variant="tonal">
 								{{ getStatusLabel(item.docstatus) }}
 							</v-chip>
-						</template>
-
-						<template #item.journal_entry="{ item }">
-							<v-btn
-								v-if="item.journal_entry"
-								variant="text"
-								color="secondary"
-								class="px-0 text-none"
-								@click="openDoc('Journal Entry', item.journal_entry)"
-							>
-								{{ item.journal_entry }}
-							</v-btn>
-							<span v-else>{{ __('Not Created') }}</span>
 						</template>
 
 						<template #item.actions="{ item }">
@@ -204,8 +189,7 @@
 		{ title: __('Branch'), key: 'branch' },
 		{ title: __('Amount'), key: 'amount', align: 'end' },
 		{ title: __('Status'), key: 'status' },
-		{ title: __('Journal Entry'), key: 'journal_entry' },
-		{ title: __('Actions'), key: 'actions', sortable: false, align: 'end' },
+		{ title: __('Actions'), key: 'actions', sortable: false},
 	]);
 
 	const statusOptions = computed(() => [

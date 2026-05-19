@@ -43,7 +43,6 @@ def get_expense_list(search_term="", expense_type=None, from_date=None, to_date=
 			"posting_date",
 			"branch",
 			"notes",
-			"journal_entry",
 			"docstatus",
 		],
 		filters=filters,
