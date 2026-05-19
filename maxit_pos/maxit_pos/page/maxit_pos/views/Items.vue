@@ -220,10 +220,11 @@ const headers = computed(() => {
 
 const getItemStock = async (item) => {
 	frappe.call({
-		method: 'maxit_pos.maxit_pos.page.maxit_pos.api.items_vue.get_item_stock_from_main_company',
+		method: 'maxit_pos.maxit_pos.page.maxit_pos.api.items_vue.get_item_stock_from_sister_branches',
 		args: {
 			item_code: item.item_code,
 			item_name: item.item_name || '',
+			warehouse: posProfileData.value?.warehouse || '',
 		},
 		freeze: true,
 		freeze_message: __('Getting stock...'),
