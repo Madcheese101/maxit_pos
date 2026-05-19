@@ -6,6 +6,8 @@ from frappe.model.document import Document
 
 class Expense(Document):
 	def validate(self):
+		self.set_missing_fields()
+
 		if self.amount <= 0:
 			frappe.throw("Amount must be greater than zero.")
 
@@ -35,6 +37,14 @@ class Expense(Document):
 		doc.submit()
 
 		self.db_set('journal_entry', doc.name)
+
+	def on_cancel(self):
+		if not self.journal_entry:
+			return
+
+		journal_entry = frappe.get_doc("Journal Entry", self.journal_entry)
+		if journal_entry.docstatus == 1:
+			journal_entry.cancel()
 	
 	@frappe.whitelist()
 	def set_missing_fields(self):
@@ -44,6 +54,9 @@ class Expense(Document):
 			bdoc = frappe.get_doc("Branch", branch)
 			self.branch_custody_account = bdoc.branch_custody_account
 			self.branch_cost_center = bdoc.branch_cost_center
+
+		if self.expense_type and not self.expense_type_account:
+			self.expense_type_account = frappe.db.get_value("Expense Type", self.expense_type, "account")
 		
 		if not self.branch:
 			frappe.throw("Branch is required. Please contact administrator to set default branch for your user's employee record.")
@@ -51,3 +64,5 @@ class Expense(Document):
 			frappe.throw("Branch Custody Account is required. Please contact administrator to set default branch custody account for your branch.")
 		if not self.branch_cost_center:
 			frappe.throw("Branch Cost Center is required. Please contact administrator to set default branch cost center for your branch.")
+		if not self.expense_type_account:
+			frappe.throw("Expense Type Account is required. Please set an account on the selected Expense Type.")

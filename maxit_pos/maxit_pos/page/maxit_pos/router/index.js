@@ -6,6 +6,10 @@ import Pos from '../views/Pos.vue'
 import Items from '../views/Items.vue'
 import Purchase from '../views/Purchase.vue'
 import CloseDay from '../views/CloseDay.vue'
+import Expenses from '../views/Expenses.vue'
+
+const expenseRoles = ['Expense User', 'Expense Manager']
+const hasExpenseAccess = expenseRoles.some((role) => frappe.user.has_role(role))
 
 const routes = [
   {
@@ -50,7 +54,14 @@ const routes = [
     path: '/desk/maxit-pos/close-day',
     name: 'CloseDay',
     component: CloseDay
-  }
+  },
+  ...(hasExpenseAccess
+    ? [{
+        path: '/desk/maxit-pos/expenses',
+        name: 'Expenses',
+        component: Expenses
+      }]
+    : [])
 ]
 
 const router = createRouter({

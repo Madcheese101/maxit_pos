@@ -29,6 +29,7 @@
           <v-list-item prepend-icon="mdi-account-multiple" title="Customers" color="#6b3fe7" value="customers" to="/desk/maxit-pos/customers"></v-list-item>
           <v-list-item prepend-icon="mdi-clipboard-text-clock" title="Orders" value="orders" to="/desk/maxit-pos/orders" v-if="props.showPosProfileDependent"></v-list-item>
           <v-list-item prepend-icon="mdi-cart" title="Purchase" value="purchase" to="/desk/maxit-pos/purchase" v-if="purchaseEnabled"></v-list-item>
+          <v-list-item prepend-icon="mdi-cash-minus" title="Expenses" value="expenses" to="/desk/maxit-pos/expenses" v-if="expensesEnabled"></v-list-item>
           <v-list-item prepend-icon="mdi-cash-lock" title="Close Day" value="close-day" to="/desk/maxit-pos/close-day" v-if="closeDayEnabled"></v-list-item>
           <v-list-item prepend-icon="mdi-package" title="Items" value="items" to="/desk/maxit-pos/items" v-if="props.showPosProfileDependent"></v-list-item>
         </v-list>
@@ -69,6 +70,10 @@
       const roles = ['Purchase User', 'Purchase Manager', 'Administrator', 'System Manager'];
       return roles.some(role => frappe.user.has_role(role)) && posProfileData.value?.allow_purchase;
   });
+    const expensesEnabled = computed(() => {
+      const roles = ['Expense User', 'Expense Manager'];
+      return roles.some(role => frappe.user.has_role(role));
+    });
   const closeDayEnabled = computed(() => {
       const roles = ['Accounts User', 'Accounts Manager', 'Administrator', 'System Manager'];
       return roles.some(role => frappe.user.has_role(role));
