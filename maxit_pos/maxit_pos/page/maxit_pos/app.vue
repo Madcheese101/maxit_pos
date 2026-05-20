@@ -50,4 +50,12 @@
   .main-body-container{
     background: #edf2f5;
   }
+
+  .modal-backdrop {
+    z-index: 1080 !important;
+  }
+
+  .modal {
+    z-index: 1090 !important;
+  }
   </style>

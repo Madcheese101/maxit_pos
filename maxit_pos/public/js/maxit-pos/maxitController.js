@@ -28,6 +28,12 @@ frappe.MaxItPOS.Controller = class {
         const pinia = createPinia()
         const vuetify = createVuetify({
             rtl: frappe.utils.is_rtl(),
+          defaults: {
+            VDialog: {
+              retainFocus: false,
+              zIndex: 1010,
+            },
+          },
             // theme: {
             //     defaultTheme: 'dark'
             // },

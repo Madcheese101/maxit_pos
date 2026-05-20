@@ -298,7 +298,22 @@ fixtures = [
                     "Branch-custom_damaged_warehouse",
                     "Branch-custom_transfer_warehouse",
                     "Branch-custom_material_warehouse",
-                    "Branch-custom_column_break_19mks"
+                    "Branch-custom_column_break_19mks",
+                    "Stock Entry-custom_from_branch",
+                    "Stock Entry-custom_to_branch"
+                ]
+            ]
+        ]
+    },
+    {
+        "doctype": "Property Setter",
+        "filters": [
+            [
+                "name",
+                "in",
+                [
+                    "Stock Entry-naming_series-options",
+                    "Stock Entry-naming_series-default",
                 ]
             ]
         ]
