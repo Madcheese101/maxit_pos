@@ -1,7 +1,7 @@
 {
  "actions": [],
- "allow_rename": 1,
- "autoname": "{mode_of_payment}.-.{posting_date}.-.##",
+ "allow_import": 1,
+ "autoname": "{mode_of_payment}.-.#####",
  "creation": "2026-04-10 15:50:09.394653",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -98,7 +98,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-05-15 05:07:25.205586",
+ "modified": "2026-05-23 13:57:14.788910",
  "modified_by": "Administrator",
  "module": "MaxIT POS",
  "name": "Note Count",
@@ -125,7 +125,6 @@
    "amend": 1,
    "cancel": 1,
    "create": 1,
-   "delete": 1,
    "email": 1,
    "export": 1,
    "print": 1,
@@ -156,8 +155,9 @@
  ],
  "row_format": "Dynamic",
  "rows_threshold_for_grid_search": 20,
+ "search_fields": "posting_date",
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],
- "title_field": "mode_of_payment"
+ "track_changes": 1
 }
