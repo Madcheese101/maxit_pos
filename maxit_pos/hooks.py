@@ -301,7 +301,9 @@ fixtures = [
                     "Branch-custom_material_warehouse",
                     "Branch-custom_column_break_19mks",
                     "Stock Entry-custom_from_branch",
-                    "Stock Entry-custom_to_branch"
+                    "Stock Entry-custom_to_branch",
+                    "Employee Advance-custom_branch",
+                    "Expense Claim-custom_branch",
                 ]
             ]
         ]
@@ -315,6 +317,7 @@ fixtures = [
                 [
                     "Stock Entry-naming_series-options",
                     "Stock Entry-naming_series-default",
+                    "Employee Advance-advance_account-fetch_from",
                 ]
             ]
         ]
