@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "autoname": "Expense-.#####",
  "creation": "2026-05-16 16:22:39.507437",
  "doctype": "DocType",
@@ -139,7 +140,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-05-18 22:12:30.032474",
+ "modified": "2026-05-23 13:50:16.416589",
  "modified_by": "Administrator",
  "module": "MaxIT POS",
  "name": "Expense",
@@ -222,5 +223,6 @@
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],
- "title_field": "expense_type"
+ "title_field": "expense_type",
+ "track_changes": 1
 }

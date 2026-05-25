@@ -79,5 +79,14 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - Prefer Frappe-native behavior over custom wrappers when the native API already covers the use case.
 - Avoid serializer/helper layers unless they add real business logic or prevent duplication across multiple consumers.
 
+## 8. Frappe And Vuetify Dialogs
+
+- Native Frappe/Bootstrap dialogs must always appear above Vuetify `v-dialog`s. Keep shared Vuetify `VDialog` defaults with `retainFocus: false` and a lower z-index than Frappe modals, and do not re-enable focus trapping on dialogs that may open `frappe.confirm`, `frappe.msgprint`, or other native Frappe dialogs.
+
+## 9. Inline Table Row Add Behavior
+
+- For scrollable table-style editors, add new rows inline from the table footer or last row area, and after inserting a row always scroll the table container to its bottom on the next DOM tick so the new row is immediately visible.
+
+
 ---
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.

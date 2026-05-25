@@ -5,7 +5,7 @@
             <div >
                 <v-text-field
                     density="compact"
-                    :placeholder="frappeRef._('Search')"
+                    :placeholder="__('Search')"
                     prepend-inner-icon="mdi-magnify"
                     variant="outlined"
                     hide-details
@@ -18,7 +18,7 @@
         <!-- item group filter -->
         <v-col cols="3">
             <v-select
-                :label="frappeRef._('Item Group')"
+                :label="__('Item Group')"
                 v-model="selectedItemGroup"
                 :items="item_groups"
                 variant="outlined"
@@ -35,7 +35,7 @@
                 height="40"
                 variant="tonal"
                 @click="showFiltersDialog()">
-                    {{ frappeRef._('Filter') }}{{ active_filters > 0 ? ` (${active_filters})` : '' }}
+                    {{ __('Filter') }}{{ active_filters > 0 ? ` (${active_filters})` : '' }}
             </v-btn>
             <!-- reset filters Button -->
             <v-btn  v-if="active_filters > 0"
@@ -52,14 +52,15 @@
 </template>
 
 <script setup>
-    import { ref, toRefs, computed, watch} from 'vue';
+    import { ref, watch} from 'vue';
     import _ from "lodash";
     const emit = defineEmits(['GetItems']);
     const props = defineProps(['customFilters', 'allowedItemGroups', 'posProfile']);
-    const frappeRef = ref(frappe);
+    const __ = window.__;
     const search_term = ref('');
-    const item_groups = ref([__("all")]);
-    const selectedItemGroup = ref(__("all"))
+    const allItemGroupsLabel = __('all');
+    const item_groups = ref([allItemGroupsLabel]);
+    const selectedItemGroup = ref(allItemGroupsLabel)
     const showDialog = ref(false);
     const filters = ref([]);
     const active_filters = ref(0);
@@ -125,7 +126,7 @@
             title: __('Set Filters'),
             fields: custom_fields,
             size: 'small', // small, large, extra-large 
-            primary_action_label: 'Submit',
+            primary_action_label: __('Submit'),
             primary_action(values) {
                 applyFilters(values);
                 d.hide();
@@ -136,7 +137,7 @@
     }
 
     const emit_get_items = () => {
-        const item_group = selectedItemGroup.value === __("all") 
+        const item_group = selectedItemGroup.value === allItemGroupsLabel 
             ? null : selectedItemGroup.value;
 
         emit('getItems', {

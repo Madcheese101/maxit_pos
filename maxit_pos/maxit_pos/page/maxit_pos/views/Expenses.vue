@@ -31,7 +31,7 @@
 						<v-col cols="12" md="3">
 							<v-text-field
 								v-model="searchTerm"
-								:placeholder="__('Search expense or notes')"
+								:placeholder="__('Search claim or notes')"
 								prepend-inner-icon="mdi-magnify"
 								variant="outlined"
 								density="compact"
@@ -64,6 +64,19 @@
 								item-title="title"
 								item-value="value"
 								:label="__('Status')"
+								variant="outlined"
+								density="compact"
+								hide-details
+							/>
+						</v-col>
+
+						<v-col cols="12" md="2">
+							<v-select
+								v-model="selectedViewMode"
+								:items="viewModeOptions"
+								item-title="title"
+								item-value="value"
+								:label="__('View Mode')"
 								variant="outlined"
 								density="compact"
 								hide-details
@@ -110,14 +123,14 @@
 						<v-data-table
 							:headers="headers"
 							:items="expenses"
-							item-value="name"
+							item-value="row_id"
 							:loading="isLoadingExpenses"
 							fixed-header
 							height="100%"
 							class="expenses-table"
 						>
 						<template #item.name="{ item }">
-							<v-btn variant="text" color="primary" class="px-0 text-none" @click="openDoc('Expense', item.name)">
+							<v-btn variant="text" color="primary" class="px-0 text-none" @click="openExpenseDialog(item.name)">
 								{{ item.name }}
 							</v-btn>
 						</template>
@@ -136,19 +149,6 @@
 							</v-chip>
 						</template>
 
-						<template #item.actions="{ item }">
-							<v-btn
-								size="small"
-								color="error"
-								variant="tonal"
-								prepend-icon="mdi-cancel"
-								:disabled="!canCancelExpenses || item.docstatus !== 1"
-								@click="cancelExpense(item)"
-							>
-								{{ __('Cancel') }}
-							</v-btn>
-						</template>
-
 						<template #no-data>
 							<div class="pa-6 text-medium-emphasis text-center">
 								{{ __('No expenses found for the selected filters.') }}
@@ -160,6 +160,11 @@
 			</v-card>
 
 			<ExpenseDialog v-model="expenseDialogOpen" @created="handleExpenseCreated" />
+			<ExpenseViewDialog
+				v-model="expenseViewDialogOpen"
+				:docname="selectedExpenseName"
+				@updated="handleExpenseUpdated"
+			/>
 		</template>
 	</v-main>
 </template>
@@ -167,30 +172,43 @@
 <script setup>
 	import { computed, onMounted, ref, watch } from 'vue';
 	import ExpenseDialog from './components/expenses/ExpenseDialog.vue';
+	import ExpenseViewDialog from './components/expenses/ExpenseViewDialog.vue';
 
 	const __ = window.__;
 	const frappe_ = window.frappe;
 	const expenses = ref([]);
 	const expenseDialogOpen = ref(false);
+	const expenseViewDialogOpen = ref(false);
 	const isLoadingExpenses = ref(false);
 	const isLoadingExpenseTypes = ref(false);
 	const searchTerm = ref('');
 	const selectedExpenseType = ref('');
 	const selectedStatus = ref('');
+	const selectedViewMode = ref('expanded');
+	const selectedExpenseName = ref('');
 	const fromDate = ref('');
 	const toDate = ref('');
 	const expenseTypeOptions = ref([]);
 	const expenseTypeSearch = ref('');
 
-	const headers = computed(() => [
-		{ title: __('Expense'), key: 'name' },
-		{ title: __('Expense Type'), key: 'expense_type' },
-		{ title: __('Posting Date'), key: 'posting_date' },
-		{ title: __('Branch'), key: 'branch' },
-		{ title: __('Amount'), key: 'amount', align: 'end' },
-		{ title: __('Status'), key: 'status' },
-		{ title: __('Actions'), key: 'actions', sortable: false},
-	]);
+	const headers = computed(() => {
+		const result = [
+			{ title: __('Expense Claim'), key: 'name' },
+		];
+
+		if (selectedViewMode.value !== 'grouped') {
+			result.push({ title: __('Expense Type'), key: 'expense_type' });
+		}
+
+		result.push(
+			{ title: __('Posting Date'), key: 'posting_date' },
+			{ title: __('Branch'), key: 'branch' },
+			{ title: selectedViewMode.value === 'grouped' ? __('Total Amount') : __('Amount'), key: 'amount', align: 'end' },
+			{ title: __('Status'), key: 'status' },
+		);
+
+		return result;
+	});
 
 	const statusOptions = computed(() => [
 		{ title: __('All Statuses'), value: '' },
@@ -199,18 +217,32 @@
 		{ title: __('Cancelled'), value: 'cancelled' },
 	]);
 
+	const viewModeOptions = computed(() => [
+		{ title: __('Grouped'), value: 'grouped' },
+		{ title: __('Expanded'), value: 'expanded' },
+	]);
+
 	const canViewExpenses = computed(() => {
 		const roles = ['Expense User', 'Expense Manager', 'Accounts User', 'Accounts Manager', 'Administrator', 'System Manager'];
 		return roles.some((role) => frappe_.user.has_role(role));
 	});
 
-	const canCancelExpenses = computed(() => {
-		const roles = ['Expense Manager', 'Accounts User', 'Accounts Manager', 'Administrator', 'System Manager'];
-		return roles.some((role) => frappe_.user.has_role(role));
-	});
-
 	watch(expenseTypeSearch, async (value) => {
 		await loadExpenseTypeOptions(value);
+	});
+
+	watch(selectedViewMode, async () => {
+		if (!canViewExpenses.value) {
+			return;
+		}
+
+		await getExpenses();
+	});
+
+	watch(expenseViewDialogOpen, (isOpen) => {
+		if (!isOpen) {
+			selectedExpenseName.value = '';
+		}
 	});
 
 	onMounted(async () => {
@@ -247,17 +279,13 @@
 		}
 	}
 
-	function openDoc(doctype, name) {
+	function openExpenseDialog(name) {
 		if (!name) {
 			return;
 		}
 
-		if (frappe_.set_route) {
-			frappe_.set_route('Form', doctype, name);
-			return;
-		}
-
-		window.location.href = `/app/${frappe_.router.slug(doctype)}/${name}`;
+		selectedExpenseName.value = name;
+		expenseViewDialogOpen.value = true;
 	}
 
 	async function loadExpenseTypeOptions(search = '') {
@@ -270,7 +298,7 @@
 			const response = await frappe.call({
 				method: 'frappe.desk.search.search_link',
 				args: {
-					doctype: 'Expense Type',
+					doctype: 'Expense Claim Type',
 					txt: search || '',
 					page_length: 20,
 				},
@@ -307,6 +335,7 @@
 					from_date: fromDate.value || '',
 					to_date: toDate.value || '',
 					status: selectedStatus.value || '',
+					view_mode: selectedViewMode.value,
 				},
 			});
 
@@ -317,35 +346,27 @@
 	}
 
 	function resetFilters() {
+		const willReloadFromViewMode = selectedViewMode.value !== 'expanded';
+
 		searchTerm.value = '';
 		selectedExpenseType.value = '';
 		expenseTypeSearch.value = '';
 		selectedStatus.value = '';
+		selectedViewMode.value = 'expanded';
 		fromDate.value = '';
 		toDate.value = '';
-		getExpenses();
+
+		if (!willReloadFromViewMode) {
+			getExpenses();
+		}
 	}
 
 	function handleExpenseCreated() {
 		getExpenses();
 	}
 
-	function cancelExpense(item) {
-		frappe_.confirm(
-			__('Are you sure you want to cancel this expense?'),
-			async () => {
-				await frappe.call({
-					method: 'maxit_pos.maxit_pos.page.maxit_pos.api.expenses_vue.cancel_expense',
-					args: {
-						name: item.name,
-					},
-				});
-
-				frappe_.show_alert({ message: __('Expense cancelled successfully.'), indicator: 'green' }, 5);
-				await getExpenses();
-			},
-			() => {}
-		);
+	function handleExpenseUpdated() {
+		getExpenses();
 	}
 </script>
 

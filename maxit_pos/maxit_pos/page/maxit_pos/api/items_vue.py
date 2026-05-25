@@ -32,3 +32,29 @@ def get_item_stock_from_main_company(item_code, item_name):
         frappe.msgprint(payload.get("message"))
     else:
         frappe.msgprint(_("No stock information found for item {0}").format(item_name))
+
+@frappe.whitelist()
+def get_item_stock_from_sister_branches(item_code, item_name, warehouse=None):
+    msg = ""
+    filters = {"item_code": item_code, "actual_qty": ['>', 0]}
+    if warehouse:
+        filters["warehouse"] = ["!=", warehouse]
+
+    wh_list = frappe.db.get_all('Bin',
+        fields=["warehouse","actual_qty"],
+        filters=filters,
+        order_by="actual_qty desc"
+        # as_list=True,
+        # pluck='warehouse'
+        # as_dict=True
+        )
+    if wh_list:
+        msg=msg + item_name +"<hr>" + "<ul>"
+        for wh in wh_list:
+            msg=msg+"<li>"+wh["warehouse"].replace("BC","")+"  ("+str(wh["actual_qty"])+") </li>"
+        msg = msg + "</ul><hr>"
+    
+    if msg:
+        frappe.msgprint(msg)
+    else:
+        frappe.msgprint(_("No stock information found for item {0}").format(item_name))

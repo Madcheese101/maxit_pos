@@ -49,8 +49,9 @@ app_include_js = [
 # doctype_js = {"doctype" : "public/js/doctype.js"}
 doctype_js = {
     "POS Profile" : "public/js/doctypes/pos_profile.js",
-    "Sales Invoice" : "public/js/doctypes/sales_invoice.js"
-    }
+    "Sales Invoice" : "public/js/doctypes/sales_invoice.js",
+    "Stock Entry" : "public/js/doctypes/stock_entry.js"
+}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -298,7 +299,25 @@ fixtures = [
                     "Branch-custom_damaged_warehouse",
                     "Branch-custom_transfer_warehouse",
                     "Branch-custom_material_warehouse",
-                    "Branch-custom_column_break_19mks"
+                    "Branch-custom_column_break_19mks",
+                    "Stock Entry-custom_from_branch",
+                    "Stock Entry-custom_to_branch",
+                    "Employee Advance-custom_branch",
+                    "Expense Claim-custom_branch",
+                ]
+            ]
+        ]
+    },
+    {
+        "doctype": "Property Setter",
+        "filters": [
+            [
+                "name",
+                "in",
+                [
+                    "Stock Entry-naming_series-options",
+                    "Stock Entry-naming_series-default",
+                    "Employee Advance-advance_account-fetch_from",
                 ]
             ]
         ]
