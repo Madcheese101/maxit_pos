@@ -23,7 +23,7 @@ frappe.ui.form.on('Sales Invoice Item', {
             // await frm.script_manager.trigger('update_rate', cdt, cdn);
 
             frappe.show_alert({
-                message: __(`Discount percentage cannot be greater than ${row.max_discount}%`),
+                message: __('Discount percentage cannot be greater than {0}%', [row.max_discount]),
                 indicator: 'orange'
             });
         }
