@@ -87,6 +87,26 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 - For scrollable table-style editors, add new rows inline from the table footer or last row area, and after inserting a row always scroll the table container to its bottom on the next DOM tick so the new row is immediately visible.
 
+## 10. Frappe + Vuetify RTL Rules
+
+- Treat `frappe.utils.is_rtl()` and `frappe.boot.lang` as the single source of truth for direction and language. Do not invent a second RTL toggle inside the Vue app unless explicitly required.
+- In Vuetify 3, do not rely on text translation alone and do not assume a plain `dir="rtl"` is enough. Configure RTL through Vuetify `locale.rtl` so component layout flips correctly.
+- When bootstrapping Vuetify, set `locale.locale`, `locale.fallback`, `locale.messages`, and `locale.rtl`, for example Arabic => `true`, English => `false`.
+- Wrap the app content in `v-locale-provider` with `:rtl="frappe.utils.is_rtl()"` when you need the full component tree to inherit RTL behavior consistently.
+- For navigation drawers, tabs, data tables, pagination, and windowed/tabbed views, prefer Vuetify’s built-in RTL behavior over custom CSS hacks. If drawer position must be explicit, bind its location to RTL (`right` in RTL, `left` in LTR).
+- Never hard-code physical CSS directions like `left`, `right`, `margin-left`, `padding-right`, `text-align: right`, or LTR-only selectors. Use logical CSS instead:
+  - `margin-inline-start/end`
+  - `padding-inline-start/end`
+  - `border-inline-start/end`
+  - `inset-inline-start/end`
+  - `text-align: start/end`
+- Do not hard-code LTR-only class selectors such as `.v-locale--is-ltr` for sizing or layout. Use stable component classes that work in both directions.
+- Directional icons must respect RTL. Back/forward arrows should flip based on `frappe.utils.is_rtl()`.
+- Printed documents and report templates must also follow the active locale:
+  - use the current language instead of hard-coded `_lang=en`
+  - set HTML `lang` and `dir` from the active locale
+  - prefer `text-align: start` and logical spacing in print CSS
+- When fixing RTL bugs, first verify the Vuetify bootstrap and locale configuration before patching individual components. If the sidebar, tabs, and tables are all still LTR, the root RTL setup is probably wrong.
 
 ---
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
