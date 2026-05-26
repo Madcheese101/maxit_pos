@@ -130,7 +130,7 @@
 											<div class="d-flex align-center gap-2">
 												<v-btn
 													v-if="smAndDown"
-													icon="mdi-arrow-left"
+													:icon="backIcon"
 													variant="text"
 													size="small"
 													@click="showDetailsOnMobile = false"
@@ -375,7 +375,7 @@
 											<div class="d-flex align-center gap-2">
 												<v-btn
 													v-if="smAndDown"
-													icon="mdi-arrow-left"
+													:icon="backIcon"
 													variant="text"
 													size="small"
 													@click="showDetailsOnMobile = false"
@@ -499,6 +499,7 @@
 	const { smAndDown, height: viewportHeight } = useDisplay();
     const posStore = usePosStore();
     const { posProfileData } = storeToRefs(posStore);
+    const { isAppRTL } = posStore;
 	const noteSearchTerm = ref('');
 	const paymentSearchTerm = ref('');
 	const showDetailsOnMobile = ref(false);
@@ -519,6 +520,7 @@
 	const selectedPaymentEntryName = ref('');
 	const hasInitializedTab = ref(false);
 	const isMobile = computed(() => smAndDown.value);
+	const backIcon = computed(() => isAppRTL() ? 'mdi-arrow-right' : 'mdi-arrow-left');
 	const canCancelSelectedNoteEntry = computed(() => Number(selectedNoteEntry.value?.docstatus) === 1 && !isCancellingNoteEntry.value);
 	const canCancelSelectedPaymentEntry = computed(() => Number(selectedPaymentEntry.value?.docstatus) === 1 && !isCancellingPaymentEntry.value);
 	const profileContextKey = computed(() => JSON.stringify({

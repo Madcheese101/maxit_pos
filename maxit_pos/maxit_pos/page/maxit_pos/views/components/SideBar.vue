@@ -1,5 +1,6 @@
 <template>
     <v-navigation-drawer
+        :location="isAppRTL() ? 'right' : 'left'"
         rail
         mobile-breakpoint="xs"
       >
@@ -13,7 +14,7 @@
                   <v-img v-if="user.avatar" :src="user.avatar" :alt="user.full_name"></v-img>
                   <span v-else class="text-caption font-weight-bold">{{ userInitials }}</span>
                 </v-avatar>
-                <div class="ml-2 user-meta">
+                <div class="ms-2 user-meta">
                   <div class="text-body-2 font-weight-medium text-truncate">{{ user.full_name }}</div>
                   <div class="text-caption text-medium-emphasis text-truncate">{{ user.email }}</div>
                 </div>
@@ -66,7 +67,7 @@
   const props = defineProps(['showPosProfileDependent']);
   const posStore = usePosStore();
   const { pos_opening, posProfileData } = storeToRefs(posStore);
-  const { close_pos } = posStore;
+  const { close_pos, isAppRTL } = posStore;
   const purchaseEnabled = computed(() => {
       const roles = ['Purchase User', 'Purchase Manager', 'Administrator', 'System Manager'];
       return roles.some(role => frappe.user.has_role(role)) && posProfileData.value?.allow_purchase;

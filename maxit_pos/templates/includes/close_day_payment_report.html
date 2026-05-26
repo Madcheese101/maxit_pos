@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="{{ report_lang }}" dir="{{ report_dir }}">
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
@@ -30,8 +30,8 @@
 			margin: 0;
 			font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
 			color: var(--title-text);
-			direction: rtl;
-			text-align: right;
+			direction: {{ report_dir }};
+			text-align: start;
 			background: #eef3f8;
 			-webkit-print-color-adjust: exact;
 			print-color-adjust: exact;
@@ -103,9 +103,9 @@
 		.report-title-block {
 			flex: 1 1 30%;
 			min-width: 0;
-			padding-left: 24px;
+			padding-inline-start: 24px;
 			margin-bottom: 12px;
-			text-align: right;
+			text-align: start;
 		}
 
 		.eyebrow {
@@ -235,7 +235,7 @@
 		}
 
 		.table-heading > div:first-child {
-			padding-left: 16px;
+			padding-inline-start: 16px;
 		}
 
 		.table-title {
@@ -261,7 +261,7 @@
 			width: 100%;
 			border-collapse: collapse;
 			table-layout: fixed;
-			direction: rtl;
+			direction: {{ report_dir }};
 		}
 
 		.report-table thead th {
@@ -271,7 +271,7 @@
 			line-height: 1.35;
 			letter-spacing: 0.06em;
 			text-transform: uppercase;
-			text-align: right;
+			text-align: start;
 			white-space: normal;
 			background: #edf3fa;
 			border-bottom: 1px solid var(--border-color);
@@ -302,7 +302,7 @@
 		}
 
 		.number-cell {
-			text-align: right;
+			text-align: end;
 			white-space: nowrap;
 			font-variant-numeric: tabular-nums;
 		}
@@ -369,12 +369,11 @@
 			.table-section,
 			.report-footer,
 			.summary-grid {
-				padding-left: 16px;
-				padding-right: 16px;
+				padding-inline: 16px;
 			}
 
 			.report-title-block {
-				padding-left: 0;
+				padding-inline-start: 0;
 			}
 
 			.meta-card-mode,

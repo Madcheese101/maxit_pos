@@ -25,6 +25,40 @@ export const usePosStore = defineStore('posStore', () => {
     const reactivePaidAmount = ref(0);
     const reactiveOutstandingAmount = ref(0);
 
+    const getAppLanguage = () => {
+        return frappe.boot?.lang || frappe.boot?.user?.language || 'en';
+    }
+
+    const isAppRTL = () => {
+        return frappe.utils.is_rtl();
+    }
+
+    const getAppDirection = () => {
+        return isAppRTL() ? 'rtl' : 'ltr';
+    }
+
+    const buildPrintViewUrl = ({
+        doctype,
+        name,
+        format = 'Standard',
+        no_letterhead = 1,
+        letterhead = 'No Letterhead',
+        settings = '{}',
+    }) => {
+        const params = new URLSearchParams({
+            doctype,
+            name,
+            format,
+            no_letterhead: String(no_letterhead),
+            letterhead,
+            settings,
+            _lang: getAppLanguage(),
+            pdf_generator: 'wkhtmltopdf',
+            trigger_print: '1',
+        });
+        return `/printview?${params.toString()}`;
+    }
+
     // actions
     const set_pos_profile_data = () => {
 		if (posProfileData.value.company && !posFrm.value.doc.company) posFrm.value.doc.company = posProfileData.value.company;
@@ -370,6 +404,10 @@ export const usePosStore = defineStore('posStore', () => {
         reactiveTotalQty,
         reactivePaidAmount,
         reactiveOutstandingAmount,
+        getAppLanguage,
+        isAppRTL,
+        getAppDirection,
+        buildPrintViewUrl,
         // company,
         pos_opening,
         close_pos,

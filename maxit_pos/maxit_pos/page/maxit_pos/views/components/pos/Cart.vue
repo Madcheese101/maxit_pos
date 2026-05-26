@@ -198,7 +198,7 @@
     .cart-scroll-container {
         max-height: 55vh;
         overflow-y: auto;
-        padding-right: 4px;
+        padding-inline-end: 4px;
     }
 
     .cart-table {
@@ -226,13 +226,13 @@
     }
 
     .cart-table :deep(tbody tr:not(.cart-expanded-row) td:first-child) {
-        border-left: 1px solid rgba(120, 144, 156, 0.2);
+        border-inline-start: 1px solid rgba(120, 144, 156, 0.2);
         border-top-left-radius: 12px;
         border-bottom-left-radius: 12px;
     }
 
     .cart-table :deep(tbody tr:not(.cart-expanded-row) td:last-child) {
-        border-right: 1px solid rgba(120, 144, 156, 0.2);
+        border-inline-end: 1px solid rgba(120, 144, 156, 0.2);
         border-top-right-radius: 12px;
         border-bottom-right-radius: 12px;
     }
@@ -280,14 +280,14 @@
     .cart-table :deep(.v-btn--icon.v-data-table-expand__content) {
         color: rgba(60, 75, 90, 0.76);
     }
-    .v-input.v-input--horizontal.v-input--center-affix.v-input--density-compact.v-theme--light.v-locale--is-ltr.v-input--dirty.v-text-field.v-number-input.cart-qty-input {
+    .cart-qty-input {
         width: 5vw;
     }
     td.v-data-table__td.v-data-table-column--no-padding.v-data-table-column--align-start.v-data-table__td--expanded-row {
         display: none;
     }
     @media (max-width: 960px) {
-        .v-input.v-input--horizontal.v-input--center-affix.v-input--density-compact.v-theme--light.v-locale--is-ltr.v-input--dirty.v-text-field.v-number-input.cart-qty-input {
+        .cart-qty-input {
             width: 5vw;
         }
     }

@@ -141,6 +141,7 @@
 
 <script setup>
 	import { computed, ref, watch } from 'vue';
+	import { usePosStore } from '../../../store/posStore';
 
 	const props = defineProps({
 		modelValue: {
@@ -157,6 +158,7 @@
 
 	const __ = window.__;
 	const frappe_ = window.frappe;
+	const { buildPrintViewUrl } = usePosStore();
 	const doc = ref(null);
 	const isLoading = ref(false);
 	const isSubmitting = ref(false);
@@ -234,7 +236,13 @@
 			return;
 		}
 
-		const printUrl = `/printview?doctype=${encodeURIComponent('Expense Claim')}&name=${encodeURIComponent(doc.value.name)}&format=Standard&no_letterhead=1&letterhead=No%20Letterhead&settings=%7B%7D&_lang=en&pdf_generator=wkhtmltopdf&trigger_print=1`;
+		const printUrl = buildPrintViewUrl({
+			doctype: 'Expense Claim',
+			name: doc.value.name,
+			format: 'Standard',
+			no_letterhead: 1,
+			letterhead: 'No Letterhead',
+		});
 		window.open(printUrl, '_blank');
 	}
 

@@ -10,7 +10,7 @@
             <v-chip
                 :color="props.item.actual_qty > 0 ? '#e4f5e9' : '#fff0f0'"
                 variant="flat"
-                class="position-absolute top-0 right-0 mr-2 mt-2"
+                class="position-absolute top-0 mt-2 stock-chip"
             >
             {{ props.item.actual_qty }}
             </v-chip>
@@ -28,3 +28,9 @@
 <script setup>
     const props = defineProps(['item']);
 </script>
+
+<style scoped>
+    .stock-chip {
+        inset-inline-end: 8px;
+    }
+</style>

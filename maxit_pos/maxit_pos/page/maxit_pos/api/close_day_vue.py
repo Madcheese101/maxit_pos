@@ -31,6 +31,8 @@ def get_note_count_options(posting_date=None, mode_of_payments=None):
 
 	return [
 		{
+		"report_lang": frappe.local.lang or "en",
+		"report_dir": "rtl" if is_rtl() else "ltr",
 			"name": row.get("name"),
 			"posting_date": row.get("posting_date"),
 			"mode_of_payment": row.get("mode_of_payment"),

@@ -157,8 +157,7 @@
 
   .item-rows-header,
   .item-row :deep(.v-list-item__content) {
-    padding-left: 12px;
-    padding-right: 12px;
+    padding-inline: 12px;
   }
 
   .item-row-name,

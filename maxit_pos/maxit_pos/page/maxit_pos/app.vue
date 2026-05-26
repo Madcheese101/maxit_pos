@@ -6,24 +6,26 @@
         class="justify-center"
         indeterminate
     ></v-progress-circular> -->
-    <v-app>
-      <!-- sidebar -->
-      <SideBar :showPosProfileDependent="showPosProfileDependent"/>
-      <!-- Pages Views Container -->
-      <v-main class="main-body-container">
-          <router-view/>
-      </v-main>
-      <v-dialog
-        v-model="isLoading"
-        max-width="100"
-        persistent>
-        <v-progress-circular
-          :size="50"
-          :width="7"
-          indeterminate
-          color="cyan-accent-2"
-        ></v-progress-circular>
-      </v-dialog>
+    <v-app :dir="getAppDirection()">
+      <v-locale-provider :rtl="isAppRTL()">
+        <!-- sidebar -->
+        <SideBar :showPosProfileDependent="showPosProfileDependent"/>
+        <!-- Pages Views Container -->
+        <v-main class="main-body-container">
+            <router-view/>
+        </v-main>
+        <v-dialog
+          v-model="isLoading"
+          max-width="100"
+          persistent>
+          <v-progress-circular
+            :size="50"
+            :width="7"
+            indeterminate
+            color="cyan-accent-2"
+          ></v-progress-circular>
+        </v-dialog>
+      </v-locale-provider>
     </v-app>
   </template>
   
@@ -37,7 +39,7 @@
     const props = defineProps(['posProfileData', 'appDefaults']);
     const posStore = usePosStore();
     const {posProfileData} = storeToRefs(posStore);
-    const {setAppDefaults, make_new_invoice} = posStore;
+    const {setAppDefaults, make_new_invoice, getAppDirection, isAppRTL} = posStore;
     const showPosProfileDependent = ref(props.posProfileData ? true : false);
 
     setAppDefaults(props.posProfileData, props.appDefaults)

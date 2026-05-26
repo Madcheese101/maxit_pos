@@ -373,15 +373,15 @@
 
 	.transfer-col-actions {
 		width: 88px;
-		text-align: right;
+		text-align: end;
 	}
 
 	.transfer-add-row-cell {
 		border-top: 1px dashed rgba(120, 144, 156, 0.28);
-		text-align: left;
+		text-align: start;
 	}
 
 	.transfer-add-row-btn {
-		margin-left: -8px;
+		margin-inline-start: -8px;
 	}
 </style>

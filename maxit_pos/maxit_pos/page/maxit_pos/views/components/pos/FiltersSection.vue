@@ -42,7 +42,7 @@
                 color="error"
                 density="comfortable"
                 icon="mdi-filter-remove"
-                class="ml-2"
+                class="ms-2"
                 @click="reset_filters()"
                 variant="tonal"></v-btn>
                 

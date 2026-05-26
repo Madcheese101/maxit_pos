@@ -84,7 +84,7 @@
               <div class="d-flex align-center gap-2">
                 <v-btn
                   v-if="isMobile"
-                  icon="mdi-arrow-left"
+                  :icon="backIcon"
                   variant="text"
                   size="small"
                   @click="showDetailsOnMobile = false"
@@ -334,7 +334,8 @@
     const showDetailsOnMobile = ref(false);
     const posStore = usePosStore();
     const {pos_profile, posProfileData} = storeToRefs(posStore);
-    const {edit_invoice, process_return} = posStore;
+    const {edit_invoice, process_return, buildPrintViewUrl, isAppRTL} = posStore;
+    const backIcon = computed(() => isAppRTL() ? 'mdi-arrow-right' : 'mdi-arrow-left');
 
     const getStatusColor = (status, docstatus) => {
       const normalizedStatus = (status || '').toLowerCase();
@@ -430,7 +431,13 @@
       const printFormat = posProfileData.value?.payment_entry_print_format || 'Standard';
       const letterHead = posProfileData.value?.letter_head || 'No Letterhead';
       const no_letterhead = letterHead === 'No Letterhead' ? 1 : 0;
-      const printUrl = `/printview?doctype=Payment%20Entry&name=${paymentEntryId}&format=${printFormat}&no_letterhead=${no_letterhead}&letterhead=${letterHead}&settings=%7B%7D&_lang=en&pdf_generator=wkhtmltopdf&trigger_print=1`;
+      const printUrl = buildPrintViewUrl({
+        doctype: 'Payment Entry',
+        name: paymentEntryId,
+        format: printFormat,
+        no_letterhead,
+        letterhead: letterHead,
+      });
       window.open(printUrl, '_blank');
     };
 
@@ -439,7 +446,13 @@
       const printFormat = posProfileData.value?.print_format || 'Standard';
       const letterHead = posProfileData.value?.letter_head || 'No Letterhead';
       const no_letterhead = letterHead === 'No Letterhead' ? 1 : 0;
-      const printUrl = `/printview?doctype=${doctype}&name=${invoice.value.name}&format=${printFormat}&no_letterhead=${no_letterhead}&letterhead=${letterHead}&settings=%7B%7D&_lang=en&pdf_generator=wkhtmltopdf&trigger_print=1`;
+      const printUrl = buildPrintViewUrl({
+        doctype,
+        name: invoice.value.name,
+        format: printFormat,
+        no_letterhead,
+        letterhead: letterHead,
+      });
       window.open(printUrl, '_blank');
     };
 

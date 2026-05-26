@@ -79,7 +79,7 @@
 											hide-details="auto"
 											:min="0"
 											:readonly="noteCountEnabled"
-											class="amount-input ml-auto py-1"
+											class="amount-input ms-auto py-1"
 											@update:model-value="updateAmount(index, $event)"
 										/>
 									</template>

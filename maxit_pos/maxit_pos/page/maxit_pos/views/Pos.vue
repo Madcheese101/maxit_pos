@@ -13,7 +13,7 @@
   
   const posStore = usePosStore();
   const {posProfileData, pos_profile, pos_opening, posFrm} = storeToRefs(posStore);
-  const {make_new_invoice, update_cart, edit_invoice, setPosOpening, sales_order_to_invoice} = posStore;
+  const {make_new_invoice, update_cart, edit_invoice, setPosOpening, sales_order_to_invoice, buildPrintViewUrl} = posStore;
   // Local State
   const activeTab = ref('pos')
   const customerSearch = ref('')
@@ -215,9 +215,13 @@
     const printFormat = posProfileData.value?.print_format || 'Standard';
     const letterHead = posProfileData.value?.letter_head || 'No Letterhead';
     const no_letterhead = letterHead === 'No Letterhead' ? 1 : 0;
-    const printUrl = `/printview?doctype=${doctype}&name=${invoice}&
-format=${printFormat}&no_letterhead=${no_letterhead}&letterhead=${letterHead}&settings=%7B%7D&_lang=en&
-pdf_generator=wkhtmltopdf&trigger_print=1`;
+    const printUrl = buildPrintViewUrl({
+      doctype,
+      name: invoice,
+      format: printFormat,
+      no_letterhead,
+      letterhead: letterHead,
+    });
     window.open(printUrl, '_blank');
   }
 
@@ -444,7 +448,7 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
               class="pos-tabs"
             >
               <v-tab value="pos">{{ __('POS') }}
-                <v-chip v-if="isReturnInvoice" class="ml-1" size="x-small" density="comfortable" color="error" variant="tonal">
+                <v-chip v-if="isReturnInvoice" class="ms-1" size="x-small" density="comfortable" color="error" variant="tonal">
                   {{ __('Return') }}
                 </v-chip>
               </v-tab>

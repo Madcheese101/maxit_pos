@@ -4,6 +4,7 @@ import router from '../../../maxit_pos/page/maxit_pos/router';
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
+import { ar, en } from 'vuetify/locale'
 import { VDateInput } from 'vuetify/labs/VDateInput'
 import { VNumberInput } from 'vuetify/labs/VNumberInput'
 import { createApp } from "vue";
@@ -25,9 +26,19 @@ frappe.MaxItPOS.Controller = class {
         $('.body-sidebar-container').remove();
         $('.body-sidebar-container').removeClass('expanded');
         this.$el = this.$wrapper.get(0);
+        const appLanguage = (frappe.boot?.lang || 'en').toLowerCase();
+        const vuetifyLocale = appLanguage.startsWith('ar') ? 'ar' : 'en';
         const pinia = createPinia()
         const vuetify = createVuetify({
-            rtl: frappe.utils.is_rtl(),
+          locale: {
+            locale: vuetifyLocale,
+            fallback: 'en',
+            messages: { ar, en },
+            rtl: {
+              ar: true,
+              en: false,
+            },
+          },
           defaults: {
             VDialog: {
               retainFocus: false,

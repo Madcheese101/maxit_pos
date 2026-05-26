@@ -80,7 +80,7 @@
               <div class="d-flex align-center gap-2">
                 <v-btn
                   v-if="isMobile"
-                  icon="mdi-arrow-left"
+                  :icon="backIcon"
                   variant="text"
                   size="small"
                   @click="showDetailsOnMobile = false"
@@ -254,6 +254,7 @@ const router = useRouter();
 const { smAndDown } = useDisplay();
 
 const isMobile = computed(() => smAndDown.value);
+const backIcon = computed(() => frappe.utils.is_rtl() ? 'mdi-arrow-right' : 'mdi-arrow-left');
 const showDetailsOnMobile = ref(false);
 
 const customers = ref([]);

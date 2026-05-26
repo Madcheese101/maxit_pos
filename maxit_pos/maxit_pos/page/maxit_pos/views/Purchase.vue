@@ -116,7 +116,7 @@
               <div class="d-flex align-center gap-2">
                 <v-btn
                   v-if="isMobile"
-                  icon="mdi-arrow-left"
+                  :icon="backIcon"
                   variant="text"
                   size="small"
                   @click="showDetailsOnMobile = false"
@@ -279,6 +279,8 @@
   let isSyncRealtimeBound = false;
   const posStore = usePosStore();
   const {pos_profile, posProfileData} = storeToRefs(posStore);
+  const { buildPrintViewUrl, isAppRTL } = posStore;
+  const backIcon = computed(() => isAppRTL() ? 'mdi-arrow-right' : 'mdi-arrow-left');
 
   const syncRealtimeHandler = (data) => {
     if (!data || !syncJobId.value || data.job_id !== syncJobId.value) return;
@@ -516,7 +518,13 @@
   const printInvoice = () => {
     const doctype = "Purchase Receipt";
     const printFormat = posProfileData.value?.purchase_receipt_print_format || 'Standard';
-    const printUrl = `/printview?doctype=${doctype}&name=${invoice.value.name}&format=${printFormat}&no_letterhead=1&letterhead=No%20Letterhead&settings=%7B%7D&_lang=en&pdf_generator=wkhtmltopdf&trigger_print=1`;
+    const printUrl = buildPrintViewUrl({
+      doctype,
+      name: invoice.value.name,
+      format: printFormat,
+      no_letterhead: 1,
+      letterhead: 'No Letterhead',
+    });
     window.open(printUrl, '_blank');
   };
 

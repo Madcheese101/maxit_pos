@@ -1,7 +1,7 @@
 <template>
     <VCard rounded="lg" class="ma-auto">
       <!-- Card Header -->
-      <VRow dense align="center" justify="center" class="ml-3 mt-3 mb-4 mr-1">
+      <VRow dense align="center" justify="center" class="ms-3 mt-3 mb-4 me-1">
         <!-- Card Title -->
         <VCol cols="5">
           <div class="font-weight-bold text-h6 ms-1 mb-2">{{ listType }}</div>
@@ -13,11 +13,11 @@
         </VCol>
         <!-- DatePicker Period Button -->
         <VCol>
-          <v-btn border class="text-none pl-0" text="Select Period"
+          <v-btn border class="text-none ps-0" text="Select Period"
             prepend-icon="mdi-calendar-range" rounded="lg"
             block size="smal" variant="flat" min-height="25"
           >
-            <div class="pl-1">Select Period</div>
+            <div class="ps-1">Select Period</div>
             <!-- DatePicker Menu -->
             <v-menu :close-on-content-click="false" 
             activator="parent" v-model="menu" @click:outside="menuClosed">
@@ -53,7 +53,7 @@
                   <span class="text-h5">{{ get_intials(item.customer) }}</span>
                 </v-avatar>
             </VCol>
-              <VCol class="pl-0">
+              <VCol class="ps-0">
                 <div class="v-list-item-title font-weight-semi-bold">{{ item.customer }}</div>
                 <div class="v-list-item-subtitle">
                   <div>{{ item.email }}</div>
@@ -204,13 +204,13 @@
   }
   .period-container{
     border: 1px #dadee1 solid;
-    border-right: 0px;
-    border-left: 0px;
+    border-inline-end: 0px;
+    border-inline-start: 0px;
     background: #edf2f5;
   }
   .period-text{
     padding: 2px;
-    margin-left: 20px;
+    margin-inline-start: 20px;
   }
   .v-list-item:last-child{
     border-bottom: 0px !important;
