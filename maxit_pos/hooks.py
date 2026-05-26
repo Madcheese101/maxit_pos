@@ -321,7 +321,19 @@ fixtures = [
                 ]
             ]
         ]
-    }
+    },
+    {
+        "doctype": "Custom DocPerm",
+        "filters": {
+            "parent": [
+                "in",
+                [
+                    "POS Closing Entry", 
+                    "POS Opening Entry",
+                ]
+            ]
+        }
+    },
 ]
 
 from maxit_pos.overrides import override_methods
