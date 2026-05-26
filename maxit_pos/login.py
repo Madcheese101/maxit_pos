@@ -1,7 +1,12 @@
 import frappe
 
 def on_session_created(login_manager):
-    branch, expense_approver, company = frappe.db.get_value("Employee", {"user_id": login_manager.user}, ["branch", "expense_approver", "company"])
+    branch = None
+    expense_approver = None
+    company = None
+    empl_exists = frappe.db.exists("Employee", {"user_id": login_manager.user})
+    if empl_exists:
+        branch, expense_approver, company = frappe.db.get_value("Employee", {"user_id": login_manager.user}, ["branch", "expense_approver", "company"])
     # Adding data to the session  
     frappe.session.data["user_branch"] = branch
     frappe.session.data["expense_approver"] = expense_approver
