@@ -1,8 +1,10 @@
 <template>
 	<v-main class="stock-entry-view pa-3 pa-md-6">
-		<v-alert v-if="!stockEntryEnabled" type="warning" variant="tonal">
-			{{ __('You do not have permission to manage stock transfers.') }}
-		</v-alert>
+		<div v-if="!stockEntryEnabled" class="stock-entry-disabled-state">
+			<v-alert type="warning" variant="tonal">
+				{{ __('You do not have permission to manage stock transfers.') }}
+			</v-alert>
+		</div>
 
 		<template v-else>
 			<v-card class="stock-entry-panel mb-2" rounded="xl" variant="flat">
@@ -252,8 +254,8 @@
 	]);
 
 	const stockEntryEnabled = computed(() => {
-		const roles = ['Purchase User', 'Purchase Manager', 'Administrator', 'System Manager'];
-		return roles.some((role) => frappe_.user.has_role(role)) && posProfileData.value?.allow_purchase;
+		const roles = ['Stock User', 'Stock Manager', 'Administrator', 'System Manager'];
+		return roles.some((role) => frappe_.user.has_role(role));
 	});
 
 	onMounted(async () => {
@@ -452,6 +454,11 @@
 		border: 1px solid rgba(120, 144, 156, 0.24);
 		background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 251, 255, 0.97));
 		box-shadow: 0 10px 24px rgba(12, 28, 43, 0.08);
+	}
+
+	.stock-entry-disabled-state {
+		align-self: flex-start;
+		width: min(100%, 520px);
 	}
 
 	.stock-entry-table-panel {

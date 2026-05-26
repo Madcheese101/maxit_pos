@@ -38,8 +38,8 @@
             <template #title>
               <div class="item-row-grid">
                 <span class="item-row-name">{{ item.item_name }}</span>
-                <span class="item-row-value">QTY: {{ item.actual_qty ?? 0 }} / {{ item.uom }}</span>
-                <span class="item-row-value item-row-rate">{{ item.price_list_rate ?? 0 }} {{item.currency || ''}}</span>
+                <span class="item-row-value">{{ __('QTY:') }} {{ item.actual_qty ?? 0 }} / {{ item.uom }}</span>
+                <span class="item-row-value item-row-rate">{{ __('Rate:') }} {{ item.price_list_rate ?? 0 }} {{item.currency || ''}}</span>
               </div>
             </template>
           </v-list-item>
