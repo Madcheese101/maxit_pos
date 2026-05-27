@@ -184,6 +184,12 @@
 	</v-main>
 </template>
 
+<script>
+export default {
+	name: 'Items',
+};
+</script>
+
 <script setup>
 import { computed, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';

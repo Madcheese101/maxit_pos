@@ -12,7 +12,11 @@
         <SideBar :showPosProfileDependent="showPosProfileDependent"/>
         <!-- Pages Views Container -->
         <v-main class="main-body-container">
-            <router-view/>
+            <router-view v-slot="{ Component }">
+              <keep-alive include="Items">
+                <component :is="Component" />
+              </keep-alive>
+            </router-view>
         </v-main>
         <v-dialog
           v-model="isLoading"
