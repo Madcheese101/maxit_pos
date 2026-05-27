@@ -1035,8 +1035,8 @@
 		height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
 		overflow: hidden;
 		background:
-			radial-gradient(circle at top right, rgba(25, 118, 210, 0.08), transparent 40%),
-			radial-gradient(circle at left bottom, rgba(76, 175, 80, 0.07), transparent 35%);
+			radial-gradient(circle at top right, var(--v-pos-info-glow), transparent 40%),
+			radial-gradient(circle at left bottom, var(--v-pos-success-glow), transparent 35%);
 	}
 
 	.close-day-shell {
@@ -1081,9 +1081,10 @@
 
 	.close-day-panel,
 	.close-day-menu {
-		border: 1px solid rgba(120, 144, 156, 0.24);
-		background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(248, 251, 255, 0.97));
-		box-shadow: 0 8px 20px rgba(12, 28, 43, 0.08);
+		border: 1px solid var(--v-pos-panel-border);
+		background: var(--v-pos-panel-background);
+		box-shadow: var(--v-pos-panel-shadow);
+		transition: var(--v-theme-transition);
 	}
 
 	.close-day-panel {
@@ -1136,11 +1137,11 @@
 	}
 
 	.close-day-list :deep(.v-list-item--active) {
-		background: rgba(25, 118, 210, 0.13);
+		background: var(--v-pos-nav-active);
 	}
 
 	.section-card {
-		border-color: rgba(120, 144, 156, 0.28) !important;
+		border-color: var(--v-pos-panel-border-strong) !important;
 	}
 
 	.close-day-table {
@@ -1156,7 +1157,8 @@
 
 	.stat-card,
 	.summary-card {
-		border: 1px solid rgba(120, 144, 156, 0.18);
+		border: 1px solid var(--v-pos-panel-border-soft);
+		transition: var(--v-theme-transition);
 	}
 
 	.meta-row {

@@ -714,14 +714,15 @@
 <style scoped>
 .pos-view {
   background:
-    radial-gradient(circle at top right, rgba(25, 118, 210, 0.09), transparent 42%),
-    radial-gradient(circle at left bottom, rgba(76, 175, 80, 0.08), transparent 38%);
+    radial-gradient(circle at top right, var(--v-pos-info-glow), transparent 42%),
+    radial-gradient(circle at left bottom, var(--v-pos-success-glow), transparent 38%);
 }
 
 .pos-panel {
-  border: 1px solid rgba(120, 144, 156, 0.24);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 251, 255, 0.96));
-  box-shadow: 0 10px 24px rgba(12, 28, 43, 0.08);
+  border: 1px solid var(--v-pos-panel-border);
+  background: var(--v-pos-panel-background);
+  box-shadow: var(--v-pos-panel-shadow);
+  transition: var(--v-theme-transition);
 }
 
 .pos-tabs :deep(.v-tab--selected) {
@@ -729,11 +730,12 @@
 }
 
 .section-card {
-  border-color: rgba(120, 144, 156, 0.28) !important;
+  border-color: var(--v-pos-panel-border-strong) !important;
 }
 
 .stat-card {
-  border: 1px solid rgba(120, 144, 156, 0.18);
+  border: 1px solid var(--v-pos-panel-border-soft);
+  transition: var(--v-theme-transition);
 }
 
 .actions-wrap {

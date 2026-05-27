@@ -498,8 +498,8 @@
 <style scoped>
 	.stock-entry-view {
 		background:
-			radial-gradient(circle at top right, rgba(25, 118, 210, 0.09), transparent 42%),
-			radial-gradient(circle at left bottom, rgba(255, 167, 38, 0.08), transparent 36%);
+			radial-gradient(circle at top right, var(--v-pos-info-glow), transparent 42%),
+			radial-gradient(circle at left bottom, var(--v-pos-warning-glow), transparent 36%);
 		height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
 		min-height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
 		display: flex;
@@ -508,9 +508,10 @@
 	}
 
 	.stock-entry-panel {
-		border: 1px solid rgba(120, 144, 156, 0.24);
-		background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 251, 255, 0.97));
-		box-shadow: 0 10px 24px rgba(12, 28, 43, 0.08);
+		border: 1px solid var(--v-pos-panel-border);
+		background: var(--v-pos-panel-background);
+		box-shadow: var(--v-pos-panel-shadow);
+		transition: var(--v-theme-transition);
 	}
 
 	.stock-entry-disabled-state {

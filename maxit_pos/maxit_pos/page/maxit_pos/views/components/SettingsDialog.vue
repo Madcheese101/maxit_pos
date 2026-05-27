@@ -29,6 +29,17 @@
           item-value="value"
           variant="outlined"
         />
+
+        <v-select
+          v-if="theme === 'dark'"
+          v-model="darkPalette"
+          :items="darkPaletteOptions"
+          :label="__('Dark Palette')"
+          item-title="label"
+          item-value="value"
+          variant="outlined"
+          class="mt-3"
+        />
       </v-card-text>
 
       <v-card-actions class="px-6 pb-4">
@@ -42,6 +53,7 @@
 
 <script setup>
   import { computed, ref, watch } from 'vue';
+  import { DARK_PALETTES, normalizeDarkPalette, normalizeThemeMode } from '../../themeConfig';
 
   const __ = window.__;
 
@@ -58,6 +70,10 @@
       type: String,
       default: 'light',
     },
+    initialDarkPalette: {
+      type: String,
+      default: DARK_PALETTES.SLATE,
+    },
     isSaving: {
       type: Boolean,
       default: false,
@@ -71,7 +87,8 @@
   };
 
   const language = ref(normalizeLanguage(props.initialLanguage));
-  const theme = ref(props.initialTheme || 'light');
+  const theme = ref(normalizeThemeMode(props.initialTheme));
+  const darkPalette = ref(normalizeDarkPalette(props.initialDarkPalette));
 
   const languageOptions = computed(() => [
     { label: __('English'), value: 'en' },
@@ -83,9 +100,16 @@
     { label: __('Dark'), value: 'dark' },
   ]);
 
+  const darkPaletteOptions = computed(() => [
+    { label: __('Slate and steel blue'), value: DARK_PALETTES.SLATE },
+    { label: __('Charcoal and emerald'), value: DARK_PALETTES.EMERALD },
+    { label: __('Graphite and amber'), value: DARK_PALETTES.AMBER },
+  ]);
+
   const syncFormState = () => {
     language.value = normalizeLanguage(props.initialLanguage);
-    theme.value = props.initialTheme || 'light';
+    theme.value = normalizeThemeMode(props.initialTheme);
+    darkPalette.value = normalizeDarkPalette(props.initialDarkPalette);
   };
 
   watch(
@@ -101,7 +125,16 @@
     () => props.initialTheme,
     (value) => {
       if (!props.modelValue) {
-        theme.value = value || 'light';
+        theme.value = normalizeThemeMode(value);
+      }
+    }
+  );
+
+  watch(
+    () => props.initialDarkPalette,
+    (value) => {
+      if (!props.modelValue) {
+        darkPalette.value = normalizeDarkPalette(value);
       }
     }
   );
@@ -123,6 +156,7 @@
     emit('save', {
       language: language.value,
       theme: theme.value,
+      darkPalette: darkPalette.value,
     });
   };
 </script>
@@ -130,5 +164,9 @@
 <style scoped>
   .settings-dialog {
     overflow: hidden;
+    border: 1px solid var(--v-pos-panel-border);
+    background: var(--v-pos-panel-background);
+    box-shadow: var(--v-pos-panel-shadow-strong);
+    transition: var(--v-theme-transition);
   }
 </style>

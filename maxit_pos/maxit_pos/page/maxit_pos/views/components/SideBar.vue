@@ -1,5 +1,6 @@
 <template>
     <v-navigation-drawer
+      class="pos-sidebar"
         :location="isAppRTL() ? 'right' : 'left'"
         rail
         mobile-breakpoint="xs"
@@ -10,7 +11,7 @@
             class="user-profile-item"
             >
               <div class="d-flex align-center user-profile-row">
-                <v-avatar color="blue-grey-lighten-4" size="36">
+                <v-avatar class="sidebar-avatar" size="36">
                   <v-img v-if="user.avatar" :src="user.avatar" :alt="user.full_name"></v-img>
                   <span v-else class="text-caption font-weight-bold">{{ userInitials }}</span>
                 </v-avatar>
@@ -26,8 +27,8 @@
 
         <v-list density="compact" nav>
           <!-- <v-list-item prepend-icon="mdi-view-dashboard" title="Dashboard" value="dashboard" to="/app/maxit-pos/"></v-list-item> -->
-          <v-list-item prepend-icon="mdi-cash-register" title="POS" color="#6b3fe7" value="pos" to="/desk/maxit-pos/"></v-list-item>
-          <v-list-item prepend-icon="mdi-account-multiple" title="Customers" color="#6b3fe7" value="customers" to="/desk/maxit-pos/customers"></v-list-item>
+          <v-list-item prepend-icon="mdi-cash-register" title="POS" color="primary" value="pos" to="/desk/maxit-pos/"></v-list-item>
+          <v-list-item prepend-icon="mdi-account-multiple" title="Customers" color="primary" value="customers" to="/desk/maxit-pos/customers"></v-list-item>
           <v-list-item prepend-icon="mdi-clipboard-text-clock" title="Orders" value="orders" to="/desk/maxit-pos/orders" v-if="props.showPosProfileDependent"></v-list-item>
           <v-list-item prepend-icon="mdi-cart" title="Purchase" value="purchase" to="/desk/maxit-pos/purchase" v-if="purchaseEnabled"></v-list-item>
           <v-list-item prepend-icon="mdi-swap-horizontal-bold" title="Stock Entry" value="stock-entry" to="/desk/maxit-pos/stock-entry"></v-list-item>
@@ -63,7 +64,8 @@
           <SettingsDialog
             v-model="isSettingsDialogOpen"
             :initial-language="currentLanguage"
-            :initial-theme="currentTheme"
+            :initial-theme="themeMode"
+            :initial-dark-palette="darkPalette"
             :is-saving="isSavingSettings"
             @save="saveSettings"
           />
@@ -81,12 +83,10 @@
 
   const props = defineProps(['showPosProfileDependent']);
   const posStore = usePosStore();
-  const { pos_opening, posProfileData } = storeToRefs(posStore);
-  const { close_pos, isAppRTL } = posStore;
-  const themeStorageKey = 'maxit_pos_theme';
+  const { pos_opening, posProfileData, themeMode, darkPalette } = storeToRefs(posStore);
+  const { close_pos, isAppRTL, setThemePreferences } = posStore;
   const isSettingsDialogOpen = ref(false);
   const isSavingSettings = ref(false);
-  const currentTheme = ref('light');
   const purchaseEnabled = computed(() => {
       const roles = ['Purchase User', 'Purchase Manager', 'Administrator', 'System Manager'];
       return roles.some(role => frappe.user.has_role(role)) && posProfileData.value?.allow_purchase;
@@ -126,24 +126,6 @@
     return normalizeLanguage(frappe.boot?.lang || frappe.boot?.user?.language || 'en');
   });
 
-  const getStoredTheme = () => {
-    try {
-      return window.localStorage.getItem(themeStorageKey) || 'light';
-    } catch (error) {
-      return 'light';
-    }
-  };
-
-  const setStoredTheme = (value) => {
-    try {
-      window.localStorage.setItem(themeStorageKey, value || 'light');
-    } catch (error) {
-      // Ignore storage failures and continue with the rest of the save flow.
-    }
-  };
-
-  currentTheme.value = getStoredTheme();
-
   const logout = async () => {
     try {
       // await frappe.logout();
@@ -163,16 +145,19 @@
     );
   };
 
-  const saveSettings = async ({ language, theme }) => {
+  const saveSettings = async ({ language, theme, darkPalette }) => {
     const selectedLanguage = normalizeLanguage(language);
     const selectedTheme = theme || 'light';
+    const selectedDarkPalette = darkPalette || 'slate';
     const shouldReload = selectedLanguage !== currentLanguage.value;
 
     isSavingSettings.value = true;
 
     try {
-      setStoredTheme(selectedTheme);
-      currentTheme.value = selectedTheme;
+      setThemePreferences({
+        mode: selectedTheme,
+        darkPalette: selectedDarkPalette,
+      });
 
       if (shouldReload) {
         const response = await frappe.call({
@@ -208,8 +193,36 @@
 </script>
 
 <style scoped>
+  .pos-sidebar {
+    border-inline-end: 1px solid var(--v-pos-panel-border-soft);
+    color: rgb(var(--v-theme-on-surface));
+    transition: var(--v-theme-transition);
+  }
+
+  .pos-sidebar :deep(.v-navigation-drawer__content) {
+    background: var(--v-pos-drawer-background);
+  }
+
+  .pos-sidebar :deep(.v-divider) {
+    border-color: var(--v-pos-panel-border-soft);
+  }
+
+  .pos-sidebar :deep(.v-list-item--active) {
+    background: var(--v-pos-nav-active);
+  }
+
+  .pos-sidebar :deep(.v-list-item:hover) {
+    background: var(--v-pos-nav-hover);
+  }
+
   .user-profile-item {
     padding-inline: 8px !important;
+  }
+
+  .sidebar-avatar {
+    background: var(--v-pos-avatar-background);
+    color: rgb(var(--v-theme-on-surface));
+    transition: var(--v-theme-transition);
   }
 
   .user-profile-row {

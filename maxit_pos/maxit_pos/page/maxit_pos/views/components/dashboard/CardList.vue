@@ -203,10 +203,10 @@
     letter-spacing: 0.0125em;
   }
   .period-container{
-    border: 1px #dadee1 solid;
+    border: 1px solid var(--v-pos-panel-border-soft);
     border-inline-end: 0px;
     border-inline-start: 0px;
-    background: #edf2f5;
+    background: var(--v-pos-shell-background);
   }
   .period-text{
     padding: 2px;

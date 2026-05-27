@@ -9,6 +9,7 @@ import { VDateInput } from 'vuetify/labs/VDateInput'
 import { VNumberInput } from 'vuetify/labs/VNumberInput'
 import { createApp } from "vue";
 import { createPinia } from 'pinia'
+import { resolveInitialVuetifyTheme, vuetifyThemes } from '../../../maxit_pos/page/maxit_pos/themeConfig'
 
 frappe.MaxItPOS.Controller = class {
 	constructor({page, wrapper}) {
@@ -30,6 +31,10 @@ frappe.MaxItPOS.Controller = class {
         const vuetifyLocale = appLanguage.startsWith('ar') ? 'ar' : 'en';
         const pinia = createPinia()
         const vuetify = createVuetify({
+          theme: {
+            defaultTheme: resolveInitialVuetifyTheme(),
+            themes: vuetifyThemes,
+          },
           locale: {
             locale: vuetifyLocale,
             fallback: 'en',
@@ -45,9 +50,6 @@ frappe.MaxItPOS.Controller = class {
               zIndex: 1010,
             },
           },
-            // theme: {
-            //     defaultTheme: 'dark'
-            // },
             components: {...components, VDateInput, VNumberInput},
             directives,
         });

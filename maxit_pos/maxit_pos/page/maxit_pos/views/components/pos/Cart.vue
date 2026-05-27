@@ -190,9 +190,10 @@
 
 <style scoped>
     .cart-card {
-        border: 1px solid rgba(120, 144, 156, 0.24);
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(248, 251, 255, 0.97));
-        box-shadow: 0 8px 20px rgba(12, 28, 43, 0.08);
+        border: 1px solid var(--v-pos-panel-border);
+        background: var(--v-pos-panel-background);
+        box-shadow: var(--v-pos-panel-shadow);
+        transition: var(--v-theme-transition);
     }
 
     .cart-scroll-container {
@@ -215,24 +216,24 @@
     }
 
     .cart-table :deep(tbody tr) {
-        background: rgba(255, 255, 255, 0.92);
+        background: var(--v-pos-field-background);
     }
 
     .cart-table :deep(tbody tr:not(.cart-expanded-row) td) {
-        border-top: 1px solid rgba(120, 144, 156, 0.2);
-        border-bottom: 1px solid rgba(120, 144, 156, 0.2);
+        border-top: 1px solid var(--v-pos-panel-border-soft);
+        border-bottom: 1px solid var(--v-pos-panel-border-soft);
         padding-top: 10px;
         padding-bottom: 10px;
     }
 
     .cart-table :deep(tbody tr:not(.cart-expanded-row) td:first-child) {
-        border-inline-start: 1px solid rgba(120, 144, 156, 0.2);
+        border-inline-start: 1px solid var(--v-pos-panel-border-soft);
         border-top-left-radius: 12px;
         border-bottom-left-radius: 12px;
     }
 
     .cart-table :deep(tbody tr:not(.cart-expanded-row) td:last-child) {
-        border-inline-end: 1px solid rgba(120, 144, 156, 0.2);
+        border-inline-end: 1px solid var(--v-pos-panel-border-soft);
         border-top-right-radius: 12px;
         border-bottom-right-radius: 12px;
     }
@@ -247,7 +248,7 @@
 
     .cart-item-amount {
         font-size: 0.9rem;
-        color: rgba(60, 75, 90, 0.76);
+        color: rgb(var(--v-pos-text-muted));
     }
 
     .cart-qty-wrap {
@@ -260,11 +261,11 @@
 
     .cart-expanded-row td {
         padding: 0 12px 12px !important;
-        border: 1px solid rgba(120, 144, 156, 0.2);
+        border: 1px solid var(--v-pos-panel-border-soft);
         border-top: 0;
         border-bottom-left-radius: 12px;
         border-bottom-right-radius: 12px;
-        background: rgba(248, 251, 255, 0.97);
+        background: var(--v-pos-panel-background);
     }
 
     .cart-table :deep(.v-data-table__td) {
@@ -278,7 +279,7 @@
     }
 
     .cart-table :deep(.v-btn--icon.v-data-table-expand__content) {
-        color: rgba(60, 75, 90, 0.76);
+        color: rgb(var(--v-pos-text-muted));
     }
     .cart-qty-input {
         width: 5vw;

@@ -1,6 +1,6 @@
 import {defineStore} from "pinia"
-import {ref, nextTick, triggerRef} from "vue"
-import { tr } from "vuetify/locale";
+import {computed, ref, nextTick, triggerRef} from "vue"
+import { readStoredThemePreferences, persistThemePreferences, resolveVuetifyThemeName } from "../themeConfig"
 frappe.provide("log_");
 frappe.provide("maxit_pos.utils");
 frappe.provide("maxit_pos.utils.errors");
@@ -24,6 +24,12 @@ export const usePosStore = defineStore('posStore', () => {
     const reactiveTotalQty = ref(0);
     const reactivePaidAmount = ref(0);
     const reactiveOutstandingAmount = ref(0);
+    const storedThemePreferences = readStoredThemePreferences();
+    const themeMode = ref(storedThemePreferences.mode);
+    const darkPalette = ref(storedThemePreferences.darkPalette);
+    const activeVuetifyTheme = computed(() => {
+        return resolveVuetifyThemeName(themeMode.value, darkPalette.value);
+    });
 
     const getAppLanguage = () => {
         return frappe.boot?.lang || frappe.boot?.user?.language || 'en';
@@ -35,6 +41,24 @@ export const usePosStore = defineStore('posStore', () => {
 
     const getAppDirection = () => {
         return isAppRTL() ? 'rtl' : 'ltr';
+    }
+
+    const hydrateThemePreferences = () => {
+        const storedPreferences = readStoredThemePreferences();
+        themeMode.value = storedPreferences.mode;
+        darkPalette.value = storedPreferences.darkPalette;
+    }
+
+    const setThemePreferences = ({ mode, darkPalette: selectedDarkPalette }) => {
+        const storedPreferences = persistThemePreferences({
+            mode,
+            darkPalette: selectedDarkPalette,
+        });
+
+        themeMode.value = storedPreferences.mode;
+        darkPalette.value = storedPreferences.darkPalette;
+
+        return activeVuetifyTheme.value;
     }
 
     const buildPrintViewUrl = ({
@@ -404,6 +428,9 @@ export const usePosStore = defineStore('posStore', () => {
         reactiveTotalQty,
         reactivePaidAmount,
         reactiveOutstandingAmount,
+        themeMode,
+        darkPalette,
+        activeVuetifyTheme,
         getAppLanguage,
         isAppRTL,
         getAppDirection,
@@ -424,6 +451,8 @@ export const usePosStore = defineStore('posStore', () => {
         edit_invoice,
         setPosOpening,
         trigger_item_update,
-        process_return
+        process_return,
+        hydrateThemePreferences,
+        setThemePreferences
     }
 })

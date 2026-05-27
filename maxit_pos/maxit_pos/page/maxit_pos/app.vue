@@ -6,7 +6,7 @@
         class="justify-center"
         indeterminate
     ></v-progress-circular> -->
-    <v-app :dir="getAppDirection()">
+    <v-app :dir="getAppDirection()" class="maxit-pos-app">
       <v-locale-provider :rtl="isAppRTL()">
         <!-- sidebar -->
         <SideBar :showPosProfileDependent="showPosProfileDependent"/>
@@ -38,13 +38,19 @@
     import SideBar from './views/components/SideBar.vue';
     import { usePosStore } from './store/posStore';
     import {storeToRefs} from 'pinia';
-    import {ref} from 'vue';
+    import {ref, watchEffect} from 'vue';
+    import { useTheme } from 'vuetify';
     const isLoading = ref(true);
     const props = defineProps(['posProfileData', 'appDefaults']);
     const posStore = usePosStore();
-    const {posProfileData} = storeToRefs(posStore);
+    const {activeVuetifyTheme} = storeToRefs(posStore);
     const {setAppDefaults, make_new_invoice, getAppDirection, isAppRTL} = posStore;
     const showPosProfileDependent = ref(props.posProfileData ? true : false);
+    const theme = useTheme();
+
+    watchEffect(() => {
+      theme.global.name.value = activeVuetifyTheme.value;
+    });
 
     setAppDefaults(props.posProfileData, props.appDefaults)
     make_new_invoice().then(() => {
@@ -53,7 +59,15 @@
   </script>
   
   <style>
+  .maxit-pos-app {
+    background: var(--v-pos-shell-background);
+    color: rgb(var(--v-theme-on-background));
+    transition: var(--v-theme-transition);
+  }
+
   .main-body-container{
-    background: #edf2f5;
+    background: var(--v-pos-shell-background);
+    color: rgb(var(--v-theme-on-background));
+    transition: var(--v-theme-transition);
   }
   </style>
