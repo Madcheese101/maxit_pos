@@ -189,7 +189,7 @@ export const vuetifyThemes = Object.freeze({
       'on-info': '#0f1724',
     },
     variables: themeVariables({
-      shellBackground: 'radial-gradient(circle at top, rgba(105, 132, 190, 0.22), rgba(18, 28, 44, 0.94) 38%), #101a2a',
+      shellBackground: 'radial-gradient(circle at top, rgba(124, 150, 210, 0.28), rgba(28, 42, 63, 0.9) 42%), #172438',
       drawerBackground: 'linear-gradient(180deg, rgba(18, 28, 43, 0.98), rgba(11, 19, 31, 0.99))',
       panelBackground: 'linear-gradient(180deg, rgba(22, 32, 51, 0.96), rgba(15, 24, 39, 0.99))',
       panelBorder: 'rgba(148, 163, 184, 0.2)',
@@ -232,7 +232,7 @@ export const vuetifyThemes = Object.freeze({
       'on-info': '#10201d',
     },
     variables: themeVariables({
-      shellBackground: 'radial-gradient(circle at top, rgba(92, 186, 156, 0.22), rgba(17, 30, 28, 0.94) 40%), #101a18',
+      shellBackground: 'radial-gradient(circle at top, rgba(112, 204, 174, 0.28), rgba(25, 43, 40, 0.9) 44%), #15211f',
       drawerBackground: 'linear-gradient(180deg, rgba(20, 34, 31, 0.98), rgba(12, 21, 19, 0.99))',
       panelBackground: 'linear-gradient(180deg, rgba(22, 35, 33, 0.96), rgba(16, 27, 25, 0.99))',
       panelBorder: 'rgba(125, 158, 149, 0.21)',
@@ -275,7 +275,7 @@ export const vuetifyThemes = Object.freeze({
       'on-info': '#1a1510',
     },
     variables: themeVariables({
-      shellBackground: 'radial-gradient(circle at top, rgba(222, 178, 118, 0.22), rgba(30, 23, 18, 0.94) 40%), #17120e',
+      shellBackground: 'radial-gradient(circle at top, rgba(231, 190, 132, 0.28), rgba(40, 31, 24, 0.9) 44%), #1f1812',
       drawerBackground: 'linear-gradient(180deg, rgba(34, 27, 21, 0.98), rgba(19, 15, 11, 0.99))',
       panelBackground: 'linear-gradient(180deg, rgba(35, 27, 22, 0.96), rgba(24, 18, 14, 0.99))',
       panelBorder: 'rgba(183, 160, 138, 0.21)',
