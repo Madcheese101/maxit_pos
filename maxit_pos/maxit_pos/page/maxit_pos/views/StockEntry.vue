@@ -111,7 +111,7 @@
 					</v-row>
 
 					<div class="d-flex justify-end flex-wrap ga-2 mt-3">
-						<v-btn color="primary" variant="tonal" prepend-icon="mdi-filter-check" @click="loadTransfers">
+						<v-btn color="primary" variant="tonal" prepend-icon="mdi-filter-check" @click="applyFilters">
 							{{ __('Apply Filters') }}
 						</v-btn>
 						<v-btn variant="text" prepend-icon="mdi-filter-remove-outline" @click="resetFilters">
@@ -214,14 +214,17 @@
 </template>
 
 <script setup>
-	import { computed, onMounted, ref } from 'vue';
+	import { computed, onMounted, ref, watch } from 'vue';
 	import { storeToRefs } from 'pinia';
+	import { useRoute, useRouter } from 'vue-router';
 	import { usePosStore } from '../store/posStore';
 	import StockTransferDialog from './components/stock/StockTransferDialog.vue';
 	import StockEntryViewDialog from './components/stock/StockEntryViewDialog.vue';
 
 	const __ = window.__;
 	const frappe_ = window.frappe;
+	const route = useRoute();
+	const router = useRouter();
 	const posStore = usePosStore();
 	const { posProfileData } = storeToRefs(posStore);
 
@@ -243,6 +246,13 @@
 	const selectedFromBranch = ref('');
 	const selectedToBranch = ref('');
 	const selectedItemCode = ref('');
+	const routeItemCode = computed(() => {
+		const itemCode = route.query.item_code;
+		if (Array.isArray(itemCode)) {
+			return (itemCode[0] || '').toString();
+		}
+		return (itemCode || '').toString();
+	});
 
 	const headers = computed(() => [
 		{ title: __('Stock Entry'), key: 'name' },
@@ -263,8 +273,27 @@
 			return;
 		}
 
-		await Promise.all([loadBranchOptions(), loadItemCodeOptions(), loadTransfers()]);
+		await Promise.all([loadBranchOptions(), loadItemCodeOptions(routeItemCode.value)]);
 	});
+
+	watch(
+		routeItemCode,
+		async (itemCode) => {
+			if (!stockEntryEnabled.value) {
+				return;
+			}
+
+			selectedItemCode.value = itemCode;
+			ensureItemCodeOption(itemCode);
+
+			if (itemCode) {
+				await loadItemCodeOptions(itemCode);
+			}
+
+			await loadTransfers();
+		},
+		{ immediate: true }
+	);
 
 	function buildFilters() {
 		return {
@@ -384,6 +413,17 @@
 		}
 	}
 
+	function ensureItemCodeOption(itemCode) {
+		if (!itemCode || itemCodeOptions.value.some((option) => option.value === itemCode)) {
+			return;
+		}
+
+		itemCodeOptions.value = [
+			{ value: itemCode, label: itemCode, description: '' },
+			...itemCodeOptions.value,
+		];
+	}
+
 	async function loadOutgoingTransfers() {
 		isLoadingOutgoing.value = true;
 		try {
@@ -420,13 +460,30 @@
 		await Promise.all([loadOutgoingTransfers(), loadIncomingTransfers()]);
 	}
 
-	function resetFilters() {
+	async function applyFilters() {
+		const nextItemCode = selectedItemCode.value || '';
+		if (nextItemCode === routeItemCode.value) {
+			await loadTransfers();
+			return;
+		}
+
+		const nextQuery = { ...route.query };
+		if (nextItemCode) {
+			nextQuery.item_code = nextItemCode;
+		} else {
+			delete nextQuery.item_code;
+		}
+
+		await router.replace({ query: nextQuery });
+	}
+
+	async function resetFilters() {
 		fromDate.value = '';
 		toDate.value = '';
 		selectedFromBranch.value = '';
 		selectedToBranch.value = '';
 		selectedItemCode.value = '';
-		loadTransfers();
+		await applyFilters();
 	}
 
 	function handleTransferCreated() {

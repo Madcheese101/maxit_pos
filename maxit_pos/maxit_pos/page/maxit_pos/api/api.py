@@ -368,8 +368,9 @@ def get_sales_orders():
     return invoices
 
 @frappe.whitelist()
-def get_sales_invoice_list(pos_profile, search_term="", customer=""):
+def get_sales_invoice_list(pos_profile, search_term="", customer="", item_code=""):
     SalesInvoice = DocType("Sales Invoice")
+    SalesInvoiceItem = DocType("Sales Invoice Item")
     query = (frappe.qb.from_(SalesInvoice)
         .select(
             SalesInvoice.name,
@@ -379,9 +380,15 @@ def get_sales_invoice_list(pos_profile, search_term="", customer=""):
         )
         .where(SalesInvoice.pos_profile == pos_profile)
         .where(SalesInvoice.docstatus == 1)
-        .orderby(SalesInvoice.modified, order=Order.desc)
-        .limit(50)
     )
+
+    if item_code:
+        query = (query
+            .inner_join(SalesInvoiceItem)
+            .on(SalesInvoiceItem.parent == SalesInvoice.name)
+            .where(SalesInvoiceItem.item_code == item_code)
+            .distinct()
+        )
 
     if customer:
         query = query.where(SalesInvoice.customer == customer)
@@ -392,7 +399,11 @@ def get_sales_invoice_list(pos_profile, search_term="", customer=""):
             | SalesInvoice.customer.like(f"%{search_term}%")
         )
 
-    invoices = query.run(as_dict=1)
+    invoices = (query
+        .orderby(SalesInvoice.modified, order=Order.desc)
+        .limit(50)
+        .run(as_dict=1)
+    )
 
     return invoices
 

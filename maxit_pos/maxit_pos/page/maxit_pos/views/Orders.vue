@@ -24,6 +24,18 @@
               rounded="lg"
               @keydown.enter="getInvoices()"
             />
+
+      <div v-if="selectedItemCodeFilter" class="mt-3 px-1">
+        <v-chip
+        closable
+        color="secondary"
+        variant="tonal"
+        prepend-icon="mdi-barcode"
+        @click:close="clearItemFilter"
+        >
+        {{ __('Item') }}: {{ selectedItemCodeFilter }}
+        </v-chip>
+      </div>
           </v-card-item>
 
           <v-divider />
@@ -354,7 +366,29 @@
 
     const invoiceSubtitle = (inv) => `${inv.customer || __('Unknown Customer')} - ${inv.grand_total || 0}`;
 
-    const selectedCustomerFilter = computed(() => (route.query.customer || '').toString());
+    const normalizeQueryValue = (value) => {
+      if (Array.isArray(value)) {
+        return (value[0] || '').toString();
+      }
+
+      return (value || '').toString();
+    };
+
+    const selectedCustomerFilter = computed(() => normalizeQueryValue(route.query.customer));
+    const selectedItemCodeFilter = computed(() => normalizeQueryValue(route.query.item_code));
+
+    const clearInvoiceSelection = () => {
+      selected.value = [];
+      invoice.value = null;
+      paymentEntries.value = [];
+      showDetailsOnMobile.value = false;
+    };
+
+    const clearItemFilter = async () => {
+      const nextQuery = { ...route.query };
+      delete nextQuery.item_code;
+      await router.replace({ query: nextQuery });
+    };
 
     const returnInvoice = async () =>{
       await process_return('Sales Invoice', invoice.value.name);
@@ -458,17 +492,15 @@
 
     watch(selected, (val) => {
       if (!val.length) {
-        invoice.value = null;
-        paymentEntries.value = [];
-        showDetailsOnMobile.value = false;
+        clearInvoiceSelection();
         return;
       }
       showDetailsOnMobile.value = true;
       GetInvoiceDoc(val[0]);
     });
 
-    watch(() => route.query.customer, () => {
-      selected.value = [];
+    watch(() => [selectedCustomerFilter.value, selectedItemCodeFilter.value], () => {
+      clearInvoiceSelection();
       getInvoices();
     });
 
@@ -481,10 +513,11 @@
           pos_profile: pos_profile.value,
           search_term: searchTerm.value || '',
           customer: selectedCustomerFilter.value,
+          item_code: selectedItemCodeFilter.value,
         },
       }).then((response) => {
         invoices.value = response.message || [];
-        invoice.value = null;
+        clearInvoiceSelection();
         isLoadingList.value = false;
       }).catch(() => {
         isLoadingList.value = false;
