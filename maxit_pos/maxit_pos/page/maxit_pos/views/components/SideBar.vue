@@ -40,6 +40,12 @@
           <v-divider class="border-opacity-100"></v-divider>
           <v-list density="compact" nav class="pb-2">
             <v-list-item
+              prepend-icon="mdi-cog-outline"
+              :title="__('Settings')"
+              value="settings"
+              @click="isSettingsDialogOpen = true"
+            ></v-list-item>
+            <v-list-item
               v-if="pos_opening"
               prepend-icon="mdi-door-closed-lock"
               :title="__('Close Shift')"
@@ -53,12 +59,21 @@
               @click="logout"
             ></v-list-item>
           </v-list>
+
+          <SettingsDialog
+            v-model="isSettingsDialogOpen"
+            :initial-language="currentLanguage"
+            :initial-theme="currentTheme"
+            :is-saving="isSavingSettings"
+            @save="saveSettings"
+          />
         </template>
     </v-navigation-drawer>
 </template>
 
 <script setup>
-    import { computed } from 'vue';
+    import { computed, ref } from 'vue';
+  import SettingsDialog from './SettingsDialog.vue';
   import { storeToRefs } from 'pinia';
   import { usePosStore } from '../../store/posStore';
 
@@ -68,6 +83,10 @@
   const posStore = usePosStore();
   const { pos_opening, posProfileData } = storeToRefs(posStore);
   const { close_pos, isAppRTL } = posStore;
+  const themeStorageKey = 'maxit_pos_theme';
+  const isSettingsDialogOpen = ref(false);
+  const isSavingSettings = ref(false);
+  const currentTheme = ref('light');
   const purchaseEnabled = computed(() => {
       const roles = ['Purchase User', 'Purchase Manager', 'Administrator', 'System Manager'];
       return roles.some(role => frappe.user.has_role(role)) && posProfileData.value?.allow_purchase;
@@ -99,6 +118,32 @@
     return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
   });
 
+  const normalizeLanguage = (value) => {
+    return String(value || 'en').toLowerCase().startsWith('ar') ? 'ar' : 'en';
+  };
+
+  const currentLanguage = computed(() => {
+    return normalizeLanguage(frappe.boot?.lang || frappe.boot?.user?.language || 'en');
+  });
+
+  const getStoredTheme = () => {
+    try {
+      return window.localStorage.getItem(themeStorageKey) || 'light';
+    } catch (error) {
+      return 'light';
+    }
+  };
+
+  const setStoredTheme = (value) => {
+    try {
+      window.localStorage.setItem(themeStorageKey, value || 'light');
+    } catch (error) {
+      // Ignore storage failures and continue with the rest of the save flow.
+    }
+  };
+
+  currentTheme.value = getStoredTheme();
+
   const logout = async () => {
     try {
       // await frappe.logout();
@@ -116,6 +161,49 @@
       },
       () => {}
     );
+  };
+
+  const saveSettings = async ({ language, theme }) => {
+    const selectedLanguage = normalizeLanguage(language);
+    const selectedTheme = theme || 'light';
+    const shouldReload = selectedLanguage !== currentLanguage.value;
+
+    isSavingSettings.value = true;
+
+    try {
+      setStoredTheme(selectedTheme);
+      currentTheme.value = selectedTheme;
+
+      if (shouldReload) {
+        const response = await frappe.call({
+          method: 'frappe.client.set_value',
+          args: {
+            doctype: 'User',
+            name: frappe.session.user,
+            fieldname: 'language',
+            value: selectedLanguage,
+          },
+          freeze: true,
+        });
+
+        if (response?.exc) {
+          throw new Error(response.exc);
+        }
+
+        window.location.reload();
+        return;
+      }
+
+      isSettingsDialogOpen.value = false;
+    } catch (error) {
+      frappe.msgprint({
+        title: __('Unable to save settings'),
+        indicator: 'red',
+        message: error?.message || __('An unexpected error occurred while saving settings.'),
+      });
+    } finally {
+      isSavingSettings.value = false;
+    }
   };
 </script>
 
