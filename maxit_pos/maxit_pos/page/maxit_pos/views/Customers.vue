@@ -490,13 +490,12 @@ fetchCustomers();
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .customers-list {
   flex: 1;
   min-height: 0;
-  max-height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px) - 260px);
   overflow-y: auto;
 }
 
@@ -530,7 +529,7 @@ fetchCustomers();
   }
 
   .customers-list {
-    max-height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px) - 220px);
+    overflow-y: auto;
   }
 
   .actions-wrap {

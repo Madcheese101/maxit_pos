@@ -543,7 +543,8 @@
 		}
 
 	.stock-entry-table-wrap {
-		padding: 0 16px 16px;
+		padding-block-end: 16px;
+		padding-inline: 16px;
 		height: 100%;
 		min-height: 0;
 	}

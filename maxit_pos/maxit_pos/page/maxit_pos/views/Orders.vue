@@ -1,8 +1,8 @@
 <template>
-  <PageSurface glow="info-success" class="orders-view pa-3 pa-md-6">
+  <PageSurface glow="info-success" class="orders-view pa-3 pa-md-6" :style="layoutVars">
     <v-row class="orders-shell" align="stretch">
-      <v-col v-show="!isMobile || !showDetailsOnMobile" cols="12" md="4" lg="3">
-        <SurfaceCard class="orders-panel" max-height="100vh">
+      <v-col v-show="!isMobile || !showDetailsOnMobile" cols="12" md="4" lg="3" class="orders-column">
+        <SurfaceCard class="orders-panel h-100">
           <v-card-item class="pb-2">
             <div class="d-flex align-center justify-space-between gap-2 mb-3">
               <div>
@@ -40,7 +40,7 @@
 
           <v-divider />
 
-          <v-card-text class="pt-3 px-2">
+          <v-card-text class="pt-3 px-2 orders-list-body">
             <div v-if="isLoadingList" class="px-2 py-5">
               <v-skeleton-loader type="list-item-two-line, list-item-two-line, list-item-two-line" />
             </div>
@@ -49,7 +49,7 @@
               v-else-if="invoices.length"
               lines="two"
               color="primary"
-              max-height="50vh"
+              :style="invoiceListStyle"
               nav
               rounded="lg"
               class="orders-list overflow-y-auto"
@@ -89,8 +89,8 @@
         </SurfaceCard>
       </v-col>
 
-      <v-col v-show="!isMobile || showDetailsOnMobile" cols="12" md="8" lg="9">
-        <SurfaceCard class="orders-panel" max-height="100vh">
+      <v-col v-show="!isMobile || showDetailsOnMobile" cols="12" md="8" lg="9" class="orders-column">
+        <SurfaceCard class="orders-panel h-100">
           <v-card-item class="pb-0">
             <div class="d-flex align-center justify-space-between flex-wrap gap-3">
               <div class="d-flex align-center gap-2">
@@ -124,7 +124,7 @@
             </div>
           </v-card-item>
 
-          <v-card-text class="pt-4">
+          <v-card-text class="pt-4 orders-details-body">
             <v-skeleton-loader
               v-if="isLoadingInvoice"
               type="table, article, article"
@@ -189,7 +189,7 @@
                     :headers="invoiceItemHeaders"
                     :items="invoice.items"
                     item-value="item_name"
-                    max-height="30vh"
+                    :height="itemsTableHeight"
                     class="orders-table"
                   />
                 </v-card-text>
@@ -204,7 +204,7 @@
                     :headers="invoicePaymentHeaders"
                     :items="invoice.payments"
                     item-value="mode_of_payment"
-                    max-height="15vh"
+                    :height="paymentsTableHeight"
                     class="orders-table"
                   />
                 </v-card-text>
@@ -219,7 +219,7 @@
                     :headers="paymentEntryHeaders"
                     :items="paymentEntries"
                     item-value="name"
-                    max-height="30vh"
+                    :height="itemsTableHeight"
                     class="orders-table"
                   >
                     <template #item.print="{ item }">
@@ -345,9 +345,20 @@
     const isLoadingInvoice = ref(false);
     const router = useRouter();
     const route = useRoute();
-    const { smAndDown } = useDisplay();
+    const { smAndDown, height: viewportHeight } = useDisplay();
     const isMobile = computed(() => smAndDown.value);
     const showDetailsOnMobile = ref(false);
+    const viewportHeightPx = computed(() => viewportHeight.value || window.innerHeight || 800);
+    const listScrollHeight = computed(() => Math.max(220, viewportHeightPx.value - (isMobile.value ? 230 : 260)));
+    const itemsTableHeight = computed(() => Math.max(100, Math.round(viewportHeightPx.value * 0.22)));
+    const paymentsTableHeight = computed(() => Math.max(80, Math.round(viewportHeightPx.value * 0.12)));
+    const layoutVars = computed(() => ({
+      '--orders-list-height': `${listScrollHeight.value}px`,
+    }));
+    const invoiceListStyle = computed(() => ({
+      height: 'var(--orders-list-height)',
+      maxHeight: 'var(--orders-list-height)',
+    }));
     const posStore = usePosStore();
     const {pos_profile, posProfileData} = storeToRefs(posStore);
     const {edit_invoice, process_return, buildPrintViewUrl, isAppRTL} = posStore;
@@ -541,9 +552,49 @@
 
 <style scoped>
 .orders-view {
+  height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
+  min-height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
+  overflow: hidden;
   background:
     radial-gradient(circle at top right, var(--v-pos-info-glow), transparent 42%),
     radial-gradient(circle at left bottom, var(--v-pos-success-glow), transparent 38%);
+}
+
+.orders-shell {
+  height: 100%;
+  min-height: 0;
+}
+
+.orders-column {
+  display: flex;
+  min-height: 0;
+}
+
+.orders-panel {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.orders-list-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.orders-list {
+  overflow-y: auto;
+  height: var(--orders-list-height, 300px);
+  max-height: var(--orders-list-height, 300px);
+}
+
+.orders-details-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .orders-panel {
