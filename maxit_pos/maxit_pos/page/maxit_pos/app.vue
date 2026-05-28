@@ -38,7 +38,7 @@
     import SideBar from './views/components/SideBar.vue';
     import { usePosStore } from './store/posStore';
     import {storeToRefs} from 'pinia';
-    import {ref, watchEffect} from 'vue';
+    import {ref, watch} from 'vue';
     import { useTheme } from 'vuetify';
     const isLoading = ref(true);
     const props = defineProps(['posProfileData', 'appDefaults']);
@@ -48,9 +48,11 @@
     const showPosProfileDependent = ref(props.posProfileData ? true : false);
     const theme = useTheme();
 
-    watchEffect(() => {
-      theme.global.name.value = activeVuetifyTheme.value;
-    });
+    watch(activeVuetifyTheme, (nextTheme) => {
+      if (theme.global.name.value !== nextTheme) {
+        theme.global.name.value = nextTheme;
+      }
+    }, { immediate: true });
 
     setAppDefaults(props.posProfileData, props.appDefaults)
     make_new_invoice().then(() => {
@@ -60,6 +62,10 @@
   
   <style>
   .maxit-pos-app {
+    --maxit-page-padding-mobile: 10px;
+    --maxit-page-padding-short: 10px;
+    --maxit-stat-padding: 16px;
+    --maxit-stat-padding-compact: 12px;
     background: var(--v-pos-shell-background);
     color: rgb(var(--v-theme-on-background));
     transition: var(--v-theme-transition);
@@ -69,5 +75,13 @@
     background: var(--v-pos-shell-background);
     color: rgb(var(--v-theme-on-background));
     transition: var(--v-theme-transition);
+  }
+
+  @media (max-height: 768px) and (min-width: 960px) {
+    .maxit-pos-app {
+      --maxit-page-padding-short: 8px;
+      --maxit-stat-padding: 14px;
+      --maxit-stat-padding-compact: 10px;
+    }
   }
   </style>

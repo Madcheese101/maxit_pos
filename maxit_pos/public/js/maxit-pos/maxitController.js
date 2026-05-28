@@ -49,6 +49,40 @@ frappe.MaxItPOS.Controller = class {
               retainFocus: false,
               zIndex: 1010,
             },
+            VBtn: {
+              rounded: 'lg',
+              class: 'text-none',
+            },
+            VCard: {
+              rounded: 'xl',
+            },
+            VChip: {
+              size: 'small',
+            },
+            VTextField: {
+              hideDetails: 'auto',
+            },
+            VSelect: {
+              hideDetails: 'auto',
+            },
+            VAutocomplete: {
+              hideDetails: 'auto',
+            },
+            VCombobox: {
+              hideDetails: 'auto',
+            },
+            VDateInput: {
+              hideDetails: 'auto',
+            },
+            VNumberInput: {
+              hideDetails: 'auto',
+            },
+            VDataTable: {
+              density: 'compact',
+            },
+            VDataTableVirtual: {
+              density: 'compact',
+            },
           },
             components: {...components, VDateInput, VNumberInput},
             directives,

@@ -54,7 +54,7 @@
 						</v-col>
 					</v-row>
 
-					<v-card v-if="noteCountForm.type === 'Cash'" class="section-card mt-4" rounded="lg" variant="outlined">
+					<SurfaceCard v-if="noteCountForm.type === 'Cash'" surface="section" class="section-card mt-4">
 						<v-card-item class="pb-1">
 							<div class="text-subtitle-1 font-weight-bold">{{ __('Cash Breakdown') }}</div>
 						</v-card-item>
@@ -87,9 +87,9 @@
 								</tbody>
 							</v-table>
 						</v-card-text>
-					</v-card>
+					</SurfaceCard>
 
-					<v-card v-else-if="noteCountForm.type === 'Bank'" class="section-card mt-4" rounded="lg" variant="outlined">
+					<SurfaceCard v-else-if="noteCountForm.type === 'Bank'" surface="section" class="section-card mt-4">
 						<v-card-item class="pb-1">
 							<div class="d-flex align-center justify-space-between gap-2 flex-wrap">
 								<div class="text-subtitle-1 font-weight-bold">{{ __('Bank Breakdown') }}</div>
@@ -180,7 +180,7 @@
 								</v-table>
 							</div>
 						</v-card-text>
-					</v-card>
+						</SurfaceCard>
 
 					<v-alert v-else type="info" variant="tonal" density="compact" class="mt-4">
 						{{ __('Select a mode of payment to continue.') }}
@@ -219,6 +219,7 @@
 
 <script setup>
 	import { computed, reactive, ref, watch } from 'vue';
+	import SurfaceCard from '../ui/SurfaceCard.vue';
 
 	const props = defineProps({
 		modelValue: {

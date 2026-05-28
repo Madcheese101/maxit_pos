@@ -28,21 +28,26 @@
           lines="one"
           max-height="55vh"
         >
+          <template v-for="(item, idx) in props.items" :key="item.item_code || idx">
+          <v-tooltip :text="item.item_code" location="top" open-delay="400">
+            <template #activator="{ props: tipProps }">
           <v-list-item
-            v-for="(item, idx) in props.items"
-            :key="item.item_code || idx"
             class="item-row"
             rounded="0"
+            v-bind="tipProps"
             @click="item_clicked(item)"
           >
             <template #title>
               <div class="item-row-grid">
                 <span class="item-row-name">{{ item.item_name }}</span>
-                <span class="item-row-value">{{ __('QTY:') }} {{ item.actual_qty ?? 0 }} / {{ item.uom }}</span>
+                <span class="item-row-value">{{ item.actual_qty ?? 0 }}</span>
                 <span class="item-row-value item-row-rate">{{ __('Rate:') }} {{ item.price_list_rate ?? 0 }} {{item.currency || ''}}</span>
               </div>
             </template>
           </v-list-item>
+            </template>
+          </v-tooltip>
+          </template>
         </v-list>
       </VCardText>
     </VCard>

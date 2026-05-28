@@ -25,7 +25,7 @@
 						</v-col>
 					</v-row>
 
-					<v-card class="section-card mt-1" rounded="lg" variant="outlined">
+					<SurfaceCard surface="section" class="section-card mt-1">
 						<v-card-item class="pb-1">
 							<div class="d-flex align-center justify-space-between gap-2 flex-wrap">
 								<div class="text-subtitle-1 font-weight-bold">{{ __('Mode of Payments') }}</div>
@@ -86,7 +86,7 @@
 								</v-data-table>
 							</div>
 						</v-card-text>
-					</v-card>
+					</SurfaceCard>
 
 					<v-row dense class="mt-3">
 						<v-col cols="12" sm="4">
@@ -121,6 +121,7 @@
 
 <script setup>
 	import { computed, reactive, ref, watch } from 'vue';
+	import SurfaceCard from '../ui/SurfaceCard.vue';
 
 	const props = defineProps({
 		modelValue: {

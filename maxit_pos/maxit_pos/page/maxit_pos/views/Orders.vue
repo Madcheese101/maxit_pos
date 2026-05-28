@@ -1,8 +1,8 @@
 <template>
-  <v-main class="orders-view pa-3 pa-md-6">
+  <PageSurface glow="info-success" class="orders-view pa-3 pa-md-6">
     <v-row class="orders-shell" align="stretch">
       <v-col v-show="!isMobile || !showDetailsOnMobile" cols="12" md="4" lg="3">
-        <v-card class="orders-panel " max-height="100vh" rounded="xl" variant="flat">
+        <SurfaceCard class="orders-panel" max-height="100vh">
           <v-card-item class="pb-2">
             <div class="d-flex align-center justify-space-between gap-2 mb-3">
               <div>
@@ -86,11 +86,11 @@
               {{ __('No invoices found for this filter.') }}
             </v-alert>
           </v-card-text>
-        </v-card>
+        </SurfaceCard>
       </v-col>
 
       <v-col v-show="!isMobile || showDetailsOnMobile" cols="12" md="8" lg="9">
-        <v-card class="orders-panel " rounded="xl" variant="flat" max-height="100vh">
+        <SurfaceCard class="orders-panel" max-height="100vh">
           <v-card-item class="pb-0">
             <div class="d-flex align-center justify-space-between flex-wrap gap-3">
               <div class="d-flex align-center gap-2">
@@ -141,30 +141,31 @@
             <template v-else>
               <v-row dense class="mb-2">
                 <v-col cols="12" sm="6" md="4">
-                  <v-card class="stat-card" rounded="lg" variant="tonal" color="primary">
-                    <v-card-text>
-                      <div class="text-caption text-medium-emphasis">{{ __('Customer') }}</div>
-                      <div class="text-body-1 font-weight-bold text-truncate">{{ invoice.customer || 'N/A' }}</div>
-                    </v-card-text>
-                  </v-card>
+                  <StatMetricCard
+                    class="stat-card"
+                    color="primary"
+                    :label="__('Customer')"
+                    :value="invoice.customer || 'N/A'"
+                    truncate
+                  />
                 </v-col>
 
                 <v-col cols="12" sm="6" md="4">
-                  <v-card class="stat-card" rounded="lg" variant="tonal" color="success">
-                    <v-card-text>
-                      <div class="text-caption text-medium-emphasis">{{ __('Grand Total') }}</div>
-                      <div class="text-body-1 font-weight-bold">{{ invoice.grand_total }} {{ invoice.price_list_currency }}</div>
-                    </v-card-text>
-                  </v-card>
+                  <StatMetricCard
+                    class="stat-card"
+                    color="success"
+                    :label="__('Grand Total')"
+                    :value="`${invoice.grand_total} ${invoice.price_list_currency}`"
+                  />
                 </v-col>
 
                 <v-col cols="12" sm="6" md="4">
-                  <v-card class="stat-card" rounded="lg" variant="tonal" color="warning">
-                    <v-card-text>
-                      <div class="text-caption text-medium-emphasis">{{ __('Outstanding') }}</div>
-                      <div class="text-body-1 font-weight-bold">{{ invoice.outstanding_amount }} {{ invoice.price_list_currency }}</div>
-                    </v-card-text>
-                  </v-card>
+                  <StatMetricCard
+                    class="stat-card"
+                    color="warning"
+                    :label="__('Outstanding')"
+                    :value="`${invoice.outstanding_amount} ${invoice.price_list_currency}`"
+                  />
                 </v-col>
               </v-row>
 
@@ -179,62 +180,45 @@
                 </v-col>
               </v-row>
 
-              <v-card class="section-card mt-4" rounded="lg" variant="outlined" v-if="invoice.items?.length">
+              <SurfaceCard v-if="invoice.items?.length" surface="section" class="section-card mt-4">
                 <v-card-item class="pb-1">
                   <div class="text-subtitle-1 font-weight-bold">{{ __('Items') }}</div>
                 </v-card-item>
                 <v-card-text>
                   <v-data-table-virtual
-                    :headers="[
-                      { title: __('Item Name'), key: 'item_name' },
-                      { title: __('Qty'), key: 'qty' },
-                      { title: __('Rate'), key: 'rate' },
-                      { title: __('Amount'), key: 'amount' }
-                    ]"
+                    :headers="invoiceItemHeaders"
                     :items="invoice.items"
                     item-value="item_name"
-                    density="compact"
                     max-height="30vh"
                     class="orders-table"
                   />
                 </v-card-text>
-              </v-card>
+              </SurfaceCard>
 
-              <v-card class="section-card mt-4" rounded="lg" variant="outlined" v-if="invoice.payments?.length">
+              <SurfaceCard v-if="invoice.payments?.length" surface="section" class="section-card mt-4">
                 <v-card-item class="pb-1">
                   <div class="text-subtitle-1 font-weight-bold">{{ __('Payments') }}</div>
                 </v-card-item>
                 <v-card-text>
                   <v-data-table-virtual
-                    :headers="[
-                      { title: __('Mode of Payment'), key: 'mode_of_payment' },
-                      { title: __('Amount'), key: 'amount' }
-                    ]"
+                    :headers="invoicePaymentHeaders"
                     :items="invoice.payments"
                     item-value="mode_of_payment"
-                    density="compact"
                     max-height="15vh"
                     class="orders-table"
                   />
                 </v-card-text>
-              </v-card>
+              </SurfaceCard>
 
-              <v-card class="section-card mt-4" rounded="lg" variant="outlined" v-if="paymentEntries?.length">
+              <SurfaceCard v-if="paymentEntries?.length" surface="section" class="section-card mt-4">
                 <v-card-item class="pb-1">
                   <div class="text-subtitle-1 font-weight-bold">{{ __('Payment Entries') }}</div>
                 </v-card-item>
                 <v-card-text>
                   <v-data-table-virtual
-                    :headers="[
-                      { title: __('Date'), key: 'posting_date' },
-                      { title: __('Name'), key: 'name' },
-                      { title: __('Mode of Payment'), key: 'mode_of_payment' },
-                      { title: __('Amount'), key: 'paid_amount' },
-                      { title: __('Print'), key: 'print', sortable: false }
-                    ]"
+                    :headers="paymentEntryHeaders"
                     :items="paymentEntries"
                     item-value="name"
-                    density="compact"
                     max-height="30vh"
                     class="orders-table"
                   >
@@ -250,7 +234,7 @@
                     </template>
                   </v-data-table-virtual>
                 </v-card-text>
-              </v-card>
+              </SurfaceCard>
 
               <div class="actions-wrap mt-5">
                 <v-btn
@@ -305,7 +289,7 @@
               </div>
             </template>
           </v-card-text>
-        </v-card>
+        </SurfaceCard>
       </v-col>
     </v-row>
 
@@ -317,7 +301,7 @@
       @pay="payInvoice"
       @close="payInvoiceDialogToggle = false"
     />
-  </v-main>
+  </PageSurface>
 </template>
 
 <script setup>
@@ -327,8 +311,28 @@
     import { useRouter, useRoute } from 'vue-router';
     import { useDisplay } from 'vuetify';
     import payInvoiceDialog from './components/orders/payInvoiceDialog.vue';
+    import PageSurface from './components/ui/PageSurface.vue';
+    import SurfaceCard from './components/ui/SurfaceCard.vue';
+    import StatMetricCard from './components/ui/StatMetricCard.vue';
     const frappe_ = frappe;
     const __ = window.__;
+    const invoiceItemHeaders = [
+      { title: __('Item Name'), key: 'item_name' },
+      { title: __('Qty'), key: 'qty' },
+      { title: __('Rate'), key: 'rate' },
+      { title: __('Amount'), key: 'amount' },
+    ];
+    const invoicePaymentHeaders = [
+      { title: __('Mode of Payment'), key: 'mode_of_payment' },
+      { title: __('Amount'), key: 'amount' },
+    ];
+    const paymentEntryHeaders = [
+      { title: __('Date'), key: 'posting_date' },
+      { title: __('Name'), key: 'name' },
+      { title: __('Mode of Payment'), key: 'mode_of_payment' },
+      { title: __('Amount'), key: 'paid_amount' },
+      { title: __('Print'), key: 'print', sortable: false },
+    ];
     const invoices = ref([]);
     const invoice = ref();
     const selected = ref([]);
@@ -377,11 +381,19 @@
     const selectedCustomerFilter = computed(() => normalizeQueryValue(route.query.customer));
     const selectedItemCodeFilter = computed(() => normalizeQueryValue(route.query.item_code));
 
-    const clearInvoiceSelection = () => {
-      selected.value = [];
-      invoice.value = null;
-      paymentEntries.value = [];
-      showDetailsOnMobile.value = false;
+    const clearInvoiceSelection = ({ keepSelected = false } = {}) => {
+      if (!keepSelected && selected.value.length) {
+        selected.value = [];
+      }
+      if (invoice.value) {
+        invoice.value = null;
+      }
+      if (paymentEntries.value.length) {
+        paymentEntries.value = [];
+      }
+      if (showDetailsOnMobile.value) {
+        showDetailsOnMobile.value = false;
+      }
     };
 
     const clearItemFilter = async () => {
@@ -492,14 +504,14 @@
 
     watch(selected, (val) => {
       if (!val.length) {
-        clearInvoiceSelection();
+        clearInvoiceSelection({ keepSelected: true });
         return;
       }
       showDetailsOnMobile.value = true;
       GetInvoiceDoc(val[0]);
     });
 
-    watch(() => [selectedCustomerFilter.value, selectedItemCodeFilter.value], () => {
+    watch([selectedCustomerFilter, selectedItemCodeFilter], () => {
       clearInvoiceSelection();
       getInvoices();
     });

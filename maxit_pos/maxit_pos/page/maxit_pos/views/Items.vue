@@ -1,6 +1,6 @@
 <template>
-	<v-main class="items-view pa-2 pa-md-4" :style="layoutVars">
-		<v-card rounded="xl" variant="flat" class="pa-3 pa-md-4 items-filters-card">
+	<PageSurface glow="info-success" class="items-view pa-2 pa-md-4" :style="layoutVars">
+		<SurfaceCard surface="filter" class="pa-3 pa-md-4 items-filters-card">
 			<v-row dense>
 				<v-col cols="12" md="4">
 					<v-text-field
@@ -64,9 +64,9 @@
 					</v-btn>
 				</v-col>
 			</v-row>
-		</v-card>
+		</SurfaceCard>
 
-		<v-card rounded="xl" variant="flat" class="mt-4 items-results-card">
+		<SurfaceCard surface="results" class="mt-4 items-results-card">
 			<v-card-item>
 				<div class="d-flex justify-space-between align-center flex-wrap ga-2">
 					<div>
@@ -141,7 +141,7 @@
 									/>
 								</template>
 
-								<v-card min-width="220" rounded="lg" variant="flat">
+								<SurfaceCard surface="menu" min-width="220">
 									<v-card-text class="pa-2 d-flex flex-column ga-2">
 										<v-btn
 											color="primary"
@@ -173,15 +173,15 @@
 											{{ __('Orders') }}
 										</v-btn>
 									</v-card-text>
-								</v-card>
+								</SurfaceCard>
 							</v-menu>
 						</template>
 					</v-data-table-virtual>
 				</div>
 
 			</v-card-text>
-		</v-card>
-	</v-main>
+		</SurfaceCard>
+	</PageSurface>
 </template>
 
 <script>
@@ -196,6 +196,8 @@ import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
 import { useDisplay } from 'vuetify';
 import { usePosStore } from '../store/posStore';
+import PageSurface from './components/ui/PageSurface.vue';
+import SurfaceCard from './components/ui/SurfaceCard.vue';
 
 const frappe_ = window.frappe;
 const __ = window.__;

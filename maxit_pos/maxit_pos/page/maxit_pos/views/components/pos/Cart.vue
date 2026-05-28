@@ -1,7 +1,5 @@
 <template>
     <VCard rounded="xl" class="cart-card pa-3" flat>
-        <div class="text-subtitle-1 mb-2">{{ __('Invoice Items') }}</div>
-
         <div class="cart-scroll-container">
             <v-data-table
                 v-model:expanded="expanded"

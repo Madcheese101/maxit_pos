@@ -1,8 +1,8 @@
 <template>
-  <v-main class="customers-view pa-3 pa-md-6">
+  <PageSurface glow="info-success" class="customers-view pa-3 pa-md-6">
     <v-row class="customers-shell" align="stretch">
       <v-col v-show="!isMobile || !showDetailsOnMobile" cols="12" md="4" lg="3" class="customers-column">
-        <v-card class="h-100 customers-card customers-list-panel" rounded="xl" variant="elevated">
+        <SurfaceCard class="h-100 customers-card customers-list-panel customers-panel">
           <v-card-item class="pb-2">
             <div class="d-flex align-center justify-space-between gap-2 mb-3">
               <div>
@@ -70,11 +70,11 @@
               {{ __('No customers found for this filter.') }}
             </v-alert>
           </v-card-text>
-        </v-card>
+        </SurfaceCard>
       </v-col>
 
       <v-col v-show="!isMobile || showDetailsOnMobile" cols="12" md="8" lg="9" class="customers-column">
-        <v-card class="h-100 customers-card" rounded="xl" variant="elevated">
+        <SurfaceCard class="h-100 customers-card customers-panel">
           <v-card-item class="pb-0">
             <div class="d-flex align-center justify-space-between flex-wrap gap-3">
               <div class="d-flex align-center gap-2">
@@ -126,42 +126,47 @@
             <template v-else>
               <v-row dense class="mb-2">
                 <v-col cols="12" sm="6" md="3">
-                  <v-card class="stat-card" rounded="lg" variant="tonal" color="primary">
-                    <v-card-text>
-                      <div class="text-caption text-medium-emphasis">{{ __('Customer ID') }}</div>
-                      <div class="text-body-1 font-weight-bold text-truncate">{{ selectedCustomer.name }}</div>
-                    </v-card-text>
-                  </v-card>
+                  <StatMetricCard
+                    class="stat-card"
+                    color="primary"
+                    :label="__('Customer ID')"
+                    :value="selectedCustomer.name"
+                    truncate
+                  />
                 </v-col>
 
                 <v-col cols="12" sm="6" md="3">
-                  <v-card class="stat-card" rounded="lg" variant="tonal" color="success" @click="openCustomerOrders" style="cursor: pointer;">
-                    <v-card-text>
-                      <div class="text-caption text-medium-emphasis">{{ __('Linked Invoices') }}</div>
-                      <div class="text-body-1 font-weight-bold">{{ selectedCustomer.linked_invoices || 0 }}</div>
-                    </v-card-text>
-                  </v-card>
+                  <StatMetricCard
+                    class="stat-card"
+                    color="success"
+                    :label="__('Linked Invoices')"
+                    :value="selectedCustomer.linked_invoices || 0"
+                    interactive
+                    @click="openCustomerOrders"
+                  />
                 </v-col>
 
                 <v-col cols="12" sm="6" md="3">
-                  <v-card class="stat-card" rounded="lg" variant="tonal" color="warning" @click="openContactDialog" style="cursor: pointer;">
-                    <v-card-text>
-                      <div class="text-caption text-medium-emphasis">{{ __('Primary Contact') }}</div>
-                      <div class="text-body-1 font-weight-bold text-truncate">
-                        {{ selectedCustomer.customer_primary_contact || __('Not linked') }}
-                      </div>
-                    </v-card-text>
-                  </v-card>
+                  <StatMetricCard
+                    class="stat-card"
+                    color="warning"
+                    :label="__('Primary Contact')"
+                    :value="selectedCustomer.customer_primary_contact || __('Not linked')"
+                    truncate
+                    interactive
+                    @click="openContactDialog"
+                  />
                 </v-col>
                 <v-col cols="12" sm="6" md="3">
-                  <v-card class="stat-card" rounded="lg" variant="tonal" color="info" @click="openAddressDialog" style="cursor: pointer;">
-                    <v-card-text>
-                      <div class="text-caption text-medium-emphasis">{{ __('Primary Address') }}</div>
-                      <div class="text-body-1 font-weight-bold text-truncate">
-                        {{ selectedCustomer.customer_primary_address || __('Not linked') }}
-                      </div>
-                    </v-card-text>
-                  </v-card>
+                  <StatMetricCard
+                    class="stat-card"
+                    color="info"
+                    :label="__('Primary Address')"
+                    :value="selectedCustomer.customer_primary_address || __('Not linked')"
+                    truncate
+                    interactive
+                    @click="openAddressDialog"
+                  />
                 </v-col>
               </v-row>
 
@@ -237,16 +242,19 @@
               </v-row>
             </template>
           </v-card-text>
-        </v-card>
+        </SurfaceCard>
       </v-col>
     </v-row>
-  </v-main>
+  </PageSurface>
 </template>
 
 <script setup>
 import { ref, watch, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useDisplay } from 'vuetify';
+import PageSurface from './components/ui/PageSurface.vue';
+import SurfaceCard from './components/ui/SurfaceCard.vue';
+import StatMetricCard from './components/ui/StatMetricCard.vue';
 
 const __ = window.__;
 

@@ -1,5 +1,5 @@
 <template>
-	<v-main class="stock-entry-view pa-3 pa-md-6">
+	<PageSurface glow="info-warning" class="stock-entry-view pa-3 pa-md-6">
 		<div v-if="!stockEntryEnabled" class="stock-entry-disabled-state">
 			<v-alert type="warning" variant="tonal">
 				{{ __('You do not have permission to manage stock transfers.') }}
@@ -7,7 +7,7 @@
 		</div>
 
 		<template v-else>
-			<v-card class="stock-entry-panel mb-2" rounded="xl" variant="flat">
+			<SurfaceCard class="stock-entry-panel mb-2">
 				<v-card-item>
 					<div class="d-flex align-center justify-space-between flex-wrap gap-3">
 						<div>
@@ -119,9 +119,9 @@
 						</v-btn>
 					</div>
 				</v-card-text>
-			</v-card>
+			</SurfaceCard>
 
-			<v-card class="stock-entry-panel stock-entry-table-panel" rounded="xl" variant="flat">
+			<SurfaceCard class="stock-entry-panel stock-entry-table-panel">
 				<v-tabs v-model="activeTab" color="primary" class="px-2 pt-2">
 					<v-tab value="outgoing">
 						<v-icon size="18" class="me-2">mdi-upload</v-icon>
@@ -200,7 +200,7 @@
 						</div>
 					</v-window-item>
 				</v-window>
-			</v-card>
+			</SurfaceCard>
 
 			<StockTransferDialog v-model="transferDialogOpen" @created="handleTransferCreated" />
 			<StockEntryViewDialog
@@ -210,7 +210,7 @@
 				@updated="handleTransferUpdated"
 			/>
 		</template>
-	</v-main>
+	</PageSurface>
 </template>
 
 <script setup>
@@ -220,6 +220,8 @@
 	import { usePosStore } from '../store/posStore';
 	import StockTransferDialog from './components/stock/StockTransferDialog.vue';
 	import StockEntryViewDialog from './components/stock/StockEntryViewDialog.vue';
+	import PageSurface from './components/ui/PageSurface.vue';
+	import SurfaceCard from './components/ui/SurfaceCard.vue';
 
 	const __ = window.__;
 	const frappe_ = window.frappe;

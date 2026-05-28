@@ -25,41 +25,39 @@
 				<template v-else>
 					<v-row dense class="mb-2">
 						<v-col cols="12" sm="6" md="3">
-							<v-card class="stat-card" rounded="lg" variant="tonal" color="primary">
-								<v-card-text>
-									<div class="text-caption text-medium-emphasis">{{ __('Posting Date') }}</div>
-									<div class="text-body-1 font-weight-bold">{{ doc.posting_date || __('N/A') }}</div>
-								</v-card-text>
-							</v-card>
+							<StatMetricCard
+								class="stat-card"
+								color="primary"
+								:label="__('Posting Date')"
+								:value="doc.posting_date || __('N/A')"
+							/>
 						</v-col>
 
 						<v-col cols="12" sm="6" md="3">
-							<v-card class="stat-card" rounded="lg" variant="tonal" color="success">
-								<v-card-text>
-									<div class="text-caption text-medium-emphasis">{{ __('From Branch') }}</div>
-									<div class="text-body-1 font-weight-bold">{{ doc.from_branch || __('N/A') }}</div>
-								</v-card-text>
-							</v-card>
+							<StatMetricCard
+								class="stat-card"
+								color="success"
+								:label="__('From Branch')"
+								:value="doc.from_branch || __('N/A')"
+							/>
 						</v-col>
 
 						<v-col cols="12" sm="6" md="3">
-							<v-card class="stat-card" rounded="lg" variant="tonal" color="warning">
-								<v-card-text>
-									<div class="text-caption text-medium-emphasis">{{ __('To Branch') }}</div>
-									<div class="text-body-1 font-weight-bold">{{ doc.to_branch || __('N/A') }}</div>
-								</v-card-text>
-							</v-card>
+							<StatMetricCard
+								class="stat-card"
+								color="warning"
+								:label="__('To Branch')"
+								:value="doc.to_branch || __('N/A')"
+							/>
 						</v-col>
 
 						<v-col cols="12" sm="6" md="3">
-							<v-card class="stat-card" rounded="lg" variant="tonal" color="info">
-								<v-card-text>
-									<div class="text-caption text-medium-emphasis">{{ __('Transfer Type') }}</div>
-									<div class="text-body-1 font-weight-bold">
-										{{ Number(doc.add_to_transit) === 1 ? __('In Transit') : __('Received') }}
-									</div>
-								</v-card-text>
-							</v-card>
+							<StatMetricCard
+								class="stat-card"
+								color="info"
+								:label="__('Transfer Type')"
+								:value="Number(doc.add_to_transit) === 1 ? __('In Transit') : __('Received')"
+							/>
 						</v-col>
 					</v-row>
 
@@ -74,7 +72,7 @@
 						</v-col>
 					</v-row>
 
-					<v-card class="section-card" rounded="lg" variant="outlined">
+					<SurfaceCard surface="section" class="section-card">
 						<v-card-item class="pb-1">
 							<div class="text-subtitle-1 font-weight-bold">{{ __('Items') }}</div>
 						</v-card-item>
@@ -91,7 +89,7 @@
 								/>
 							</div>
 						</v-card-text>
-					</v-card>
+					</SurfaceCard>
 				</template>
 			</v-card-text>
 
@@ -137,6 +135,8 @@
 <script setup>
 	import { computed, ref, watch } from 'vue';
 	import { usePosStore } from '../../../store/posStore';
+	import SurfaceCard from '../ui/SurfaceCard.vue';
+	import StatMetricCard from '../ui/StatMetricCard.vue';
 
 	const props = defineProps({
 		modelValue: {

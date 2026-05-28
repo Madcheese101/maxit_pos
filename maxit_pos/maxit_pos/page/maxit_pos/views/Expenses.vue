@@ -1,11 +1,11 @@
 <template>
-	<v-main class="expenses-view pa-3 pa-md-6">
+	<PageSurface glow="success-warning" class="expenses-view pa-3 pa-md-6">
 		<v-alert v-if="!canViewExpenses" type="warning" variant="tonal">
 			{{ __('You do not have permission to manage expenses.') }}
 		</v-alert>
 
 		<template v-else>
-			<v-card class="expenses-panel mb-2" rounded="xl" variant="flat">
+			<SurfaceCard class="expenses-panel mb-2">
 				<v-card-item>
 					<div class="d-flex align-center justify-space-between flex-wrap gap-3">
 						<div>
@@ -115,9 +115,9 @@
 						</v-btn>
 					</div>
 				</v-card-text>
-			</v-card>
+			</SurfaceCard>
 
-			<v-card class="expenses-panel expenses-table-panel" rounded="xl" variant="flat">
+			<SurfaceCard class="expenses-panel expenses-table-panel">
 				<v-card-text class="pa-0 expenses-table-body">
 					<div class="expenses-table-wrap">
 						<v-data-table
@@ -157,7 +157,7 @@
 						</v-data-table>
 					</div>
 				</v-card-text>
-			</v-card>
+			</SurfaceCard>
 
 			<ExpenseDialog v-model="expenseDialogOpen" @created="handleExpenseCreated" />
 			<ExpenseViewDialog
@@ -166,13 +166,15 @@
 				@updated="handleExpenseUpdated"
 			/>
 		</template>
-	</v-main>
+	</PageSurface>
 </template>
 
 <script setup>
 	import { computed, onMounted, ref, watch } from 'vue';
 	import ExpenseDialog from './components/expenses/ExpenseDialog.vue';
 	import ExpenseViewDialog from './components/expenses/ExpenseViewDialog.vue';
+	import PageSurface from './components/ui/PageSurface.vue';
+	import SurfaceCard from './components/ui/SurfaceCard.vue';
 
 	const __ = window.__;
 	const frappe_ = window.frappe;
