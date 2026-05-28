@@ -1,5 +1,5 @@
 <template>
-    <VCard rounded="xl" class="cart-card pa-3" flat>
+    <VCard rounded="xl" class="cart-card pa-3" flat :style="layoutVars">
         <div class="cart-scroll-container">
             <v-data-table
                 v-model:expanded="expanded"
@@ -12,7 +12,6 @@
                 hide-default-header
                 expand-on-click
                 class="cart-table"
-                height="50vh"
             >
                 <template #item.item_name="{ item }">
                     <div class="cart-item-name">
@@ -135,11 +134,15 @@
 
 <script setup>
     import { computed, ref } from 'vue'
+    import { useDisplay } from 'vuetify';
     import { usePosStore } from '../../../store/posStore';
     import {storeToRefs} from 'pinia';
     import { VCard } from 'vuetify/components';
     const __ = window.__;
     const frappe_ = frappe;
+    const { height: viewportHeight } = useDisplay();
+    const cartScrollHeight = computed(() => Math.max(180, (viewportHeight.value || window.innerHeight || 800) - 450));
+    const layoutVars = computed(() => ({ '--cart-scroll-height': `${cartScrollHeight.value}px` }));
     const posStore = usePosStore();
     const {posFrm, posProfileData} = storeToRefs(posStore);
     const {update_cart} = posStore;
@@ -195,7 +198,7 @@
     }
 
     .cart-scroll-container {
-        max-height: 55vh;
+        max-height: var(--cart-scroll-height, 280px);
         overflow-y: auto;
         padding-inline-end: 4px;
     }
@@ -226,14 +229,14 @@
 
     .cart-table :deep(tbody tr:not(.cart-expanded-row) td:first-child) {
         border-inline-start: 1px solid var(--v-pos-panel-border-soft);
-        border-top-left-radius: 12px;
-        border-bottom-left-radius: 12px;
+        border-start-start-radius: 12px;
+        border-end-start-radius: 12px;
     }
 
     .cart-table :deep(tbody tr:not(.cart-expanded-row) td:last-child) {
         border-inline-end: 1px solid var(--v-pos-panel-border-soft);
-        border-top-right-radius: 12px;
-        border-bottom-right-radius: 12px;
+        border-start-end-radius: 12px;
+        border-end-end-radius: 12px;
     }
 
     .cart-item-name {
@@ -258,11 +261,12 @@
     }
 
     .cart-expanded-row td {
-        padding: 0 12px 12px !important;
+        padding-block-end: 12px !important;
+        padding-inline: 12px !important;
         border: 1px solid var(--v-pos-panel-border-soft);
         border-top: 0;
-        border-bottom-left-radius: 12px;
-        border-bottom-right-radius: 12px;
+        border-end-start-radius: 12px;
+        border-end-end-radius: 12px;
         background: var(--v-pos-panel-background);
     }
 
@@ -272,22 +276,17 @@
 
     .cart-table :deep(.v-data-table__tr--expanded td) {
         border-bottom: 0;
-        border-bottom-left-radius: 0 !important;
-        border-bottom-right-radius: 0 !important;
+        border-end-start-radius: 0 !important;
+        border-end-end-radius: 0 !important;
     }
 
     .cart-table :deep(.v-btn--icon.v-data-table-expand__content) {
         color: rgb(var(--v-pos-text-muted));
     }
     .cart-qty-input {
-        width: 5vw;
+        width: 100%;
     }
     td.v-data-table__td.v-data-table-column--no-padding.v-data-table-column--align-start.v-data-table__td--expanded-row {
         display: none;
-    }
-    @media (max-width: 960px) {
-        .cart-qty-input {
-            width: 5vw;
-        }
     }
 </style>

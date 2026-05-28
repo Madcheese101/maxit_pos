@@ -11,7 +11,7 @@
 
       <v-divider />
 
-      <v-card-text class="pt-4">
+      <v-card-text>
         <v-select
           v-model="language"
           :items="languageOptions"
@@ -22,6 +22,7 @@
         />
 
         <v-select
+          class="mt-3"
           v-model="theme"
           :items="themeOptions"
           :label="__('Theme')"

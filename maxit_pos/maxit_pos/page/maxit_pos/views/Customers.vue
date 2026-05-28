@@ -1,5 +1,5 @@
 <template>
-  <PageSurface glow="info-success" class="customers-view pa-3 pa-md-6">
+  <PageSurface glow="info-success" class="customers-view pa-3 pa-md-6" :style="layoutVars">
     <v-row class="customers-shell" align="stretch">
       <v-col v-show="!isMobile || !showDetailsOnMobile" cols="12" md="4" lg="3" class="customers-column">
         <SurfaceCard class="h-100 customers-card customers-list-panel customers-panel">
@@ -259,10 +259,13 @@ import StatMetricCard from './components/ui/StatMetricCard.vue';
 const __ = window.__;
 
 const router = useRouter();
-const { smAndDown } = useDisplay();
+const { smAndDown, height: viewportHeight } = useDisplay();
 
 const isMobile = computed(() => smAndDown.value);
 const backIcon = computed(() => frappe.utils.is_rtl() ? 'mdi-arrow-right' : 'mdi-arrow-left');
+const viewportHeightPx = computed(() => viewportHeight.value || window.innerHeight || 800);
+const listScrollHeight = computed(() => Math.max(200, viewportHeightPx.value - (isMobile.value ? 240 : 290)));
+const layoutVars = computed(() => ({ '--customers-list-height': `${listScrollHeight.value}px` }));
 const showDetailsOnMobile = ref(false);
 
 const customers = ref([]);
@@ -494,8 +497,8 @@ fetchCustomers();
 }
 
 .customers-list {
-  flex: 1;
-  min-height: 0;
+  height: var(--customers-list-height, 300px);
+  max-height: var(--customers-list-height, 300px);
   overflow-y: auto;
 }
 
