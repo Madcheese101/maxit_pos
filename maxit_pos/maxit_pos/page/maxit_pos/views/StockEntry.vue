@@ -7,208 +7,215 @@
 		</div>
 
 		<template v-else>
-			<SurfaceCard class="stock-entry-panel mb-2">
-				<v-card-item>
-					<div class="d-flex align-center justify-space-between flex-wrap gap-3">
-						<div>
-							<div class="text-h6 font-weight-bold">{{ __('Manage Stock Entry') }}</div>
-						</div>
-						<v-btn
-							color="primary"
-							variant="elevated"
-							prepend-icon="mdi-plus"
-							@click="transferDialogOpen = true"
-						>
-							{{ __('New Outgoing Entry') }}
-						</v-btn>
-					</div>
-				</v-card-item>
-
-				<v-divider />
-
-				<v-card-text class="pt-1">
-					<v-row dense>
-						<v-col cols="12" md="2">
-							<v-text-field
-								v-model="fromDate"
-								type="date"
-								:label="__('From Date')"
-								variant="outlined"
-								density="compact"
-								hide-details
-							/>
-						</v-col>
-
-						<v-col cols="12" md="2">
-							<v-text-field
-								v-model="toDate"
-								type="date"
-								:label="__('To Date')"
-								variant="outlined"
-								density="compact"
-								hide-details
-							/>
-						</v-col>
-
-						<v-col cols="12" md="2">
-							<v-autocomplete
-								v-model="selectedFromBranch"
-								:items="branchOptions"
-								item-title="label"
-								item-value="value"
-								:label="__('From Branch')"
-								variant="outlined"
-								density="compact"
-								:loading="isLoadingBranches"
-								hide-details
-								clearable
-								no-filter
-								@update:search="(search) => loadBranchOptions(search, 'from_branch')"
-							/>
-						</v-col>
-
-						<v-col cols="12" md="2">
-							<v-autocomplete
-								v-model="selectedToBranch"
-								:items="branchOptions"
-								item-title="label"
-								item-value="value"
-								:label="__('To Branch')"
-								variant="outlined"
-								density="compact"
-								:loading="isLoadingBranches"
-								hide-details
-								clearable
-								no-filter
-								@update:search="(search) => loadBranchOptions(search, 'to_branch')"
-							/>
-						</v-col>
-
-						<v-col cols="12" md="4">
-							<v-autocomplete
-								v-model="selectedItemCode"
-								:items="itemCodeOptions"
-								item-title="label"
-								item-value="value"
-								:label="__('Item Code')"
-								variant="outlined"
-								density="compact"
-								:loading="isLoadingItems"
-								hide-details
-								clearable
-								no-filter
-								@update:search="loadItemCodeOptions"
-							>
-								<template #item="{ props, item }">
-									<v-list-item
-										v-bind="props"
-										:title="item.raw.label"
-										:subtitle="item.raw.description || undefined"
-									/>
-								</template>
-							</v-autocomplete>
-						</v-col>
-					</v-row>
-
-					<div class="d-flex justify-end flex-wrap ga-2 mt-3">
-						<v-btn color="primary" variant="tonal" prepend-icon="mdi-filter-check" @click="applyFilters">
-							{{ __('Apply Filters') }}
-						</v-btn>
-						<v-btn variant="text" prepend-icon="mdi-filter-remove-outline" @click="resetFilters">
-							{{ __('Clear Filters') }}
-						</v-btn>
-					</div>
-				</v-card-text>
-			</SurfaceCard>
-
-			<SurfaceCard class="stock-entry-panel stock-entry-table-panel">
-				<v-tabs v-model="activeTab" color="primary" class="px-2 pt-2">
-					<v-tab value="outgoing">
-						<v-icon size="18" class="me-2">mdi-upload</v-icon>
-						{{ __('Outgoing Transfers') }}
-					</v-tab>
-					<v-tab value="incoming">
-						<v-icon size="18" class="me-2">mdi-download</v-icon>
-						{{ __('Incoming Transfers') }}
-					</v-tab>
-				</v-tabs>
-
-				<v-divider />
-
-				<v-window v-model="activeTab" class="stock-entry-window">
-					<v-window-item value="outgoing" class="stock-entry-window-item">
-						<div class="stock-entry-table-wrap">
-							<v-data-table
-								:headers="headers"
-								:items="outgoingTransfers"
-								item-value="name"
-								:loading="isLoadingOutgoing"
-								fixed-header
-								height="100%"
-								class="stock-entry-table"
-							>
-								<template #item.status="{ item }">
-									<v-chip size="small" :color="getStatusColor(item)" variant="tonal">
-										{{ getStatusLabel(item) }}
-									</v-chip>
-								</template>
-
-								<template #item.actions="{ item }">
-									<v-btn size="small" color="primary" variant="tonal" @click="openViewDialog('outgoing', item)">
-										{{ __('View') }}
-									</v-btn>
-								</template>
-
-								<template #no-data>
-									<div class="pa-6 text-medium-emphasis text-center">
-										{{ __('No outgoing transfers found for the selected filters.') }}
-									</div>
-								</template>
-							</v-data-table>
-						</div>
-					</v-window-item>
-
-					<v-window-item value="incoming" class="stock-entry-window-item">
-						<div class="stock-entry-table-wrap">
-							<v-data-table
-								:headers="headers"
-								:items="incomingTransfers"
-								item-value="name"
-								:loading="isLoadingIncoming"
-								fixed-header
-								height="100%"
-								class="stock-entry-table"
-							>
-								<template #item.status="{ item }">
-									<v-chip size="small" :color="getStatusColor(item)" variant="tonal">
-										{{ getStatusLabel(item) }}
-									</v-chip>
-								</template>
-
-								<template #item.actions="{ item }">
-									<v-btn size="small" color="primary" variant="tonal" @click="openViewDialog('incoming', item)">
-										{{ __('View') }}
-									</v-btn>
-								</template>
-
-								<template #no-data>
-									<div class="pa-6 text-medium-emphasis text-center">
-										{{ __('No incoming transfers found for the selected filters.') }}
-									</div>
-								</template>
-							</v-data-table>
-						</div>
-					</v-window-item>
-				</v-window>
-			</SurfaceCard>
-
-			<StockTransferDialog v-model="transferDialogOpen" @created="handleTransferCreated" />
-			<StockEntryViewDialog
-				v-model="viewDialogOpen"
-				:docname="selectedDocname"
-				:source-tab="viewSourceTab"
-				@updated="handleTransferUpdated"
+			<StockTransferForm
+				v-if="showCreateForm"
+				@cancel="showCreateForm = false"
+				@created="handleTransferCreated"
 			/>
+
+			<template v-else>
+				<SurfaceCard class="stock-entry-panel mb-2">
+					<v-card-item>
+						<div class="d-flex align-center justify-space-between flex-wrap gap-3">
+							<div>
+								<div class="text-h6 font-weight-bold">{{ __('Manage Stock Entry') }}</div>
+							</div>
+							<v-btn
+								color="primary"
+								variant="elevated"
+								prepend-icon="mdi-plus"
+								@click="showCreateForm = true"
+							>
+								{{ __('New Outgoing Entry') }}
+							</v-btn>
+						</div>
+					</v-card-item>
+
+					<v-divider />
+
+					<v-card-text class="pt-1">
+						<v-row dense>
+							<v-col cols="12" md="2">
+								<v-text-field
+									v-model="fromDate"
+									type="date"
+									:label="__('From Date')"
+									variant="outlined"
+									density="compact"
+									hide-details
+								/>
+							</v-col>
+
+							<v-col cols="12" md="2">
+								<v-text-field
+									v-model="toDate"
+									type="date"
+									:label="__('To Date')"
+									variant="outlined"
+									density="compact"
+									hide-details
+								/>
+							</v-col>
+
+							<v-col cols="12" md="2">
+								<v-autocomplete
+									v-model="selectedFromBranch"
+									:items="branchOptions"
+									item-title="label"
+									item-value="value"
+									:label="__('From Branch')"
+									variant="outlined"
+									density="compact"
+									:loading="isLoadingBranches"
+									hide-details
+									clearable
+									no-filter
+									@update:search="(search) => loadBranchOptions(search, 'from_branch')"
+								/>
+							</v-col>
+
+							<v-col cols="12" md="2">
+								<v-autocomplete
+									v-model="selectedToBranch"
+									:items="branchOptions"
+									item-title="label"
+									item-value="value"
+									:label="__('To Branch')"
+									variant="outlined"
+									density="compact"
+									:loading="isLoadingBranches"
+									hide-details
+									clearable
+									no-filter
+									@update:search="(search) => loadBranchOptions(search, 'to_branch')"
+								/>
+							</v-col>
+
+							<v-col cols="12" md="4">
+								<v-autocomplete
+									v-model="selectedItemCode"
+									:items="itemCodeOptions"
+									item-title="label"
+									item-value="value"
+									:label="__('Item Code')"
+									variant="outlined"
+									density="compact"
+									:loading="isLoadingItems"
+									hide-details
+									clearable
+									no-filter
+									@update:search="loadItemCodeOptions"
+								>
+									<template #item="{ props, item }">
+										<v-list-item
+											v-bind="props"
+											:title="item.raw.label"
+											:subtitle="item.raw.description || undefined"
+										/>
+									</template>
+								</v-autocomplete>
+							</v-col>
+						</v-row>
+
+						<div class="d-flex justify-end flex-wrap ga-2 mt-3">
+							<v-btn color="primary" variant="tonal" prepend-icon="mdi-filter-check" @click="applyFilters">
+								{{ __('Apply Filters') }}
+							</v-btn>
+							<v-btn variant="text" prepend-icon="mdi-filter-remove-outline" @click="resetFilters">
+								{{ __('Clear Filters') }}
+							</v-btn>
+						</div>
+					</v-card-text>
+				</SurfaceCard>
+
+				<SurfaceCard class="stock-entry-panel stock-entry-table-panel">
+					<v-tabs v-model="activeTab" color="primary" class="px-2 pt-2">
+						<v-tab value="outgoing">
+							<v-icon size="18" class="me-2">mdi-upload</v-icon>
+							{{ __('Outgoing Transfers') }}
+						</v-tab>
+						<v-tab value="incoming">
+							<v-icon size="18" class="me-2">mdi-download</v-icon>
+							{{ __('Incoming Transfers') }}
+						</v-tab>
+					</v-tabs>
+
+					<v-divider />
+
+					<v-window v-model="activeTab" class="stock-entry-window">
+						<v-window-item value="outgoing" class="stock-entry-window-item">
+							<div class="stock-entry-table-wrap">
+								<v-data-table
+									:headers="headers"
+									:items="outgoingTransfers"
+									item-value="name"
+									:loading="isLoadingOutgoing"
+									fixed-header
+									height="100%"
+									class="stock-entry-table"
+								>
+									<template #item.status="{ item }">
+										<v-chip size="small" :color="getStatusColor(item)" variant="tonal">
+											{{ getStatusLabel(item) }}
+										</v-chip>
+									</template>
+
+									<template #item.actions="{ item }">
+										<v-btn size="small" color="primary" variant="tonal" @click="openViewDialog('outgoing', item)">
+											{{ __('View') }}
+										</v-btn>
+									</template>
+
+									<template #no-data>
+										<div class="pa-6 text-medium-emphasis text-center">
+											{{ __('No outgoing transfers found for the selected filters.') }}
+										</div>
+									</template>
+								</v-data-table>
+							</div>
+						</v-window-item>
+
+						<v-window-item value="incoming" class="stock-entry-window-item">
+							<div class="stock-entry-table-wrap">
+								<v-data-table
+									:headers="headers"
+									:items="incomingTransfers"
+									item-value="name"
+									:loading="isLoadingIncoming"
+									fixed-header
+									height="100%"
+									class="stock-entry-table"
+								>
+									<template #item.status="{ item }">
+										<v-chip size="small" :color="getStatusColor(item)" variant="tonal">
+											{{ getStatusLabel(item) }}
+										</v-chip>
+									</template>
+
+									<template #item.actions="{ item }">
+										<v-btn size="small" color="primary" variant="tonal" @click="openViewDialog('incoming', item)">
+											{{ __('View') }}
+										</v-btn>
+									</template>
+
+									<template #no-data>
+										<div class="pa-6 text-medium-emphasis text-center">
+											{{ __('No incoming transfers found for the selected filters.') }}
+										</div>
+									</template>
+								</v-data-table>
+							</div>
+						</v-window-item>
+					</v-window>
+				</SurfaceCard>
+
+				<StockEntryViewDialog
+					v-model="viewDialogOpen"
+					:docname="selectedDocname"
+					:source-tab="viewSourceTab"
+					@updated="handleTransferUpdated"
+				/>
+			</template>
 		</template>
 	</PageSurface>
 </template>
@@ -218,7 +225,7 @@
 	import { storeToRefs } from 'pinia';
 	import { useRoute, useRouter } from 'vue-router';
 	import { usePosStore } from '../store/posStore';
-	import StockTransferDialog from './components/stock/StockTransferDialog.vue';
+	import StockTransferForm from './components/stock/StockTransferForm.vue';
 	import StockEntryViewDialog from './components/stock/StockEntryViewDialog.vue';
 	import PageSurface from './components/ui/PageSurface.vue';
 	import SurfaceCard from './components/ui/SurfaceCard.vue';
@@ -230,7 +237,7 @@
 	const posStore = usePosStore();
 	const { posProfileData } = storeToRefs(posStore);
 
-	const transferDialogOpen = ref(false);
+	const showCreateForm = ref(false);
 	const viewDialogOpen = ref(false);
 	const selectedDocname = ref('');
 	const viewSourceTab = ref('outgoing');
@@ -489,6 +496,7 @@
 	}
 
 	function handleTransferCreated() {
+		showCreateForm.value = false;
 		loadTransfers();
 	}
 

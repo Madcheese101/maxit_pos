@@ -4,6 +4,7 @@ from frappe.utils import cint, flt
 from frappe.model.mapper import get_mapped_doc
 from frappe.model.document import Document
 
+
 def _get_user_branch():
     user_branch = frappe.session.data.get("user_branch")
     if not user_branch:
