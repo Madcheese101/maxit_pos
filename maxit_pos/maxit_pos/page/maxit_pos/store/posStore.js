@@ -222,7 +222,8 @@ export const usePosStore = defineStore('posStore', () => {
 	}
     const update_cart = async (args) => {
         
-        let { field, value, item, is_number } = args;        
+        let { field, value, item, is_number } = args;
+        item["uom"] = item["uom"] || item["stock_uom"];
         const index = get_item_from_frm(item);
         const item_row_exists = index >= 0;
         // const item_row_exists = 0;
@@ -320,9 +321,12 @@ export const usePosStore = defineStore('posStore', () => {
 			const has_batch_no = batch_no !== "null" && batch_no !== null;
             index = frm.doc.items.findIndex(
 				(i) =>
-					i.item_code === item_code &&
-					(!has_batch_no || (has_batch_no && i.batch_no === batch_no)) &&
-					i.uom === uom &&
+					i.item_code === item_code 
+                    &&
+					(!has_batch_no || (has_batch_no && i.batch_no === batch_no)) 
+                    &&
+					i.uom === uom 
+                    &&
 					i.price_list_rate === flt(rate)
 			);
 		}
