@@ -5,6 +5,7 @@ from frappe import _
 from frappe.utils import cint, flt, formatdate, now_datetime, nowdate
 from frappe.www.printview import get_letter_head
 from erpnext.accounts.utils import get_account_currency, get_balance_on
+from frappe.utils.jinja_globals import is_rtl
 
 CASH_NOTES = (5, 10, 20, 50)
 
