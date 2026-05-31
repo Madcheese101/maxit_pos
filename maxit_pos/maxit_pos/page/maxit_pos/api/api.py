@@ -100,7 +100,7 @@ def create_and_submit_pos_closing_entry(pos_profile, company, pos_opening_entry)
 
     closing_entry = frappe.new_doc("POS Closing Entry")
     closing_entry.pos_profile = pos_profile
-    closing_entry.user = frappe.session.user
+    closing_entry.user = opening_entry.user
     closing_entry.company = company
     closing_entry.pos_opening_entry = pos_opening_entry
     closing_entry.period_start_date = opening_entry.period_start_date
@@ -193,7 +193,7 @@ def create_and_submit_pos_closing_entry(pos_profile, company, pos_opening_entry)
     closing_entry.insert()
     closing_entry.submit()
 
-    return closing_entry.name
+    return closing_entry.name, closing_entry.user 
 
 @frappe.whitelist()
 def cancel_invoice(name):

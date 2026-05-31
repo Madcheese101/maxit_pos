@@ -392,7 +392,8 @@ export const usePosStore = defineStore('posStore', () => {
             },
             freeze: true,
         }).then((response) => {
-            const closingEntryName = response.message;
+            const closingEntryName = response.message[0];
+            const closingEntryUser = response.message[1];
 
             pos_opening.value = '';
             pos_opening_time.value = null;

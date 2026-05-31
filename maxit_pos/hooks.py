@@ -168,23 +168,29 @@ doc_events = {
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"maxit_pos.tasks.all"
-# 	],
-# 	"daily": [
-# 		"maxit_pos.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"maxit_pos.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"maxit_pos.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"maxit_pos.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+	# "all": [
+	# 	"maxit_pos.tasks.all"
+	# ],
+	# "daily": [
+	# 	"maxit_pos.tasks.daily"
+	# ],
+	# "hourly": [
+	# 	"maxit_pos.tasks.hourly"
+	# ],
+	# "weekly": [
+	# 	"maxit_pos.tasks.weekly"
+	# ],
+	# "monthly": [
+	# 	"maxit_pos.tasks.monthly"
+	# ],
+    "cron": {
+        # run at 12AM
+        "0 0 * * *":[
+            "maxit_pos.tasks.close_sifts",
+        ]
+	}
+}
 
 # Testing
 # -------

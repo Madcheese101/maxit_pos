@@ -38,7 +38,7 @@
     import SideBar from './views/components/SideBar.vue';
     import { usePosStore } from './store/posStore';
     import {storeToRefs} from 'pinia';
-    import {ref, watch} from 'vue';
+    import {ref, watch, onMounted} from 'vue';
     import { useTheme } from 'vuetify';
     const isLoading = ref(true);
     const props = defineProps(['posProfileData', 'appDefaults']);
@@ -58,6 +58,19 @@
     make_new_invoice().then(() => {
       isLoading.value = false;
     })
+
+    frappe.realtime.on("shift_closed", (data) => { 
+      
+    });
+    onMounted(async () => {
+      if (frappe.realtime && typeof frappe.realtime.on === "function") {
+        frappe.realtime.on("shift_closed", (data) => {
+          console.log("Received shift_closed event:", data);
+          if(!data.user_name || !data.closing_entry_name) return;
+          if (data.user_name === frappe.session.user) window.location.reload();
+        });
+      }
+    });
   </script>
   
   <style>
