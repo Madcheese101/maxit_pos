@@ -137,7 +137,7 @@
 	import { usePosStore } from '../../../store/posStore';
 	import SurfaceCard from '../ui/SurfaceCard.vue';
 	import StatMetricCard from '../ui/StatMetricCard.vue';
-
+	
 	const props = defineProps({
 		modelValue: {
 			type: Boolean,
@@ -189,7 +189,7 @@
 			return { label: __('Received'), color: 'success' };
 		}
 
-		if (Number(doc.value?.add_to_transit || 0) === 1) {
+		if (Number(doc.value?.add_to_transit || 0) === 1 && !doc.value?.outgoing_stock_entry) {
 			return { label: __('In Transit'), color: 'warning' };
 		}
 
@@ -200,13 +200,16 @@
 		const isSubmitted = Number(doc.value?.docstatus || 0) === 1;
 		const isInTransit = Number(doc.value?.add_to_transit || 0) === 1;
 		const isTransferred = Number(doc.value?.per_transferred || 0) > 0;
-
-		return isSubmitted && !(isInTransit && isTransferred);
+		const isSourceBranch = doc.value?.from_branch === frappe.boot.user_branch;
+		const isDestBranch = doc.value?.to_branch === frappe.boot.user_branch;
+		const hasBranchPermission = isInTransit ? isSourceBranch : (isSourceBranch || isDestBranch);
+		return isSubmitted && !(isInTransit && isTransferred) && hasBranchPermission;
 	});
 	const canReceive = computed(() => {
 		return props.sourceTab === 'incoming'
 			&& Number(doc.value?.docstatus || 0) === 1
-			&& Number(doc.value?.add_to_transit || 0) === 1;
+			&& Number(doc.value?.add_to_transit || 0) === 1
+			&& !doc.value?.outgoing_stock_entry;
 	});
 
 	watch(
@@ -256,6 +259,10 @@
 	}
 
 	function cancelTransfer() {
+		if (doc.value?.add_to_transit && doc.value?.from_branch !== frappe.boot.user_branch) {
+			frappe_.alert(__('Only the branch which initiated the transfer can cancel it.'), { indicator: 'red' });
+			return;
+		}
 		frappe_.confirm(
 			__('Are you sure you want to cancel this stock entry?'),
 			async () => {

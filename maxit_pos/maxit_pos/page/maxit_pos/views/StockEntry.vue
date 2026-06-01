@@ -326,7 +326,7 @@
 		if (Number(item.per_transferred || 0) > 0) {
 			return __('Received');
 		}
-		if (add_to_transit === 1) {
+		if (add_to_transit === 1 && !item.outgoing_stock_entry) {
 			return __('In Transit');
 		}
 		if(add_to_transit === 0) {
@@ -348,10 +348,10 @@
 			return 'success';
 		}
 
-		if (add_to_transit === 1) {
+		if (add_to_transit === 1 && !item.outgoing_stock_entry) {
 			return 'warning';
 		}
-		if(add_to_transit === 0) {
+		if(add_to_transit === 0 && item.outgoing_stock_entry) {
 			return 'success';
 		}
 		return 'info';
