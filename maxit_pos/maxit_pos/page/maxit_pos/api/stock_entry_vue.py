@@ -155,6 +155,7 @@ def get_outgoing_transfers(filters): # filters should be a dict with keys (from_
         "stock_entry_type": "Material Transfer",
         "from_branch": user_branch,
         "add_to_transit": 1,
+        "outgoing_stock_entry": ["in", ("", None)],
     }
 
     if filters.get("from_date") and filters.get("to_date"):
