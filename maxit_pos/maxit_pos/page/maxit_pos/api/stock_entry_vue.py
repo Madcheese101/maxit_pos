@@ -71,6 +71,7 @@ def make_stock_in_entry(source_name: str, target_doc: str | Document | None = No
         target.from_branch = source.from_branch
         target.to_branch = source.to_branch
         target.set_missing_values()
+        target.add_to_transit = 0
 
         if not frappe.get_single_value("Stock Settings", "use_serial_batch_fields"):
             target.make_serial_and_batch_bundle_for_transfer()
