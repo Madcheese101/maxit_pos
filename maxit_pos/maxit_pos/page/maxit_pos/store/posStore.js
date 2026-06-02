@@ -214,7 +214,8 @@ export const usePosStore = defineStore('posStore', () => {
 				frappe.model.sync(r.message);
 				frappe.get_doc(r.message.doctype, r.message.name).__run_link_triggers = false;
 				// this.set_pos_profile_data();
-                
+                const items = r.message.items || [];
+                posFrm.value.doc.items = [...items];
                 // above line sets pos profile data for invoice according to current pos profile
                 // useful when returning an invoice created in different pos profile.
 			},
