@@ -145,16 +145,13 @@ doctype_js = {
 # ---------------
 # Hook on document methods and events
 
-doc_events = {
+# doc_events = {
 	# "*": {
 	# 	"on_update": "method",
 	# 	"on_cancel": "method",
 	# 	"on_trash": "method"
 	# }
-    "Stock Entry": {
-        "before_save": "maxit_pos.events.before_stock_entry_save"
-    }
-}
+# }
 
 doc_events = {
     "POS Profile": {
@@ -166,6 +163,9 @@ doc_events = {
         "on_trash": "maxit_pos.maxit_pos.page.maxit_pos.api.api.on_item_group_cache_invalidate",
         "after_rename": "maxit_pos.maxit_pos.page.maxit_pos.api.api.on_item_group_cache_invalidate",
     },
+    "Stock Entry": {
+        "before_submit": "maxit_pos.events.stock_entry_before_submit",
+    }
 }
 
 # Scheduled Tasks

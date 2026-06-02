@@ -1,5 +1,5 @@
 import frappe
 
-def before_stock_entry_save(doc, method):
+def stock_entry_before_submit(doc, method):
     if doc.outgoing_stock_entry:
         doc.add_to_transit = 0
