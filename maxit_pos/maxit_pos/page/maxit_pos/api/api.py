@@ -1202,3 +1202,12 @@ def process_items_data(result: list, items_uoms: list, items_data: list, hide_un
                 "batch_no": item_uom_price.get("batch_no"),
             }
         )
+
+
+@frappe.whitelist()
+def make_sales_return(source_name):
+    from erpnext.controllers.sales_and_purchase_return import make_return_doc
+
+    target_doc = frappe.new_doc("Sales Invoice")
+    target_doc.flags.ignore_permissions = True
+    return make_return_doc("Sales Invoice", source_name, target_doc)
