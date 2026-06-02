@@ -150,16 +150,24 @@
                   />
                 </v-col>
 
-                <v-col cols="12" sm="6" md="4">
+                <v-col cols="12" sm="6" md="3">
                   <StatMetricCard
                     class="stat-card"
-                    color="success"
+                    color="primary"
                     :label="__('Grand Total')"
                     :value="`${invoice.grand_total} ${invoice.price_list_currency}`"
                   />
                 </v-col>
 
-                <v-col cols="12" sm="6" md="4">
+                <v-col cols="12" sm="6" md="3">
+                  <StatMetricCard
+                    class="stat-card"
+                    color="success"
+                    :label="__('Paid Amount')"
+                    :value="`${invoice.paid_amount} ${invoice.price_list_currency}`"
+                  />
+                </v-col>
+                <v-col cols="12" sm="6" md="2">
                   <StatMetricCard
                     class="stat-card"
                     color="warning"
@@ -169,18 +177,7 @@
                 </v-col>
               </v-row>
 
-              <v-row class="mb-1" dense>
-                <v-col cols="12" md="6">
-                  <div class="meta-row"><strong>{{ __('Status') }}:</strong> {{ invoice.status || 'N/A' }}</div>
-                  <div class="meta-row"><strong>{{ __('Date') }}:</strong> {{ invoice.posting_date || 'N/A' }}</div>
-                </v-col>
-                <v-col cols="12" md="6">
-                  <div class="meta-row"><strong>{{ __('Paid Amount') }}:</strong> {{ invoice.paid_amount || '0' }} {{ invoice.price_list_currency }}</div>
-                  <div class="meta-row"><strong>{{ __('Outstanding Amount') }}:</strong> {{ invoice.outstanding_amount || '0' }} {{ invoice.price_list_currency }}</div>
-                </v-col>
-              </v-row>
-
-              <SurfaceCard v-if="invoice.items?.length" surface="section" class="section-card mt-4">
+              <SurfaceCard v-if="invoice.items?.length" surface="section" class="section-card mt-3">
                 <v-card-item class="pb-1">
                   <div class="text-subtitle-1 font-weight-bold">{{ __('Items') }}</div>
                 </v-card-item>
@@ -195,7 +192,7 @@
                 </v-card-text>
               </SurfaceCard>
 
-              <SurfaceCard v-if="invoice.payments?.length" surface="section" class="section-card mt-4">
+              <SurfaceCard v-if="invoice.payments?.length" surface="section" class="section-card mt-3">
                 <v-card-item class="pb-1">
                   <div class="text-subtitle-1 font-weight-bold">{{ __('Payments') }}</div>
                 </v-card-item>
@@ -210,7 +207,7 @@
                 </v-card-text>
               </SurfaceCard>
 
-              <SurfaceCard v-if="paymentEntries?.length" surface="section" class="section-card mt-4">
+              <SurfaceCard v-if="paymentEntries?.length" surface="section" class="section-card mt-3">
                 <v-card-item class="pb-1">
                   <div class="text-subtitle-1 font-weight-bold">{{ __('Payment Entries') }}</div>
                 </v-card-item>
@@ -236,7 +233,7 @@
                 </v-card-text>
               </SurfaceCard>
 
-              <div class="actions-wrap mt-5">
+              <div class="actions-wrap mt-4">
                 <v-btn
                   v-if="invoice.docstatus !== 0"
                   color="primary"
@@ -350,10 +347,12 @@
     const showDetailsOnMobile = ref(false);
     const viewportHeightPx = computed(() => viewportHeight.value || window.innerHeight || 800);
     const listScrollHeight = computed(() => Math.max(220, viewportHeightPx.value - (isMobile.value ? 230 : 260)));
-    const itemsTableHeight = computed(() => Math.max(100, Math.round(viewportHeightPx.value * 0.22)));
+    const detailsBodyHeight = computed(() => Math.max(550, viewportHeightPx.value - (isMobile.value ? 175 : 200)));
+    const itemsTableHeight = computed(() => Math.max(180, Math.round(viewportHeightPx.value * 0.22)));
     const paymentsTableHeight = computed(() => Math.max(80, Math.round(viewportHeightPx.value * 0.12)));
     const layoutVars = computed(() => ({
       '--orders-list-height': `${listScrollHeight.value}px`,
+      '--orders-details-body-height': `${detailsBodyHeight.value}px`,
     }));
     const invoiceListStyle = computed(() => ({
       height: 'var(--orders-list-height)',
@@ -591,10 +590,9 @@
 }
 
 .orders-details-body {
-  flex: 1;
-  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  max-height: var(--orders-details-body-height, 600px);
 }
 
 .orders-panel {
