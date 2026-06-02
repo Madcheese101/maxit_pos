@@ -1,5 +1,5 @@
 <template>
-    <VCard rounded="xl" class="cart-card pa-3" flat :style="layoutVars">
+    <VCard rounded="xl" class="cart-card pa-3" flat>
         <div class="cart-scroll-container">
             <v-data-table
                 v-model:expanded="expanded"
@@ -126,6 +126,50 @@
             <div class="text-h6" v-html="frappe_.format(posFrm?.doc?.total, {'fieldtype': 'Currency'})"></div>
         </div>
 
+        <div v-if="allow_discount_change" class="d-flex justify-space-between align-center mt-2 gap-3" @click.stop>
+            <div class="text-subtitle-2 text-medium-emphasis flex-shrink-0">{{ __('Discount') }}</div>
+            <div class="invoice-discount-input">
+                <v-number-input
+                    v-if="invoiceDiscountType === 'Amount'"
+                    v-model="posFrm.doc.discount_amount"
+                    control-variant="hidden"
+                    variant="outlined"
+                    density="compact"
+                    :precision="2"
+                    :min="0"
+                    hide-details
+                    @change="applyInvoiceDiscount"
+                >
+                    <template #append-inner>
+                        <v-btn size="x-small" variant="text" @click.stop="toggleInvoiceDiscountType">
+                            {{ priceListCurrency }}
+                        </v-btn>
+                    </template>
+                </v-number-input>
+                <v-number-input
+                    v-else
+                    v-model="posFrm.doc.additional_discount_percentage"
+                    control-variant="hidden"
+                    variant="outlined"
+                    density="compact"
+                    :precision="2"
+                    :min="0"
+                    :max="100"
+                    hide-details
+                    @change="applyInvoiceDiscount"
+                >
+                    <template #append-inner>
+                        <v-btn size="x-small" variant="text" @click.stop="toggleInvoiceDiscountType" text="%" />
+                    </template>
+                </v-number-input>
+            </div>
+        </div>
+
+        <div class="d-flex justify-space-between align-center mt-1">
+            <div class="text-subtitle-1 font-weight-bold">{{ __('Net Total') }}</div>
+            <div class="text-h6 font-weight-bold" v-html="frappe_.format(posFrm?.doc?.grand_total, {'fieldtype': 'Currency'})"></div>
+        </div>
+
         <v-btn color="green-lighten-1" class="mt-3" block @click="emit('checkout')">
             {{ __('Checkout') }}
         </v-btn>
@@ -133,16 +177,12 @@
 </template>
 
 <script setup>
-    import { computed, ref } from 'vue'
-    import { useDisplay } from 'vuetify';
+    import { computed, ref, triggerRef } from 'vue'
     import { usePosStore } from '../../../store/posStore';
     import {storeToRefs} from 'pinia';
     import { VCard } from 'vuetify/components';
     const __ = window.__;
     const frappe_ = frappe;
-    const { height: viewportHeight } = useDisplay();
-    const cartScrollHeight = computed(() => Math.max(180, (viewportHeight.value || window.innerHeight || 800) - 450));
-    const layoutVars = computed(() => ({ '--cart-scroll-height': `${cartScrollHeight.value}px` }));
     const posStore = usePosStore();
     const {posFrm, posProfileData} = storeToRefs(posStore);
     const {update_cart} = posStore;
@@ -187,6 +227,24 @@
         item.discount_type =
         item.discount_type === 'Percentage' ? 'Amount' : 'Percentage'
     }
+
+    const invoiceDiscountType = ref('Amount')
+
+    async function applyInvoiceDiscount() {
+        await posFrm.value.script_manager.trigger("calculate_taxes_and_totals");
+        triggerRef(posFrm);
+    }
+
+    function toggleInvoiceDiscountType() {
+        if (invoiceDiscountType.value === 'Percentage') {
+            invoiceDiscountType.value = 'Amount'
+            posFrm.value.doc.additional_discount_percentage = 0
+        } else {
+            invoiceDiscountType.value = 'Percentage'
+            posFrm.value.doc.discount_amount = 0
+        }
+        applyInvoiceDiscount()
+    }
 </script>
 
 <style scoped>
@@ -198,7 +256,7 @@
     }
 
     .cart-scroll-container {
-        max-height: var(--cart-scroll-height, 280px);
+        max-height: clamp(160px, 40dvh, 700px);
         overflow-y: auto;
         padding-inline-end: 4px;
     }
@@ -288,5 +346,9 @@
     }
     td.v-data-table__td.v-data-table-column--no-padding.v-data-table-column--align-start.v-data-table__td--expanded-row {
         display: none;
+    }
+
+    .invoice-discount-input {
+        width: 160px;
     }
 </style>

@@ -314,6 +314,7 @@
     const frappe_ = frappe;
     const __ = window.__;
     const invoiceItemHeaders = [
+      { title: __('Item Code'), key: 'item_code' },
       { title: __('Item Name'), key: 'item_name' },
       { title: __('Qty'), key: 'qty' },
       { title: __('Rate'), key: 'rate' },
@@ -347,7 +348,7 @@
     const showDetailsOnMobile = ref(false);
     const viewportHeightPx = computed(() => viewportHeight.value || window.innerHeight || 800);
     const listScrollHeight = computed(() => Math.max(220, viewportHeightPx.value - (isMobile.value ? 230 : 260)));
-    const detailsBodyHeight = computed(() => Math.max(550, viewportHeightPx.value - (isMobile.value ? 175 : 200)));
+    const detailsBodyHeight = computed(() => Math.max(400, viewportHeightPx.value - (isMobile.value ? 175 : 200)));
     const itemsTableHeight = computed(() => Math.max(180, Math.round(viewportHeightPx.value * 0.22)));
     const paymentsTableHeight = computed(() => Math.max(80, Math.round(viewportHeightPx.value * 0.12)));
     const layoutVars = computed(() => ({
@@ -592,7 +593,7 @@
 .orders-details-body {
   overflow-y: auto;
   overflow-x: hidden;
-  max-height: var(--orders-details-body-height, 600px);
+  max-height: var(--orders-details-body-height, 300px);
 }
 
 .orders-panel {
