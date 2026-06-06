@@ -142,12 +142,16 @@ def create_expense(doc):
 				"cost_center": cost_center,
 			},
 		)
-
 	expense_claim.set_expense_account()
 	expense_claim.calculate_total_amount()
 	expense_claim.calculate_taxes()
 	_populate_claim_advances(expense_claim)
 	_update_employee_advance_claimed_amount(expense_claim)
+	if expense_claim.total_sanctioned_amount > expense_claim.total_advance_amount:
+		frappe.throw(
+			(_("Custody Account Balance is insufficient, still need {0} more.")
+				.format(expense_claim.total_sanctioned_amount - expense_claim.total_advance_amount))
+		)
 	expense_claim.flags.ignore_permissions = True
 	expense_claim.save()
 	expense_claim.submit()
