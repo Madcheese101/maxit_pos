@@ -2,7 +2,7 @@ import json
 
 import frappe
 from frappe import _
-from frappe.utils import cint, flt, formatdate, now_datetime, nowdate
+from frappe.utils import cint, flt, formatdate, now_datetime, nowdate, today
 from frappe.www.printview import get_letter_head
 from erpnext.accounts.utils import get_account_currency, get_balance_on
 from frappe.utils.jinja_globals import is_rtl
@@ -651,3 +651,16 @@ def _get_mode_of_payment_meta(mode_of_payments, company=None):
 		)
 
 	return result
+
+
+@frappe.whitelist()
+def get_current_balance_msg(mode_of_payments, date=None):
+	branch = frappe.session.data.get("user_branch")
+	if isinstance(mode_of_payments, str):
+		mode_of_payments = json.loads(mode_of_payments)
+	msg = branch + f': ({date}) <br>' + '<ul>'
+	for mode in mode_of_payments:
+		balance = get_balance_on(mode["default_account"], today(), ignore_account_permission=True) or 0
+		msg += f'<li>{mode["name"]}: {frappe.format_value(balance, {"fieldtype":"Currency"})} </li>'
+	msg += '</ul>'
+	frappe.msgprint(msg)

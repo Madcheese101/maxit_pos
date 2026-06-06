@@ -13,6 +13,13 @@
 						</div>
 						<div class="d-flex align-center flex-wrap ga-1">
 							<v-btn
+								icon="mdi-wallet-outline"
+								variant="tonal"
+								size="small"
+								:title="__('Check Custody Balance')"
+								@click="checkCustodyBalance"
+							/>
+							<v-btn
 								color="primary"
 								variant="elevated"
 								prepend-icon="mdi-plus"
@@ -288,6 +295,12 @@
 
 		selectedExpenseName.value = name;
 		expenseViewDialogOpen.value = true;
+	}
+
+	async function checkCustodyBalance() {
+		await frappe.call({
+			method: 'maxit_pos.maxit_pos.page.maxit_pos.api.expenses_vue.get_custody_account_balance',
+		});
 	}
 
 	async function loadExpenseTypeOptions(search = '') {

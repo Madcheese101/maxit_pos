@@ -24,7 +24,6 @@
 												<div class="text-overline text-medium-emphasis">{{ __('Close Day') }}</div>
 												<div class="text-h6 font-weight-bold">{{ __('Select Note Count') }}</div>
 											</div>
-
 											<v-menu location="bottom end" offset="8">
 												<template #activator="{ props }">
 													<v-btn
@@ -48,6 +47,15 @@
 															{{ __('New Note Count') }}
 														</v-btn>
 														<v-btn
+															color="primary"
+															variant="text"
+															prepend-icon="mdi-wallet-outline"
+															size="small"
+															@click="checkBalance"
+														>
+															{{ __('Check Balance') }}
+														</v-btn>
+														<v-btn
 															color="secondary"
 															variant="text"
 															prepend-icon="mdi-refresh"
@@ -56,6 +64,7 @@
 														>
 															{{ __('Refresh') }}
 														</v-btn>
+														
 													</v-card-text>
 												</SurfaceCard>
 											</v-menu>
@@ -198,14 +207,6 @@
 													/>
 												</v-col>
 											</v-row>
-
-											<v-row class="mb-1" dense>
-												<v-col cols="12" md="7">
-													<div class="meta-row"><strong>{{ __('Status') }}:</strong> {{ selectedNoteEntry.status }}</div>
-													<div class="meta-row"><strong>{{ __('Posting Date') }}:</strong> {{ selectedNoteEntry.posting_date }}</div>
-												</v-col>
-											</v-row>
-
 											<SurfaceCard surface="section" class="section-card mt-3">
 												<v-card-item class="pb-1">
 													<div class="text-subtitle-1 font-weight-bold">
@@ -278,6 +279,15 @@
 
 												<SurfaceCard surface="menu" class="close-day-menu" min-width="180">
 													<v-card-text class="pa-2 d-flex flex-column ga-2">
+														<v-btn
+															color="primary"
+															variant="text"
+															prepend-icon="mdi-wallet-outline"
+															size="small"
+															@click="checkBalance"
+														>
+															{{ __('Check Balance') }}
+														</v-btn>
 														<v-btn
 															color="primary"
 															variant="text"
@@ -450,11 +460,9 @@
 
 											<v-row class="mb-1" dense>
 												<v-col cols="12" md="6">
-													<div class="meta-row"><strong>{{ __('Status') }}:</strong> {{ selectedPaymentEntry.status }}</div>
-													<div class="meta-row"><strong>{{ __('Posting Date') }}:</strong> {{ selectedPaymentEntry.posting_date }}</div>
+													<div class="meta-row"><strong>{{ __('From Account') }}:</strong> {{ selectedPaymentEntry.paid_from }}</div>
 												</v-col>
 												<v-col cols="12" md="6">
-													<div class="meta-row"><strong>{{ __('From Account') }}:</strong> {{ selectedPaymentEntry.paid_from }}</div>
 													<div class="meta-row"><strong>{{ __('To Account') }}:</strong> {{ selectedPaymentEntry.paid_to }}</div>
 												</v-col>
 											</v-row>
@@ -1037,6 +1045,22 @@
 		} finally {
 			isCancellingPaymentEntry.value = false;
 		}
+	}
+	async function checkBalance() {
+		frappe.prompt({
+			label: __('Select Date'),
+			fieldname: 'date',
+			fieldtype: 'Date',
+			reqd: true,
+		}, (values) => {
+			frappe.call({
+				method: 'maxit_pos.maxit_pos.page.maxit_pos.api.close_day_vue.get_current_balance_msg',
+				args: {
+					date: values.date,
+					mode_of_payments: modeOfPayments.value || [],
+				},
+			});
+		});
 	}
 </script>
 
