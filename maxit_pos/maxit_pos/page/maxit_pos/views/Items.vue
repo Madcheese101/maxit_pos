@@ -1,6 +1,6 @@
 <template>
-	<v-main class="items-view pa-2 pa-md-4" :style="layoutVars">
-		<v-card rounded="xl" variant="flat" class="pa-3 pa-md-4 items-filters-card">
+	<PageSurface glow="info-success" class="items-view pa-2 pa-md-4" :style="layoutVars">
+		<SurfaceCard surface="filter" class="pa-3 pa-md-4 items-filters-card">
 			<v-row dense>
 				<v-col cols="12" md="4">
 					<v-text-field
@@ -64,9 +64,9 @@
 					</v-btn>
 				</v-col>
 			</v-row>
-		</v-card>
+		</SurfaceCard>
 
-		<v-card rounded="xl" variant="flat" class="mt-4 items-results-card">
+		<SurfaceCard surface="results" class="mt-4 items-results-card">
 			<v-card-item>
 				<div class="d-flex justify-space-between align-center flex-wrap ga-2">
 					<div>
@@ -130,31 +130,78 @@
 							<div class="font-weight-bold">{{ item.rate }} {{ item.currency }}</div>
 						</template>
 						<template #item.get_stock_btn="{ item }">
-							<v-btn
-								variant="tonal"
-								color="primary"
-								block
-								@click="getItemStock(item)"
-							>
-								{{ __('Get Stock') }}
-							</v-btn>
+							<v-menu location="bottom end" offset="8">
+								<template #activator="{ props }">
+									<v-btn
+										v-bind="props"
+										icon="mdi-dots-vertical"
+										variant="text"
+										size="small"
+										color="primary"
+									/>
+								</template>
+
+								<SurfaceCard surface="menu" min-width="220">
+									<v-card-text class="pa-2 d-flex flex-column ga-2">
+										<v-btn
+											color="primary"
+											variant="text"
+											prepend-icon="mdi-package-variant"
+											justify="start"
+											@click="getItemStock(item)"
+										>
+											{{ __('Get Stock') }}
+										</v-btn>
+
+										<v-btn
+											color="secondary"
+											variant="text"
+											prepend-icon="mdi-swap-horizontal"
+											justify="start"
+											@click="openStockEntry(item)"
+										>
+											{{ __('Stock Entry') }}
+										</v-btn>
+
+										<v-btn
+											color="secondary"
+											variant="text"
+											prepend-icon="mdi-receipt-text-outline"
+											justify="start"
+											@click="openOrders(item)"
+										>
+											{{ __('Orders') }}
+										</v-btn>
+									</v-card-text>
+								</SurfaceCard>
+							</v-menu>
 						</template>
 					</v-data-table-virtual>
 				</div>
 
 			</v-card-text>
-		</v-card>
-	</v-main>
+		</SurfaceCard>
+	</PageSurface>
 </template>
+
+<script>
+export default {
+	name: 'Items',
+};
+</script>
 
 <script setup>
 import { computed, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
+import { useRouter } from 'vue-router';
 import { useDisplay } from 'vuetify';
 import { usePosStore } from '../store/posStore';
+import PageSurface from './components/ui/PageSurface.vue';
+import SurfaceCard from './components/ui/SurfaceCard.vue';
 
 const frappe_ = window.frappe;
 const __ = window.__;
+const router = useRouter();
 
 const posStore = usePosStore();
 const { posProfileData } = storeToRefs(posStore);
@@ -219,8 +266,9 @@ const headers = computed(() => {
 });
 
 const getItemStock = async (item) => {
+	const method = posProfileData.value?.allow_purchase ? 'get_item_stock_from_main_company' : 'get_item_stock_from_sister_branches';
 	frappe.call({
-		method: 'maxit_pos.maxit_pos.page.maxit_pos.api.items_vue.get_item_stock_from_sister_branches',
+		method: `maxit_pos.maxit_pos.page.maxit_pos.api.items_vue.${method}`,
 		args: {
 			item_code: item.item_code,
 			item_name: item.item_name || '',
@@ -228,8 +276,19 @@ const getItemStock = async (item) => {
 		},
 		freeze: true,
 		freeze_message: __('Getting stock...'),
-	})
+	});
 };
+
+const openStockEntry = (item) => router.push({
+	name: 'StockEntry',
+	query: { item_code: item.item_code || '' },
+});
+
+const openOrders = (item) => router.push({
+	name: 'Orders',
+	query: { item_code: item.item_code || '' },
+});
+
 const loadDynamicFilters = async () => {
 	const customFilters = posProfileData.value?.custom_filters || [];
 	if (!customFilters.length) {
@@ -247,7 +306,6 @@ const loadDynamicFilters = async () => {
 			...filter,
 			selected: '',
 		}));
-
 	} catch (error) {
 		errorMessage.value = __('Failed to load dynamic filters.');
 		dynamicFilters.value = [];

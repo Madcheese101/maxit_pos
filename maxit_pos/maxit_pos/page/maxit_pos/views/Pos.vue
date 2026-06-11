@@ -5,15 +5,19 @@
   
   import {storeToRefs} from 'pinia';
   import { ref, computed, watch } from 'vue'
+  import { useDisplay } from 'vuetify';
   import { usePosStore } from '../store/posStore';
   import Cart from './components/pos/Cart.vue';
   import ItemsList from './components/pos/ItemsList.vue';
   import FiltersSection from './components/pos/FiltersSection.vue';
   import LoadInvoiceDialog from './components/pos/LoadInvoiceDialog.vue';
+  import PageSurface from './components/ui/PageSurface.vue';
+  import SurfaceCard from './components/ui/SurfaceCard.vue';
+  import StatMetricCard from './components/ui/StatMetricCard.vue';
   
   const posStore = usePosStore();
   const {posProfileData, pos_profile, pos_opening, posFrm} = storeToRefs(posStore);
-  const {make_new_invoice, update_cart, edit_invoice, setPosOpening, sales_order_to_invoice} = posStore;
+  const {make_new_invoice, update_cart, edit_invoice, setPosOpening, sales_order_to_invoice, buildPrintViewUrl} = posStore;
   // Local State
   const activeTab = ref('pos')
   const customerSearch = ref('')
@@ -40,6 +44,13 @@
   const isReturnInvoice = computed(() => {
     return posFrm.value?.doc?.is_return || false;
   });
+
+  const { height: viewportHeight } = useDisplay();
+  const customerRules = computed(() => [
+    () => customers.value.length > 0 || __('No customers found'),
+  ]);
+  const cartPanelMaxHeight = computed(() => `${Math.max(380, viewportHeight.value - 130)}px`);
+  const checkoutListMaxHeight = computed(() => `${Math.max(180, Math.round(viewportHeight.value * 0.34))}px`);
   
   const searchItems = async (filters) => {
     search_term = filters ? filters.search_term : "";
@@ -215,9 +226,13 @@
     const printFormat = posProfileData.value?.print_format || 'Standard';
     const letterHead = posProfileData.value?.letter_head || 'No Letterhead';
     const no_letterhead = letterHead === 'No Letterhead' ? 1 : 0;
-    const printUrl = `/printview?doctype=${doctype}&name=${invoice}&
-format=${printFormat}&no_letterhead=${no_letterhead}&letterhead=${letterHead}&settings=%7B%7D&_lang=en&
-pdf_generator=wkhtmltopdf&trigger_print=1`;
+    const printUrl = buildPrintViewUrl({
+      doctype,
+      name: invoice,
+      format: printFormat,
+      no_letterhead,
+      letterhead: letterHead,
+    });
     window.open(printUrl, '_blank');
   }
 
@@ -432,10 +447,10 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
 </script>
 
 <template>
-  <v-main class="pos-view pa-3 pa-md-6">
+  <PageSurface glow="info-success" class="pos-view pa-3 pa-md-6">
     <v-row class="pos-shell" align="stretch">
       <v-col cols="12">
-        <v-card class="pos-panel mb-1" rounded="xl" variant="flat">
+        <SurfaceCard class="pos-panel">
           <v-card-item class="pb-1">
             <v-tabs
               v-model="activeTab"
@@ -444,14 +459,14 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
               class="pos-tabs"
             >
               <v-tab value="pos">{{ __('POS') }}
-                <v-chip v-if="isReturnInvoice" class="ml-1" size="x-small" density="comfortable" color="error" variant="tonal">
+                <v-chip v-if="isReturnInvoice" class="ms-1" size="x-small" density="comfortable" color="error" variant="tonal">
                   {{ __('Return') }}
                 </v-chip>
               </v-tab>
               <v-tab value="checkout" :disabled="!hasCartItems">{{ __('Checkout') }}</v-tab>
             </v-tabs>
           </v-card-item>
-        </v-card>
+        </SurfaceCard>
       </v-col>
 
       <v-col cols="12">
@@ -459,7 +474,7 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
           <v-window-item value="pos">
             <v-row class="pos-content" dense align="stretch">
               <v-col cols="12" lg="6">
-                <v-card class="pos-panel" rounded="xl" max-height="100vh" variant="flat" :disabled="isReturnInvoice">
+                <SurfaceCard class="pos-panel" max-height="100vh" :disabled="isReturnInvoice">
                   <v-card-text>
                     <FiltersSection
                       :customFilters="posProfileData.custom_filters"
@@ -483,17 +498,18 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
                     </div>
                     <ItemsList :items="items" :view-mode="itemViewMode"/>
                   </v-card-text>
-                </v-card>
+                </SurfaceCard>
               </v-col>
 
               <v-col cols="12" lg="6">
-                <v-card class="pos-panel" rounded="xl" variant="flat">
+                <SurfaceCard class="pos-panel cart-side-panel" :style="{ maxHeight: cartPanelMaxHeight }">
                   <v-card-text>
                     <v-combobox
                       v-model="customer"
                       :items="customers"
-                      item-title="name"
+                      item-title="customer_name"
                       item-value="name"
+                      :label="__('Customer')"
                       :search="customerSearch"
                       @update:search="customerSearch = $event"
                       @update:model-value="updateSelection"
@@ -501,7 +517,7 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
                       density="comfortable"
                       rounded="lg"
                       :loading="loading"
-                      :rules="[customers.length == 0 ? () => 'No customers found' : () => true]"
+                      :rules="customerRules"
                       :disabled="isReturnInvoice"
                     >
                       <template #append-inner>
@@ -516,15 +532,14 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
 
                     <Cart @checkout="prepareCheckout" />
 
-                    <v-card class="section-card mt-2" rounded="lg" variant="outlined">
+                    <SurfaceCard surface="section" class="section-card mt-2">
                       <v-card-text class="pt-4">
+                        <v-defaults-provider :defaults="{ VBtn: { block: true, rounded: 'lg' } }">
                         <div class="actions-wrap">
                           <v-btn
                             v-if="posProfileData?.allow_print_last_invoice"
-                            block
                             color="primary"
                             variant="elevated"
-                            rounded="lg"
                             prepend-icon="mdi-printer"
                             @click="printLastInvoice()"
                           >
@@ -532,30 +547,24 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
                           </v-btn>
 
                           <v-btn
-                            block
                             color="secondary"
                             variant="tonal"
-                            rounded="lg"
                             @click="showLoadInvoiceDialog()"
                           >
                             {{ __('Load') }}
                           </v-btn>
 
                           <v-btn
-                            block
                             color="secondary"
                             variant="tonal"
-                            rounded="lg"
                             @click="showLoadInvoiceDialog(true)"
                           >
                             {{ __('Load SO') }}
                           </v-btn>
 
                           <v-btn
-                            block
                             color="warning"
                             variant="tonal"
-                            rounded="lg"
                             :disabled="!hasCartItems"
                             @click="saveAsSalesOrder()"
                           >
@@ -563,10 +572,8 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
                           </v-btn>
 
                           <v-btn
-                            block
                             color="primary"
                             variant="tonal"
-                            rounded="lg"
                             :disabled="!hasCartItems"
                             @click="posFrm.save()"
                           >
@@ -574,19 +581,18 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
                           </v-btn>
 
                           <v-btn
-                            block
                             color="info"
                             variant="tonal"
-                            rounded="lg"
                             @click="resetForm()"
                           >
                             {{ __('New') }}
                           </v-btn>
                         </div>
+                    </v-defaults-provider>
                       </v-card-text>
-                    </v-card>
+                    </SurfaceCard>
                   </v-card-text>
-                </v-card>
+                </SurfaceCard>
               </v-col>
             </v-row>
           </v-window-item>
@@ -594,16 +600,16 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
           <v-window-item value="checkout">
             <v-row justify="center">
               <v-col cols="12" md="9" lg="8">
-                <v-card class="pos-panel checkout-panel" rounded="xl" variant="flat">
+                <SurfaceCard class="pos-panel checkout-panel">
                   <v-card-item class="pb-1">
                     <div class="text-overline text-medium-emphasis">{{ __('Invoice Settlement') }}</div>
                     <div class="text-h6 font-weight-bold">{{ __('Checkout') }}</div>
                   </v-card-item>
 
                   <v-card-text>
-                    <v-card class="section-card" rounded="lg" variant="outlined">
+                    <SurfaceCard surface="section" class="section-card">
                       <v-card-text>
-                        <v-list class="checkout-list">
+                        <v-list class="checkout-list" :style="{ maxHeight: checkoutListMaxHeight }">
                           <v-list-item
                             v-for="payment in posPayments"
                             :key="payment.idx"
@@ -637,40 +643,45 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
                           </v-list-item>
                         </v-list>
                       </v-card-text>
-                    </v-card>
+                    </SurfaceCard>
 
                     <v-row dense class="mt-2">
                       <v-col cols="12" sm="6" md="3">
-                        <v-card class="stat-card" rounded="lg" variant="tonal" color="primary">
-                          <v-card-text>
-                            <div class="text-caption text-medium-emphasis">{{ __('Customer') }}</div>
-                            <div class="text-body-2 font-weight-bold text-truncate">{{ posFrm?.doc?.customer_name || '' }}</div>
-                          </v-card-text>
-                        </v-card>
+                        <StatMetricCard
+                          class="stat-card"
+                          color="primary"
+                          :label="__('Customer')"
+                          :value="posFrm?.doc?.customer_name || ''"
+                          truncate
+                          compact
+                        />
                       </v-col>
                       <v-col cols="12" sm="6" md="3">
-                        <v-card class="stat-card" rounded="lg" variant="tonal" color="success">
-                          <v-card-text>
-                            <div class="text-caption text-medium-emphasis">{{ __('Total') }}</div>
-                            <div class="text-body-2 font-weight-bold">{{ posFrm?.doc?.grand_total || 0 }} {{ posFrm?.doc?.price_list_currency || '' }}</div>
-                          </v-card-text>
-                        </v-card>
+                        <StatMetricCard
+                          class="stat-card"
+                          color="success"
+                          :label="__('Total')"
+                          :value="`${posFrm?.doc?.grand_total || 0} ${posFrm?.doc?.price_list_currency || ''}`"
+                          compact
+                        />
                       </v-col>
                       <v-col cols="12" sm="6" md="3">
-                        <v-card class="stat-card" rounded="lg" variant="tonal" color="info">
-                          <v-card-text>
-                            <div class="text-caption text-medium-emphasis">{{ __('Paid Amount') }}</div>
-                            <div class="text-body-2 font-weight-bold">{{ posFrm?.doc?.grand_total - posFrm?.doc?.outstanding_amount || 0 }} {{ posFrm?.doc?.price_list_currency || '' }}</div>
-                          </v-card-text>
-                        </v-card>
+                        <StatMetricCard
+                          class="stat-card"
+                          color="info"
+                          :label="__('Paid Amount')"
+                          :value="`${(posFrm?.doc?.grand_total || 0) - (posFrm?.doc?.outstanding_amount || 0)} ${posFrm?.doc?.price_list_currency || ''}`"
+                          compact
+                        />
                       </v-col>
                       <v-col cols="12" sm="6" md="3">
-                        <v-card class="stat-card" rounded="lg" variant="tonal" color="warning">
-                          <v-card-text>
-                            <div class="text-caption text-medium-emphasis">{{ __('Remaining') }}</div>
-                            <div class="text-body-2 font-weight-bold">{{ posFrm?.doc?.outstanding_amount || 0 }} {{ posFrm?.doc?.price_list_currency || '' }}</div>
-                          </v-card-text>
-                        </v-card>
+                        <StatMetricCard
+                          class="stat-card"
+                          color="warning"
+                          :label="__('Remaining')"
+                          :value="`${posFrm?.doc?.outstanding_amount || 0} ${posFrm?.doc?.price_list_currency || ''}`"
+                          compact
+                        />
                       </v-col>
                     </v-row>
 
@@ -690,7 +701,7 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
                       </v-col>
                     </v-row>
                   </v-card-text>
-                </v-card>
+                </SurfaceCard>
               </v-col>
             </v-row>
           </v-window-item>
@@ -704,20 +715,21 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
       @load="load_invoice"
       @close="clearLoadInvoiceList()"
     />
-  </v-main>
+  </PageSurface>
 </template>
 
 <style scoped>
 .pos-view {
   background:
-    radial-gradient(circle at top right, rgba(25, 118, 210, 0.09), transparent 42%),
-    radial-gradient(circle at left bottom, rgba(76, 175, 80, 0.08), transparent 38%);
+    radial-gradient(circle at top right, var(--v-pos-info-glow), transparent 42%),
+    radial-gradient(circle at left bottom, var(--v-pos-success-glow), transparent 38%);
 }
 
 .pos-panel {
-  border: 1px solid rgba(120, 144, 156, 0.24);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 251, 255, 0.96));
-  box-shadow: 0 10px 24px rgba(12, 28, 43, 0.08);
+  border: 1px solid var(--v-pos-panel-border);
+  background: var(--v-pos-panel-background);
+  box-shadow: var(--v-pos-panel-shadow);
+  transition: var(--v-theme-transition);
 }
 
 .pos-tabs :deep(.v-tab--selected) {
@@ -725,11 +737,12 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
 }
 
 .section-card {
-  border-color: rgba(120, 144, 156, 0.28) !important;
+  border-color: var(--v-pos-panel-border-strong) !important;
 }
 
 .stat-card {
-  border: 1px solid rgba(120, 144, 156, 0.18);
+  border: 1px solid var(--v-pos-panel-border-soft);
+  transition: var(--v-theme-transition);
 }
 
 .actions-wrap {
@@ -738,8 +751,11 @@ pdf_generator=wkhtmltopdf&trigger_print=1`;
   gap: 10px;
 }
 
+.cart-side-panel {
+  overflow-y: auto;
+}
+
 .checkout-list {
-  max-height: 34vh;
   overflow-y: auto;
 }
 

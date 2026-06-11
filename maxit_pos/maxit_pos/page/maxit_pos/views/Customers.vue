@@ -1,8 +1,8 @@
 <template>
-  <v-main class="customers-view pa-3 pa-md-6">
+  <PageSurface glow="info-success" class="customers-view pa-3 pa-md-6" :style="layoutVars">
     <v-row class="customers-shell" align="stretch">
       <v-col v-show="!isMobile || !showDetailsOnMobile" cols="12" md="4" lg="3" class="customers-column">
-        <v-card class="h-100 customers-card customers-list-panel" rounded="xl" variant="elevated">
+        <SurfaceCard class="h-100 customers-card customers-list-panel customers-panel">
           <v-card-item class="pb-2">
             <div class="d-flex align-center justify-space-between gap-2 mb-3">
               <div>
@@ -70,17 +70,17 @@
               {{ __('No customers found for this filter.') }}
             </v-alert>
           </v-card-text>
-        </v-card>
+        </SurfaceCard>
       </v-col>
 
       <v-col v-show="!isMobile || showDetailsOnMobile" cols="12" md="8" lg="9" class="customers-column">
-        <v-card class="h-100 customers-card" rounded="xl" variant="elevated">
+        <SurfaceCard class="h-100 customers-card customers-panel">
           <v-card-item class="pb-0">
             <div class="d-flex align-center justify-space-between flex-wrap gap-3">
               <div class="d-flex align-center gap-2">
                 <v-btn
                   v-if="isMobile"
-                  icon="mdi-arrow-left"
+                  :icon="backIcon"
                   variant="text"
                   size="small"
                   @click="showDetailsOnMobile = false"
@@ -126,42 +126,47 @@
             <template v-else>
               <v-row dense class="mb-2">
                 <v-col cols="12" sm="6" md="3">
-                  <v-card class="stat-card" rounded="lg" variant="tonal" color="primary">
-                    <v-card-text>
-                      <div class="text-caption text-medium-emphasis">{{ __('Customer ID') }}</div>
-                      <div class="text-body-1 font-weight-bold text-truncate">{{ selectedCustomer.name }}</div>
-                    </v-card-text>
-                  </v-card>
+                  <StatMetricCard
+                    class="stat-card"
+                    color="primary"
+                    :label="__('Customer ID')"
+                    :value="selectedCustomer.name"
+                    truncate
+                  />
                 </v-col>
 
                 <v-col cols="12" sm="6" md="3">
-                  <v-card class="stat-card" rounded="lg" variant="tonal" color="success" @click="openCustomerOrders" style="cursor: pointer;">
-                    <v-card-text>
-                      <div class="text-caption text-medium-emphasis">{{ __('Linked Invoices') }}</div>
-                      <div class="text-body-1 font-weight-bold">{{ selectedCustomer.linked_invoices || 0 }}</div>
-                    </v-card-text>
-                  </v-card>
+                  <StatMetricCard
+                    class="stat-card"
+                    color="success"
+                    :label="__('Linked Invoices')"
+                    :value="selectedCustomer.linked_invoices || 0"
+                    interactive
+                    @click="openCustomerOrders"
+                  />
                 </v-col>
 
                 <v-col cols="12" sm="6" md="3">
-                  <v-card class="stat-card" rounded="lg" variant="tonal" color="warning" @click="openContactDialog" style="cursor: pointer;">
-                    <v-card-text>
-                      <div class="text-caption text-medium-emphasis">{{ __('Primary Contact') }}</div>
-                      <div class="text-body-1 font-weight-bold text-truncate">
-                        {{ selectedCustomer.customer_primary_contact || __('Not linked') }}
-                      </div>
-                    </v-card-text>
-                  </v-card>
+                  <StatMetricCard
+                    class="stat-card"
+                    color="warning"
+                    :label="__('Primary Contact')"
+                    :value="selectedCustomer.customer_primary_contact || __('Not linked')"
+                    truncate
+                    interactive
+                    @click="openContactDialog"
+                  />
                 </v-col>
                 <v-col cols="12" sm="6" md="3">
-                  <v-card class="stat-card" rounded="lg" variant="tonal" color="info" @click="openAddressDialog" style="cursor: pointer;">
-                    <v-card-text>
-                      <div class="text-caption text-medium-emphasis">{{ __('Primary Address') }}</div>
-                      <div class="text-body-1 font-weight-bold text-truncate">
-                        {{ selectedCustomer.customer_primary_address || __('Not linked') }}
-                      </div>
-                    </v-card-text>
-                  </v-card>
+                  <StatMetricCard
+                    class="stat-card"
+                    color="info"
+                    :label="__('Primary Address')"
+                    :value="selectedCustomer.customer_primary_address || __('Not linked')"
+                    truncate
+                    interactive
+                    @click="openAddressDialog"
+                  />
                 </v-col>
               </v-row>
 
@@ -237,23 +242,30 @@
               </v-row>
             </template>
           </v-card-text>
-        </v-card>
+        </SurfaceCard>
       </v-col>
     </v-row>
-  </v-main>
+  </PageSurface>
 </template>
 
 <script setup>
 import { ref, watch, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useDisplay } from 'vuetify';
+import PageSurface from './components/ui/PageSurface.vue';
+import SurfaceCard from './components/ui/SurfaceCard.vue';
+import StatMetricCard from './components/ui/StatMetricCard.vue';
 
 const __ = window.__;
 
 const router = useRouter();
-const { smAndDown } = useDisplay();
+const { smAndDown, height: viewportHeight } = useDisplay();
 
 const isMobile = computed(() => smAndDown.value);
+const backIcon = computed(() => frappe.utils.is_rtl() ? 'mdi-arrow-right' : 'mdi-arrow-left');
+const viewportHeightPx = computed(() => viewportHeight.value || window.innerHeight || 800);
+const listScrollHeight = computed(() => Math.max(200, viewportHeightPx.value - (isMobile.value ? 240 : 290)));
+const layoutVars = computed(() => ({ '--customers-list-height': `${listScrollHeight.value}px` }));
 const showDetailsOnMobile = ref(false);
 
 const customers = ref([]);
@@ -451,8 +463,8 @@ fetchCustomers();
   height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
   overflow: hidden;
   background:
-    radial-gradient(circle at top right, rgba(25, 118, 210, 0.09), transparent 42%),
-    radial-gradient(circle at left bottom, rgba(76, 175, 80, 0.08), transparent 38%);
+    radial-gradient(circle at top right, var(--v-pos-info-glow), transparent 42%),
+    radial-gradient(circle at left bottom, var(--v-pos-success-glow), transparent 38%);
 }
 
 .customers-shell {
@@ -481,28 +493,29 @@ fetchCustomers();
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .customers-list {
-  flex: 1;
-  min-height: 0;
-  max-height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px) - 260px);
+  height: var(--customers-list-height, 300px);
+  max-height: var(--customers-list-height, 300px);
   overflow-y: auto;
 }
 
 .customers-panel {
-  border: 1px solid rgba(120, 144, 156, 0.24);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 251, 255, 0.96));
-  box-shadow: 0 10px 24px rgba(12, 28, 43, 0.08);
+  border: 1px solid var(--v-pos-panel-border);
+  background: var(--v-pos-panel-background);
+  box-shadow: var(--v-pos-panel-shadow);
+  transition: var(--v-theme-transition);
 }
 
 .customers-list :deep(.v-list-item--active) {
-  background: rgba(25, 118, 210, 0.13);
+  background: var(--v-pos-nav-active);
 }
 
 .stat-card {
-  border: 1px solid rgba(120, 144, 156, 0.18);
+  border: 1px solid var(--v-pos-panel-border-soft);
+  transition: var(--v-theme-transition);
 }
 
 .actions-wrap {
@@ -519,7 +532,7 @@ fetchCustomers();
   }
 
   .customers-list {
-    max-height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px) - 220px);
+    overflow-y: auto;
   }
 
   .actions-wrap {

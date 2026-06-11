@@ -9,6 +9,47 @@ import StockEntry from '../views/StockEntry.vue'
 import CloseDay from '../views/CloseDay.vue'
 import Expenses from '../views/Expenses.vue'
 
+const ROUTER_STATE_KEYS = ['back', 'current', 'forward', 'position', 'replaced', 'scroll']
+
+const hasRouterState = (state) => {
+  return Boolean(state) && ROUTER_STATE_KEYS.some((key) => state[key] !== undefined)
+}
+
+const preserveRouterHistoryState = () => {
+  if (typeof window === 'undefined' || window.__maxitPosHistoryStatePatched) {
+    return
+  }
+
+  const wrapHistoryMethod = (methodName) => {
+    const originalMethod = window.history[methodName]
+
+    window.history[methodName] = function patchedHistoryState(state, title, url) {
+      const currentState = window.history.state
+
+      if (!hasRouterState(currentState)) {
+        return originalMethod.call(window.history, state, title, url)
+      }
+
+      if (state == null) {
+        return originalMethod.call(window.history, { ...currentState }, title, url)
+      }
+
+      if (typeof state !== 'object') {
+        return originalMethod.call(window.history, state, title, url)
+      }
+
+      const mergedState = { ...currentState, ...state }
+      return originalMethod.call(window.history, mergedState, title, url)
+    }
+  }
+
+  wrapHistoryMethod('replaceState')
+  wrapHistoryMethod('pushState')
+  window.__maxitPosHistoryStatePatched = true
+}
+
+preserveRouterHistoryState()
+
 const expenseRoles = ['Expense User', 'Expense Manager']
 const hasExpenseAccess = expenseRoles.some((role) => frappe.user.has_role(role))
 

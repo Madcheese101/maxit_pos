@@ -1,10 +1,10 @@
 <template>
-    <VCard rounded="lg" class="ma-auto" max-height="100vh" flat>
+    <VCard rounded="lg" class="ma-auto" flat>
       <VCardText class="items-list-shell">
         <v-row
           v-if="props.viewMode === 'grid'"
           class="overflow-y-auto"
-          style="max-height: 55vh"
+          :style="{ maxHeight: itemsHeight + 'px' }"
         >
           <v-col
             v-for="(item, idx) in props.items"
@@ -14,7 +14,6 @@
             md="6"
             sm="6"
             cols="6"
-            min-height="50"
           >
             <Item :item="item" @click="item_clicked(item)"/>
           </v-col>
@@ -26,23 +25,28 @@
           bg-color="transparent"
           density="compact"
           lines="one"
-          max-height="55vh"
+          :max-height="itemsHeight"
         >
+          <template v-for="(item, idx) in props.items" :key="item.item_code || idx">
+          <v-tooltip :text="item.item_code" location="top" open-delay="400">
+            <template #activator="{ props: tipProps }">
           <v-list-item
-            v-for="(item, idx) in props.items"
-            :key="item.item_code || idx"
             class="item-row"
             rounded="0"
+            v-bind="tipProps"
             @click="item_clicked(item)"
           >
             <template #title>
               <div class="item-row-grid">
                 <span class="item-row-name">{{ item.item_name }}</span>
-                <span class="item-row-value">QTY: {{ item.actual_qty ?? 0 }} / {{ item.uom }}</span>
-                <span class="item-row-value item-row-rate">{{ item.price_list_rate ?? 0 }} {{item.currency || ''}}</span>
+                <span class="item-row-value">{{ item.actual_qty ?? 0 }}</span>
+                <span class="item-row-value item-row-rate">{{ __('Rate:') }} {{ item.price_list_rate ?? 0 }} {{item.currency || ''}}</span>
               </div>
             </template>
           </v-list-item>
+            </template>
+          </v-tooltip>
+          </template>
         </v-list>
       </VCardText>
     </VCard>
@@ -50,9 +54,13 @@
 
 <script setup>
     import Item from "./Item.vue";
+    import { computed } from 'vue';
+    import { useDisplay } from 'vuetify';
     import { usePosStore } from '../../../store/posStore';
     const __ = window.__;
     const posStore = usePosStore();
+    const { height: viewportHeight } = useDisplay();
+    const itemsHeight = computed(() => Math.max(300, (viewportHeight.value || window.innerHeight || 800) - 320));
     const props = defineProps({
       items: {
         type: Array,
@@ -98,9 +106,9 @@
   z-index: 1;
   padding: 12px 16px !important;
   min-height: auto;
-  background: #f3f7fa;
-  border-bottom: 1px solid rgba(120, 144, 156, 0.28);
-  color: rgba(38, 50, 56, 0.78);
+  background: var(--v-pos-field-background);
+  border-bottom: 1px solid var(--v-pos-panel-border-strong);
+  color: rgba(var(--v-theme-on-surface), 0.78);
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.03em;
@@ -121,13 +129,13 @@
 
 .item-row {
   border-radius: 0 !important;
-  border-bottom: 1px solid rgba(120, 144, 156, 0.18);
+  border-bottom: 1px solid var(--v-pos-panel-border-soft);
   transition: background-color 0.15s ease;
 }
 
 .item-row:hover,
 .item-row:focus-visible {
-  background: rgba(25, 118, 210, 0.08);
+  background: var(--v-pos-nav-hover);
 }
 
 .item-row :deep(.v-list-item__content) {
@@ -135,7 +143,7 @@
 }
 
 .item-row-name {
-  color: rgb(38, 50, 56);
+  color: rgb(var(--v-theme-on-surface));
   font-weight: 600;
 }
 
@@ -157,8 +165,7 @@
 
   .item-rows-header,
   .item-row :deep(.v-list-item__content) {
-    padding-left: 12px;
-    padding-right: 12px;
+    padding-inline: 12px;
   }
 
   .item-row-name,

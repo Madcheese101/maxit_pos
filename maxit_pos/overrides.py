@@ -24,21 +24,22 @@ def custom_get_bin_qty(item_code, warehouse):
     return actual_qty
 
 def check_open_pos_exists(self):
-    if frappe.db.exists("POS Opening Entry", {
+    exists = frappe.db.exists("POS Opening Entry", {
         "pos_profile": self.pos_profile, 
         "user": self.user,
         "status": "Open",
         "name": ["!=", self.name] if self.name else None
-        }):
+        })
+    if exists:
         frappe.throw(
             title=_("POS Opening Entry Exists"),
             msg=_(
-                "{0} is open. Close the POS or cancel the existing POS Opening Entry to create a new POS Opening Entry."
-            ).format(frappe.bold(self.pos_profile)),
+                "{0} is open for user {1}. Close the POS or cancel the existing POS Opening Entry to create a new POS Opening Entry."
+            ).format(frappe.bold(self.pos_profile), frappe.bold(self.user)),
         )
 
 def validate_pos_opening_entry(self):
-    opening_entries = frappe.get_all(
+    opening_entries = frappe.db.get_list(
         "POS Opening Entry",
         fields=["name", "period_start_date"],
         filters={

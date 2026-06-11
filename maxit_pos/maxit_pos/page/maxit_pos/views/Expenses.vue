@@ -1,17 +1,24 @@
 <template>
-	<v-main class="expenses-view pa-3 pa-md-6">
+	<PageSurface glow="success-warning" class="expenses-view pa-3 pa-md-6">
 		<v-alert v-if="!canViewExpenses" type="warning" variant="tonal">
 			{{ __('You do not have permission to manage expenses.') }}
 		</v-alert>
 
 		<template v-else>
-			<v-card class="expenses-panel mb-2" rounded="xl" variant="flat">
+			<SurfaceCard class="expenses-panel mb-2">
 				<v-card-item>
 					<div class="d-flex align-center justify-space-between flex-wrap gap-3">
 						<div>
 							<div class="text-h6 font-weight-bold">{{ __('Manage Expenses') }}</div>
 						</div>
 						<div class="d-flex align-center flex-wrap ga-1">
+							<v-btn
+								icon="mdi-wallet-outline"
+								variant="tonal"
+								size="small"
+								:title="__('Check Custody Balance')"
+								@click="checkCustodyBalance"
+							/>
 							<v-btn
 								color="primary"
 								variant="elevated"
@@ -115,9 +122,9 @@
 						</v-btn>
 					</div>
 				</v-card-text>
-			</v-card>
+			</SurfaceCard>
 
-			<v-card class="expenses-panel expenses-table-panel" rounded="xl" variant="flat">
+			<SurfaceCard class="expenses-panel expenses-table-panel">
 				<v-card-text class="pa-0 expenses-table-body">
 					<div class="expenses-table-wrap">
 						<v-data-table
@@ -157,7 +164,7 @@
 						</v-data-table>
 					</div>
 				</v-card-text>
-			</v-card>
+			</SurfaceCard>
 
 			<ExpenseDialog v-model="expenseDialogOpen" @created="handleExpenseCreated" />
 			<ExpenseViewDialog
@@ -166,13 +173,15 @@
 				@updated="handleExpenseUpdated"
 			/>
 		</template>
-	</v-main>
+	</PageSurface>
 </template>
 
 <script setup>
 	import { computed, onMounted, ref, watch } from 'vue';
 	import ExpenseDialog from './components/expenses/ExpenseDialog.vue';
 	import ExpenseViewDialog from './components/expenses/ExpenseViewDialog.vue';
+	import PageSurface from './components/ui/PageSurface.vue';
+	import SurfaceCard from './components/ui/SurfaceCard.vue';
 
 	const __ = window.__;
 	const frappe_ = window.frappe;
@@ -288,6 +297,12 @@
 		expenseViewDialogOpen.value = true;
 	}
 
+	async function checkCustodyBalance() {
+		await frappe.call({
+			method: 'maxit_pos.maxit_pos.page.maxit_pos.api.expenses_vue.get_custody_account_balance',
+		});
+	}
+
 	async function loadExpenseTypeOptions(search = '') {
 		if (!canViewExpenses.value) {
 			return;
@@ -373,8 +388,8 @@
 <style scoped>
 	.expenses-view {
 		background:
-			radial-gradient(circle at top right, rgba(46, 125, 50, 0.09), transparent 40%),
-			radial-gradient(circle at left bottom, rgba(251, 140, 0, 0.08), transparent 38%);
+			radial-gradient(circle at top right, var(--v-pos-success-glow), transparent 40%),
+			radial-gradient(circle at left bottom, var(--v-pos-warning-glow), transparent 38%);
 		height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
 		min-height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
 		display: flex;
@@ -383,9 +398,10 @@
 	}
 
 	.expenses-panel {
-		border: 1px solid rgba(120, 144, 156, 0.24);
-		background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 251, 255, 0.97));
-		box-shadow: 0 10px 24px rgba(12, 28, 43, 0.08);
+		border: 1px solid var(--v-pos-panel-border);
+		background: var(--v-pos-panel-background);
+		box-shadow: var(--v-pos-panel-shadow);
+		transition: var(--v-theme-transition);
 	}
 
 	.expenses-table-panel {

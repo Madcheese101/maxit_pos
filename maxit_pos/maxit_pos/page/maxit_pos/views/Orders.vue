@@ -1,8 +1,8 @@
 <template>
-  <v-main class="orders-view pa-3 pa-md-6">
+  <PageSurface glow="info-success" class="orders-view pa-3 pa-md-6" :style="layoutVars">
     <v-row class="orders-shell" align="stretch">
-      <v-col v-show="!isMobile || !showDetailsOnMobile" cols="12" md="4" lg="3">
-        <v-card class="orders-panel " max-height="100vh" rounded="xl" variant="flat">
+      <v-col v-show="!isMobile || !showDetailsOnMobile" cols="12" md="4" lg="3" class="orders-column">
+        <SurfaceCard class="orders-panel h-100">
           <v-card-item class="pb-2">
             <div class="d-flex align-center justify-space-between gap-2 mb-3">
               <div>
@@ -24,11 +24,23 @@
               rounded="lg"
               @keydown.enter="getInvoices()"
             />
+
+      <div v-if="selectedItemCodeFilter" class="mt-3 px-1">
+        <v-chip
+        closable
+        color="secondary"
+        variant="tonal"
+        prepend-icon="mdi-barcode"
+        @click:close="clearItemFilter"
+        >
+        {{ __('Item') }}: {{ selectedItemCodeFilter }}
+        </v-chip>
+      </div>
           </v-card-item>
 
           <v-divider />
 
-          <v-card-text class="pt-3 px-2">
+          <v-card-text class="pt-3 px-2 orders-list-body">
             <div v-if="isLoadingList" class="px-2 py-5">
               <v-skeleton-loader type="list-item-two-line, list-item-two-line, list-item-two-line" />
             </div>
@@ -37,7 +49,7 @@
               v-else-if="invoices.length"
               lines="two"
               color="primary"
-              max-height="50vh"
+              :style="invoiceListStyle"
               nav
               rounded="lg"
               class="orders-list overflow-y-auto"
@@ -74,17 +86,17 @@
               {{ __('No invoices found for this filter.') }}
             </v-alert>
           </v-card-text>
-        </v-card>
+        </SurfaceCard>
       </v-col>
 
-      <v-col v-show="!isMobile || showDetailsOnMobile" cols="12" md="8" lg="9">
-        <v-card class="orders-panel " rounded="xl" variant="flat" max-height="100vh">
+      <v-col v-show="!isMobile || showDetailsOnMobile" cols="12" md="8" lg="9" class="orders-column">
+        <SurfaceCard class="orders-panel h-100">
           <v-card-item class="pb-0">
             <div class="d-flex align-center justify-space-between flex-wrap gap-3">
               <div class="d-flex align-center gap-2">
                 <v-btn
                   v-if="isMobile"
-                  icon="mdi-arrow-left"
+                  :icon="backIcon"
                   variant="text"
                   size="small"
                   @click="showDetailsOnMobile = false"
@@ -112,7 +124,7 @@
             </div>
           </v-card-item>
 
-          <v-card-text class="pt-4">
+          <v-card-text class="pt-4 orders-details-body">
             <v-skeleton-loader
               v-if="isLoadingInvoice"
               type="table, article, article"
@@ -129,101 +141,82 @@
             <template v-else>
               <v-row dense class="mb-2">
                 <v-col cols="12" sm="6" md="4">
-                  <v-card class="stat-card" rounded="lg" variant="tonal" color="primary">
-                    <v-card-text>
-                      <div class="text-caption text-medium-emphasis">{{ __('Customer') }}</div>
-                      <div class="text-body-1 font-weight-bold text-truncate">{{ invoice.customer || 'N/A' }}</div>
-                    </v-card-text>
-                  </v-card>
+                  <StatMetricCard
+                    class="stat-card"
+                    color="primary"
+                    :label="__('Customer')"
+                    :value="invoice.customer || 'N/A'"
+                    truncate
+                  />
                 </v-col>
 
-                <v-col cols="12" sm="6" md="4">
-                  <v-card class="stat-card" rounded="lg" variant="tonal" color="success">
-                    <v-card-text>
-                      <div class="text-caption text-medium-emphasis">{{ __('Grand Total') }}</div>
-                      <div class="text-body-1 font-weight-bold">{{ invoice.grand_total }} {{ invoice.price_list_currency }}</div>
-                    </v-card-text>
-                  </v-card>
+                <v-col cols="12" sm="6" md="3">
+                  <StatMetricCard
+                    class="stat-card"
+                    color="primary"
+                    :label="__('Grand Total')"
+                    :value="`${invoice.grand_total} ${invoice.price_list_currency}`"
+                  />
                 </v-col>
 
-                <v-col cols="12" sm="6" md="4">
-                  <v-card class="stat-card" rounded="lg" variant="tonal" color="warning">
-                    <v-card-text>
-                      <div class="text-caption text-medium-emphasis">{{ __('Outstanding') }}</div>
-                      <div class="text-body-1 font-weight-bold">{{ invoice.outstanding_amount }} {{ invoice.price_list_currency }}</div>
-                    </v-card-text>
-                  </v-card>
+                <v-col cols="12" sm="6" md="3">
+                  <StatMetricCard
+                    class="stat-card"
+                    color="success"
+                    :label="__('Paid Amount')"
+                    :value="`${invoice.paid_amount} ${invoice.price_list_currency}`"
+                  />
+                </v-col>
+                <v-col cols="12" sm="6" md="2">
+                  <StatMetricCard
+                    class="stat-card"
+                    color="warning"
+                    :label="__('Outstanding')"
+                    :value="`${invoice.outstanding_amount} ${invoice.price_list_currency}`"
+                  />
                 </v-col>
               </v-row>
 
-              <v-row class="mb-1" dense>
-                <v-col cols="12" md="6">
-                  <div class="meta-row"><strong>{{ __('Status') }}:</strong> {{ invoice.status || 'N/A' }}</div>
-                  <div class="meta-row"><strong>{{ __('Date') }}:</strong> {{ invoice.posting_date || 'N/A' }}</div>
-                </v-col>
-                <v-col cols="12" md="6">
-                  <div class="meta-row"><strong>{{ __('Paid Amount') }}:</strong> {{ invoice.paid_amount || '0' }} {{ invoice.price_list_currency }}</div>
-                  <div class="meta-row"><strong>{{ __('Outstanding Amount') }}:</strong> {{ invoice.outstanding_amount || '0' }} {{ invoice.price_list_currency }}</div>
-                </v-col>
-              </v-row>
-
-              <v-card class="section-card mt-4" rounded="lg" variant="outlined" v-if="invoice.items?.length">
+              <SurfaceCard v-if="invoice.items?.length" surface="section" class="section-card mt-3">
                 <v-card-item class="pb-1">
                   <div class="text-subtitle-1 font-weight-bold">{{ __('Items') }}</div>
                 </v-card-item>
                 <v-card-text>
                   <v-data-table-virtual
-                    :headers="[
-                      { title: __('Item Name'), key: 'item_name' },
-                      { title: __('Qty'), key: 'qty' },
-                      { title: __('Rate'), key: 'rate' },
-                      { title: __('Amount'), key: 'amount' }
-                    ]"
+                    :headers="invoiceItemHeaders"
                     :items="invoice.items"
                     item-value="item_name"
-                    density="compact"
-                    max-height="30vh"
+                    :height="itemsTableHeight"
                     class="orders-table"
                   />
                 </v-card-text>
-              </v-card>
+              </SurfaceCard>
 
-              <v-card class="section-card mt-4" rounded="lg" variant="outlined" v-if="invoice.payments?.length">
+              <SurfaceCard v-if="invoice.payments?.length" surface="section" class="section-card mt-3">
                 <v-card-item class="pb-1">
                   <div class="text-subtitle-1 font-weight-bold">{{ __('Payments') }}</div>
                 </v-card-item>
                 <v-card-text>
                   <v-data-table-virtual
-                    :headers="[
-                      { title: __('Mode of Payment'), key: 'mode_of_payment' },
-                      { title: __('Amount'), key: 'amount' }
-                    ]"
+                    :headers="invoicePaymentHeaders"
                     :items="invoice.payments"
                     item-value="mode_of_payment"
-                    density="compact"
-                    max-height="15vh"
+                    :height="paymentsTableHeight"
                     class="orders-table"
                   />
                 </v-card-text>
-              </v-card>
+              </SurfaceCard>
 
-              <v-card class="section-card mt-4" rounded="lg" variant="outlined" v-if="paymentEntries?.length">
+              <SurfaceCard v-if="paymentEntries?.length" surface="section" class="section-card mt-3">
                 <v-card-item class="pb-1">
                   <div class="text-subtitle-1 font-weight-bold">{{ __('Payment Entries') }}</div>
                 </v-card-item>
                 <v-card-text>
                   <v-data-table-virtual
-                    :headers="[
-                      { title: __('Date'), key: 'posting_date' },
-                      { title: __('Name'), key: 'name' },
-                      { title: __('Mode of Payment'), key: 'mode_of_payment' },
-                      { title: __('Amount'), key: 'paid_amount' },
-                      { title: __('Print'), key: 'print', sortable: false }
-                    ]"
+                    :headers="paymentEntryHeaders"
                     :items="paymentEntries"
                     item-value="name"
-                    density="compact"
-                    max-height="30vh"
+                    :height="itemsTableHeight"
                     class="orders-table"
                   >
                     <template #item.print="{ item }">
@@ -238,9 +231,9 @@
                     </template>
                   </v-data-table-virtual>
                 </v-card-text>
-              </v-card>
+              </SurfaceCard>
 
-              <div class="actions-wrap mt-5">
+              <div class="actions-wrap mt-4">
                 <v-btn
                   v-if="invoice.docstatus !== 0"
                   color="primary"
@@ -293,7 +286,7 @@
               </div>
             </template>
           </v-card-text>
-        </v-card>
+        </SurfaceCard>
       </v-col>
     </v-row>
 
@@ -305,7 +298,7 @@
       @pay="payInvoice"
       @close="payInvoiceDialogToggle = false"
     />
-  </v-main>
+  </PageSurface>
 </template>
 
 <script setup>
@@ -315,8 +308,29 @@
     import { useRouter, useRoute } from 'vue-router';
     import { useDisplay } from 'vuetify';
     import payInvoiceDialog from './components/orders/payInvoiceDialog.vue';
+    import PageSurface from './components/ui/PageSurface.vue';
+    import SurfaceCard from './components/ui/SurfaceCard.vue';
+    import StatMetricCard from './components/ui/StatMetricCard.vue';
     const frappe_ = frappe;
     const __ = window.__;
+    const invoiceItemHeaders = [
+      { title: __('Item Code'), key: 'item_code' },
+      { title: __('Item Name'), key: 'item_name' },
+      { title: __('Qty'), key: 'qty' },
+      { title: __('Rate'), key: 'rate' },
+      { title: __('Amount'), key: 'amount' },
+    ];
+    const invoicePaymentHeaders = [
+      { title: __('Mode of Payment'), key: 'mode_of_payment' },
+      { title: __('Amount'), key: 'amount' },
+    ];
+    const paymentEntryHeaders = [
+      { title: __('Date'), key: 'posting_date' },
+      { title: __('Name'), key: 'name' },
+      { title: __('Mode of Payment'), key: 'mode_of_payment' },
+      { title: __('Amount'), key: 'paid_amount' },
+      { title: __('Print'), key: 'print', sortable: false },
+    ];
     const invoices = ref([]);
     const invoice = ref();
     const selected = ref([]);
@@ -329,12 +343,26 @@
     const isLoadingInvoice = ref(false);
     const router = useRouter();
     const route = useRoute();
-    const { smAndDown } = useDisplay();
+    const { smAndDown, height: viewportHeight } = useDisplay();
     const isMobile = computed(() => smAndDown.value);
     const showDetailsOnMobile = ref(false);
+    const viewportHeightPx = computed(() => viewportHeight.value || window.innerHeight || 800);
+    const listScrollHeight = computed(() => Math.max(220, viewportHeightPx.value - (isMobile.value ? 230 : 260)));
+    const detailsBodyHeight = computed(() => Math.max(400, viewportHeightPx.value - (isMobile.value ? 175 : 200)));
+    const itemsTableHeight = computed(() => Math.max(180, Math.round(viewportHeightPx.value * 0.22)));
+    const paymentsTableHeight = computed(() => Math.max(80, Math.round(viewportHeightPx.value * 0.12)));
+    const layoutVars = computed(() => ({
+      '--orders-list-height': `${listScrollHeight.value}px`,
+      '--orders-details-body-height': `${detailsBodyHeight.value}px`,
+    }));
+    const invoiceListStyle = computed(() => ({
+      height: 'var(--orders-list-height)',
+      maxHeight: 'var(--orders-list-height)',
+    }));
     const posStore = usePosStore();
     const {pos_profile, posProfileData} = storeToRefs(posStore);
-    const {edit_invoice, process_return} = posStore;
+    const {edit_invoice, process_return, buildPrintViewUrl, isAppRTL} = posStore;
+    const backIcon = computed(() => isAppRTL() ? 'mdi-arrow-right' : 'mdi-arrow-left');
 
     const getStatusColor = (status, docstatus) => {
       const normalizedStatus = (status || '').toLowerCase();
@@ -353,7 +381,37 @@
 
     const invoiceSubtitle = (inv) => `${inv.customer || __('Unknown Customer')} - ${inv.grand_total || 0}`;
 
-    const selectedCustomerFilter = computed(() => (route.query.customer || '').toString());
+    const normalizeQueryValue = (value) => {
+      if (Array.isArray(value)) {
+        return (value[0] || '').toString();
+      }
+
+      return (value || '').toString();
+    };
+
+    const selectedCustomerFilter = computed(() => normalizeQueryValue(route.query.customer));
+    const selectedItemCodeFilter = computed(() => normalizeQueryValue(route.query.item_code));
+
+    const clearInvoiceSelection = ({ keepSelected = false } = {}) => {
+      if (!keepSelected && selected.value.length) {
+        selected.value = [];
+      }
+      if (invoice.value) {
+        invoice.value = null;
+      }
+      if (paymentEntries.value.length) {
+        paymentEntries.value = [];
+      }
+      if (showDetailsOnMobile.value) {
+        showDetailsOnMobile.value = false;
+      }
+    };
+
+    const clearItemFilter = async () => {
+      const nextQuery = { ...route.query };
+      delete nextQuery.item_code;
+      await router.replace({ query: nextQuery });
+    };
 
     const returnInvoice = async () =>{
       await process_return('Sales Invoice', invoice.value.name);
@@ -430,7 +488,13 @@
       const printFormat = posProfileData.value?.payment_entry_print_format || 'Standard';
       const letterHead = posProfileData.value?.letter_head || 'No Letterhead';
       const no_letterhead = letterHead === 'No Letterhead' ? 1 : 0;
-      const printUrl = `/printview?doctype=Payment%20Entry&name=${paymentEntryId}&format=${printFormat}&no_letterhead=${no_letterhead}&letterhead=${letterHead}&settings=%7B%7D&_lang=en&pdf_generator=wkhtmltopdf&trigger_print=1`;
+      const printUrl = buildPrintViewUrl({
+        doctype: 'Payment Entry',
+        name: paymentEntryId,
+        format: printFormat,
+        no_letterhead,
+        letterhead: letterHead,
+      });
       window.open(printUrl, '_blank');
     };
 
@@ -439,23 +503,27 @@
       const printFormat = posProfileData.value?.print_format || 'Standard';
       const letterHead = posProfileData.value?.letter_head || 'No Letterhead';
       const no_letterhead = letterHead === 'No Letterhead' ? 1 : 0;
-      const printUrl = `/printview?doctype=${doctype}&name=${invoice.value.name}&format=${printFormat}&no_letterhead=${no_letterhead}&letterhead=${letterHead}&settings=%7B%7D&_lang=en&pdf_generator=wkhtmltopdf&trigger_print=1`;
+      const printUrl = buildPrintViewUrl({
+        doctype,
+        name: invoice.value.name,
+        format: printFormat,
+        no_letterhead,
+        letterhead: letterHead,
+      });
       window.open(printUrl, '_blank');
     };
 
     watch(selected, (val) => {
       if (!val.length) {
-        invoice.value = null;
-        paymentEntries.value = [];
-        showDetailsOnMobile.value = false;
+        clearInvoiceSelection({ keepSelected: true });
         return;
       }
       showDetailsOnMobile.value = true;
       GetInvoiceDoc(val[0]);
     });
 
-    watch(() => route.query.customer, () => {
-      selected.value = [];
+    watch([selectedCustomerFilter, selectedItemCodeFilter], () => {
+      clearInvoiceSelection();
       getInvoices();
     });
 
@@ -468,10 +536,11 @@
           pos_profile: pos_profile.value,
           search_term: searchTerm.value || '',
           customer: selectedCustomerFilter.value,
+          item_code: selectedItemCodeFilter.value,
         },
       }).then((response) => {
         invoices.value = response.message || [];
-        invoice.value = null;
+        clearInvoiceSelection();
         isLoadingList.value = false;
       }).catch(() => {
         isLoadingList.value = false;
@@ -483,23 +552,63 @@
 
 <style scoped>
 .orders-view {
+  height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
+  min-height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
+  overflow: hidden;
   background:
-    radial-gradient(circle at top right, rgba(25, 118, 210, 0.09), transparent 42%),
-    radial-gradient(circle at left bottom, rgba(76, 175, 80, 0.08), transparent 38%);
+    radial-gradient(circle at top right, var(--v-pos-info-glow), transparent 42%),
+    radial-gradient(circle at left bottom, var(--v-pos-success-glow), transparent 38%);
+}
+
+.orders-shell {
+  height: 100%;
+  min-height: 0;
+}
+
+.orders-column {
+  display: flex;
+  min-height: 0;
 }
 
 .orders-panel {
-  border: 1px solid rgba(120, 144, 156, 0.24);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 251, 255, 0.96));
-  box-shadow: 0 10px 24px rgba(12, 28, 43, 0.08);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.orders-list-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.orders-list {
+  overflow-y: auto;
+  height: var(--orders-list-height, 300px);
+  max-height: var(--orders-list-height, 300px);
+}
+
+.orders-details-body {
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: var(--orders-details-body-height, 300px);
+}
+
+.orders-panel {
+  border: 1px solid var(--v-pos-panel-border);
+  background: var(--v-pos-panel-background);
+  box-shadow: var(--v-pos-panel-shadow);
+  transition: var(--v-theme-transition);
 }
 
 .orders-list :deep(.v-list-item--active) {
-  background: rgba(25, 118, 210, 0.13);
+  background: var(--v-pos-nav-active);
 }
 
 .section-card {
-  border-color: rgba(120, 144, 156, 0.28) !important;
+  border-color: var(--v-pos-panel-border-strong) !important;
 }
 
 .orders-table {
@@ -508,7 +617,8 @@
 }
 
 .stat-card {
-  border: 1px solid rgba(120, 144, 156, 0.18);
+  border: 1px solid var(--v-pos-panel-border-soft);
+  transition: var(--v-theme-transition);
 }
 
 .meta-row {

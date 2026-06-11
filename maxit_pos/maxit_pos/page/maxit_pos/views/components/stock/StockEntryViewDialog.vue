@@ -25,41 +25,39 @@
 				<template v-else>
 					<v-row dense class="mb-2">
 						<v-col cols="12" sm="6" md="3">
-							<v-card class="stat-card" rounded="lg" variant="tonal" color="primary">
-								<v-card-text>
-									<div class="text-caption text-medium-emphasis">{{ __('Posting Date') }}</div>
-									<div class="text-body-1 font-weight-bold">{{ doc.posting_date || __('N/A') }}</div>
-								</v-card-text>
-							</v-card>
+							<StatMetricCard
+								class="stat-card"
+								color="primary"
+								:label="__('Posting Date')"
+								:value="doc.posting_date || __('N/A')"
+							/>
 						</v-col>
 
 						<v-col cols="12" sm="6" md="3">
-							<v-card class="stat-card" rounded="lg" variant="tonal" color="success">
-								<v-card-text>
-									<div class="text-caption text-medium-emphasis">{{ __('From Branch') }}</div>
-									<div class="text-body-1 font-weight-bold">{{ doc.from_branch || __('N/A') }}</div>
-								</v-card-text>
-							</v-card>
+							<StatMetricCard
+								class="stat-card"
+								color="success"
+								:label="__('From Branch')"
+								:value="doc.from_branch || __('N/A')"
+							/>
 						</v-col>
 
 						<v-col cols="12" sm="6" md="3">
-							<v-card class="stat-card" rounded="lg" variant="tonal" color="warning">
-								<v-card-text>
-									<div class="text-caption text-medium-emphasis">{{ __('To Branch') }}</div>
-									<div class="text-body-1 font-weight-bold">{{ doc.to_branch || __('N/A') }}</div>
-								</v-card-text>
-							</v-card>
+							<StatMetricCard
+								class="stat-card"
+								color="warning"
+								:label="__('To Branch')"
+								:value="doc.to_branch || __('N/A')"
+							/>
 						</v-col>
 
 						<v-col cols="12" sm="6" md="3">
-							<v-card class="stat-card" rounded="lg" variant="tonal" color="info">
-								<v-card-text>
-									<div class="text-caption text-medium-emphasis">{{ __('Transfer Type') }}</div>
-									<div class="text-body-1 font-weight-bold">
-										{{ Number(doc.add_to_transit) === 1 ? __('In Transit') : __('Received') }}
-									</div>
-								</v-card-text>
-							</v-card>
+							<StatMetricCard
+								class="stat-card"
+								color="info"
+								:label="__('Transfer Type')"
+								:value="Number(doc.add_to_transit) === 1 ? __('In Transit') : __('Received')"
+							/>
 						</v-col>
 					</v-row>
 
@@ -74,7 +72,7 @@
 						</v-col>
 					</v-row>
 
-					<v-card class="section-card" rounded="lg" variant="outlined">
+					<SurfaceCard surface="section" class="section-card">
 						<v-card-item class="pb-1">
 							<div class="text-subtitle-1 font-weight-bold">{{ __('Items') }}</div>
 						</v-card-item>
@@ -91,7 +89,7 @@
 								/>
 							</div>
 						</v-card-text>
-					</v-card>
+					</SurfaceCard>
 				</template>
 			</v-card-text>
 
@@ -136,7 +134,10 @@
 
 <script setup>
 	import { computed, ref, watch } from 'vue';
-
+	import { usePosStore } from '../../../store/posStore';
+	import SurfaceCard from '../ui/SurfaceCard.vue';
+	import StatMetricCard from '../ui/StatMetricCard.vue';
+	
 	const props = defineProps({
 		modelValue: {
 			type: Boolean,
@@ -156,6 +157,7 @@
 
 	const __ = window.__;
 	const frappe_ = window.frappe;
+	const { buildPrintViewUrl } = usePosStore();
 	const doc = ref(null);
 	const isLoading = ref(false);
 	const isSubmitting = ref(false);
@@ -187,7 +189,7 @@
 			return { label: __('Received'), color: 'success' };
 		}
 
-		if (Number(doc.value?.add_to_transit || 0) === 1) {
+		if (Number(doc.value?.add_to_transit || 0) === 1 && !doc.value?.outgoing_stock_entry) {
 			return { label: __('In Transit'), color: 'warning' };
 		}
 
@@ -198,13 +200,16 @@
 		const isSubmitted = Number(doc.value?.docstatus || 0) === 1;
 		const isInTransit = Number(doc.value?.add_to_transit || 0) === 1;
 		const isTransferred = Number(doc.value?.per_transferred || 0) > 0;
-
-		return isSubmitted && !(isInTransit && isTransferred);
+		const isSourceBranch = doc.value?.from_branch === frappe.boot.user_branch;
+		const isDestBranch = doc.value?.to_branch === frappe.boot.user_branch;
+		const hasBranchPermission = isInTransit ? isSourceBranch : (isSourceBranch || isDestBranch);
+		return isSubmitted && !(isInTransit && isTransferred) && hasBranchPermission;
 	});
 	const canReceive = computed(() => {
 		return props.sourceTab === 'incoming'
 			&& Number(doc.value?.docstatus || 0) === 1
-			&& Number(doc.value?.add_to_transit || 0) === 1;
+			&& Number(doc.value?.add_to_transit || 0) === 1
+			&& !doc.value?.outgoing_stock_entry;
 	});
 
 	watch(
@@ -243,11 +248,21 @@
 			return;
 		}
 
-		const printUrl = `/printview?doctype=${encodeURIComponent('Stock Entry')}&name=${encodeURIComponent(doc.value.name)}&format=Standard&no_letterhead=1&letterhead=No%20Letterhead&settings=%7B%7D&_lang=en&pdf_generator=wkhtmltopdf&trigger_print=1`;
+		const printUrl = buildPrintViewUrl({
+			doctype: 'Stock Entry',
+			name: doc.value.name,
+			format: 'Standard',
+			no_letterhead: 1,
+			letterhead: 'No Letterhead',
+		});
 		window.open(printUrl, '_blank');
 	}
 
 	function cancelTransfer() {
+		if (doc.value?.add_to_transit && doc.value?.from_branch !== frappe.boot.user_branch) {
+			frappe_.alert(__('Only the branch which initiated the transfer can cancel it.'), { indicator: 'red' });
+			return;
+		}
 		frappe_.confirm(
 			__('Are you sure you want to cancel this stock entry?'),
 			async () => {
@@ -302,9 +317,10 @@
 
 <style scoped>
 	.stock-entry-dialog {
-		border: 1px solid rgba(120, 144, 156, 0.24);
-		background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(248, 251, 255, 0.97));
-		box-shadow: 0 8px 20px rgba(12, 28, 43, 0.08);
+		border: 1px solid var(--v-pos-panel-border);
+		background: var(--v-pos-panel-background);
+		box-shadow: var(--v-pos-panel-shadow);
+		transition: var(--v-theme-transition);
 	}
 
 	.dialog-body {
@@ -313,11 +329,12 @@
 	}
 
 	.stat-card {
-		border: 1px solid rgba(120, 144, 156, 0.18);
+		border: 1px solid var(--v-pos-panel-border-soft);
+		transition: var(--v-theme-transition);
 	}
 
 	.section-card {
-		border-color: rgba(120, 144, 156, 0.28) !important;
+		border-color: var(--v-pos-panel-border-strong) !important;
 	}
 
 	.meta-row {

@@ -9,7 +9,12 @@ def extend_boot_info(bootinfo):
     bootinfo["user_warehouse"] = user_warehouse
 
 def set_user_branch_in_session():
-    branch, expense_approver, company = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, ["branch", "expense_approver", "company"])
+    branch = None
+    expense_approver = None
+    company = None
+    empl_exists = frappe.db.exists("Employee", {"user_id": frappe.session.user})
+    if empl_exists:
+        branch, expense_approver, company = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, ["branch", "expense_approver", "company"])
     # Adding data to the session  
     frappe.session.data["user_branch"] = branch
     frappe.session.data["expense_approver"] = expense_approver

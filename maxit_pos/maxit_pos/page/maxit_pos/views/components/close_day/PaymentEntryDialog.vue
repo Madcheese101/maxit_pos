@@ -25,7 +25,7 @@
 						</v-col>
 					</v-row>
 
-					<v-card class="section-card mt-1" rounded="lg" variant="outlined">
+					<SurfaceCard surface="section" class="section-card mt-1">
 						<v-card-item class="pb-1">
 							<div class="d-flex align-center justify-space-between gap-2 flex-wrap">
 								<div class="text-subtitle-1 font-weight-bold">{{ __('Mode of Payments') }}</div>
@@ -79,14 +79,14 @@
 											hide-details="auto"
 											:min="0"
 											:readonly="noteCountEnabled"
-											class="amount-input ml-auto py-1"
+											class="amount-input ms-auto py-1"
 											@update:model-value="updateAmount(index, $event)"
 										/>
 									</template>
 								</v-data-table>
 							</div>
 						</v-card-text>
-					</v-card>
+					</SurfaceCard>
 
 					<v-row dense class="mt-3">
 						<v-col cols="12" sm="4">
@@ -121,6 +121,7 @@
 
 <script setup>
 	import { computed, reactive, ref, watch } from 'vue';
+	import SurfaceCard from '../ui/SurfaceCard.vue';
 
 	const props = defineProps({
 		modelValue: {
@@ -389,17 +390,18 @@
 
 <style scoped>
 	.payment-entry-dialog {
-		border: 1px solid rgba(120, 144, 156, 0.24);
-		background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(248, 251, 255, 0.97));
-		box-shadow: 0 8px 20px rgba(12, 28, 43, 0.08);
+		border: 1px solid var(--v-pos-panel-border);
+		background: var(--v-pos-panel-background);
+		box-shadow: var(--v-pos-panel-shadow);
+		transition: var(--v-theme-transition);
 	}
 
 	.section-card {
-		border-color: rgba(120, 144, 156, 0.28) !important;
+		border-color: var(--v-pos-panel-border-strong) !important;
 	}
 
 	.payment-entry-table {
-		border: 1px solid rgba(120, 144, 156, 0.2);
+		border: 1px solid var(--v-pos-panel-border-soft);
 		border-radius: 12px;
 		overflow: hidden;
 	}
@@ -421,7 +423,7 @@
 	}
 
 	.summary-card {
-		border: 1px solid rgba(120, 144, 156, 0.18);
+		border: 1px solid var(--v-pos-panel-border-soft);
 		padding: 12px;
 	}
 </style>

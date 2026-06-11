@@ -1,8 +1,8 @@
 <template>
-  <v-main class="orders-view pa-2 pa-md-4" v-if="purchaseEnabled" :style="layoutVars">
+  <PageSurface glow="info-warning" class="orders-view pa-2 pa-md-4" v-if="purchaseEnabled" :style="layoutVars">
     <v-row class="orders-shell" align="stretch">
       <v-col v-show="!isMobile || !showDetailsOnMobile" cols="12" md="4" lg="3" class="orders-column">
-        <v-card class="orders-panel h-100" rounded="xl" variant="flat">
+        <SurfaceCard class="orders-panel h-100">
           <v-card-item class="pb-2">
             <div class="d-flex align-center justify-space-between gap-2 mb-3">
               <div>
@@ -20,7 +20,7 @@
                   />
                 </template>
 
-                <v-card class="purchase-actions-menu" min-width="80px" rounded="lg" variant="flat">
+                <SurfaceCard surface="menu" class="purchase-actions-menu" min-width="80px">
                   <v-card-text class="pa-2 d-flex flex-column ga-2">
                     <v-btn
                       color="primary"
@@ -42,7 +42,7 @@
                       {{ __('Return') }}
                     </v-btn>
                   </v-card-text>
-                </v-card>
+                </SurfaceCard>
               </v-menu>
             </div>
             <v-text-field
@@ -106,17 +106,17 @@
               {{ __('No invoices found for this filter.') }}
             </v-alert>
           </v-card-text>
-        </v-card>
+        </SurfaceCard>
       </v-col>
       <!-- Right Section -->
       <v-col v-show="!isMobile || showDetailsOnMobile" cols="12" md="8" lg="9" class="orders-column">
-        <v-card class="orders-panel h-100" rounded="xl" variant="flat">
+        <SurfaceCard class="orders-panel h-100">
           <v-card-item class="pb-0">
             <div class="d-flex align-center justify-space-between flex-wrap gap-3">
               <div class="d-flex align-center gap-2">
                 <v-btn
                   v-if="isMobile"
-                  icon="mdi-arrow-left"
+                  :icon="backIcon"
                   variant="text"
                   size="small"
                   @click="showDetailsOnMobile = false"
@@ -161,30 +161,31 @@
             <template v-else>
               <v-row dense class="mb-2">
                 <v-col cols="12" sm="6" md="4">
-                  <v-card class="stat-card" rounded="lg" variant="tonal" color="primary">
-                    <v-card-text>
-                      <div class="text-caption text-medium-emphasis">{{ __('Supplier Branch') }}</div>
-                      <div class="text-body-1 font-weight-bold text-truncate">{{ invoice.supplier_branch || 'N/A' }}</div>
-                    </v-card-text>
-                  </v-card>
+                  <StatMetricCard
+                    class="stat-card"
+                    color="primary"
+                    :label="__('Supplier Branch')"
+                    :value="invoice.supplier_branch || 'N/A'"
+                    truncate
+                  />
                 </v-col>
 
                 <v-col cols="12" sm="6" md="4">
-                  <v-card class="stat-card" rounded="lg" variant="tonal" color="success">
-                    <v-card-text>
-                      <div class="text-caption text-medium-emphasis">{{ __('Supplier Invoice') }}</div>
-                      <div class="text-body-1 font-weight-bold">{{ invoice.bill_no || 'N/A' }}</div>
-                    </v-card-text>
-                  </v-card>
+                  <StatMetricCard
+                    class="stat-card"
+                    color="success"
+                    :label="__('Supplier Invoice')"
+                    :value="invoice.bill_no || 'N/A'"
+                  />
                 </v-col>
 
                 <v-col cols="12" sm="6" md="4">
-                  <v-card class="stat-card" rounded="lg" variant="tonal" color="warning">
-                    <v-card-text>
-                      <div class="text-caption text-medium-emphasis">{{ __('Supplier Invoice Date') }}</div>
-                      <div class="text-body-1 font-weight-bold">{{ invoice.posting_date || 'N/A' }}</div>
-                    </v-card-text>
-                  </v-card>
+                  <StatMetricCard
+                    class="stat-card"
+                    color="warning"
+                    :label="__('Supplier Invoice Date')"
+                    :value="invoice.posting_date || 'N/A'"
+                  />
                 </v-col>
               </v-row>
 
@@ -195,29 +196,23 @@
                 </v-col>
               </v-row>
 
-              <v-card class="section-card mt-4" rounded="lg" variant="outlined" v-if="invoice.items?.length">
+              <SurfaceCard v-if="invoice.items?.length" surface="section" class="section-card mt-4">
                 <v-card-item class="pb-1">
                   <div class="text-subtitle-1 font-weight-bold">{{ __('Items') }}</div>
                 </v-card-item>
                 <v-card-text class="items-section-body">
                   <div class="items-table-wrap" :style="itemsTableWrapStyle">
                     <v-data-table-virtual
-                      :headers="[
-                        { title: __('No.'), key: 'idx', width: '70px' },
-                        { title: __('Item Code'), key: 'item_code' },
-                        { title: __('Item Name'), key: 'item_name' },
-                        { title: __('Qty'), key: 'qty' },
-                      ]"
+                      :headers="purchaseItemHeaders"
                       :items="invoice.items"
                       item-value="item_name"
-                      density="compact"
                       :height="itemsTableHeight"
                       fixed-header
                       class="orders-table"
                     />
                   </div>
                 </v-card-text>
-              </v-card>
+              </SurfaceCard>
 
               <div class="actions-wrap mt-5">
                 <!-- <v-btn
@@ -250,10 +245,10 @@
               </div>
             </template>
           </v-card-text>
-        </v-card>
+        </SurfaceCard>
       </v-col>
     </v-row>
-  </v-main>
+  </PageSurface>
 </template>
 
 <script setup>
@@ -261,9 +256,18 @@
   import { useDisplay } from 'vuetify';
   import { ref, watch, computed } from "vue";
   import { usePosStore } from '../store/posStore';
+  import PageSurface from './components/ui/PageSurface.vue';
+  import SurfaceCard from './components/ui/SurfaceCard.vue';
+  import StatMetricCard from './components/ui/StatMetricCard.vue';
     
   const __ = window.__;
   const frappe_ = window.frappe;
+  const purchaseItemHeaders = [
+    { title: __('No.'), key: 'idx', width: '70px' },
+    { title: __('Item Code'), key: 'item_code' },
+    { title: __('Item Name'), key: 'item_name' },
+    { title: __('Qty'), key: 'qty' },
+  ];
   const invoices = ref([]);
   const invoice = ref();
   const selected = ref([]);
@@ -279,6 +283,8 @@
   let isSyncRealtimeBound = false;
   const posStore = usePosStore();
   const {pos_profile, posProfileData} = storeToRefs(posStore);
+  const { buildPrintViewUrl, isAppRTL } = posStore;
+  const backIcon = computed(() => isAppRTL() ? 'mdi-arrow-right' : 'mdi-arrow-left');
 
   const syncRealtimeHandler = (data) => {
     if (!data || !syncJobId.value || data.job_id !== syncJobId.value) return;
@@ -516,7 +522,13 @@
   const printInvoice = () => {
     const doctype = "Purchase Receipt";
     const printFormat = posProfileData.value?.purchase_receipt_print_format || 'Standard';
-    const printUrl = `/printview?doctype=${doctype}&name=${invoice.value.name}&format=${printFormat}&no_letterhead=1&letterhead=No%20Letterhead&settings=%7B%7D&_lang=en&pdf_generator=wkhtmltopdf&trigger_print=1`;
+    const printUrl = buildPrintViewUrl({
+      doctype,
+      name: invoice.value.name,
+      format: printFormat,
+      no_letterhead: 1,
+      letterhead: 'No Letterhead',
+    });
     window.open(printUrl, '_blank');
   };
 
@@ -559,8 +571,8 @@
   height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
   overflow: hidden;
   background:
-    radial-gradient(circle at top right, rgba(25, 118, 210, 0.09), transparent 42%),
-    radial-gradient(circle at left bottom, rgba(76, 175, 80, 0.08), transparent 38%);
+    radial-gradient(circle at top right, var(--v-pos-info-glow), transparent 42%),
+    radial-gradient(circle at left bottom, var(--v-pos-warning-glow), transparent 38%);
 }
 
 .orders-shell {
@@ -574,9 +586,10 @@
 }
 
 .orders-panel {
-  border: 1px solid rgba(120, 144, 156, 0.24);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 251, 255, 0.96));
-  box-shadow: 0 10px 24px rgba(12, 28, 43, 0.08);
+  border: 1px solid var(--v-pos-panel-border);
+  background: var(--v-pos-panel-background);
+  box-shadow: var(--v-pos-panel-shadow);
+  transition: var(--v-theme-transition);
   width: 100%;
   height: 100%;
   min-height: 0;
@@ -587,8 +600,6 @@
 .orders-list-body {
   flex: 1;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
   overflow: hidden;
 }
 
@@ -615,11 +626,11 @@
 }
 
 .orders-list :deep(.v-list-item--active) {
-  background: rgba(25, 118, 210, 0.13);
+  background: var(--v-pos-nav-active);
 }
 
 .section-card {
-  border-color: rgba(120, 144, 156, 0.28) !important;
+  border-color: var(--v-pos-panel-border-strong) !important;
 }
 
 .orders-table {
@@ -634,13 +645,15 @@
 }
 
 .stat-card {
-  border: 1px solid rgba(120, 144, 156, 0.18);
+  border: 1px solid var(--v-pos-panel-border-soft);
+  transition: var(--v-theme-transition);
 }
 
 .purchase-actions-menu {
-  border: 1px solid rgba(120, 144, 156, 0.26);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 251, 255, 0.98));
-  box-shadow: 0 8px 20px rgba(12, 28, 43, 0.12);
+  border: 1px solid var(--v-pos-panel-border-strong);
+  background: var(--v-pos-panel-background);
+  box-shadow: var(--v-pos-panel-shadow-strong);
+  transition: var(--v-theme-transition);
   /* min-width: 260px; */
 }
 

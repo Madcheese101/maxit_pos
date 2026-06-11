@@ -1,21 +1,28 @@
 <template>
   <v-dialog v-model="internalModel" max-width="700">
-    <v-card>
-      <v-card-title class="text-h6">
-        Select Invoice
-      </v-card-title>
+    <v-card class="load-invoice-dialog" rounded="xl">
+      <v-card-item class="pb-2">
+        <div>
+          <div class="text-overline text-medium-emphasis">{{ __('POS') }}</div>
+          <div class="text-h6 font-weight-bold">{{ __('Select Invoice') }}</div>
+        </div>
+      </v-card-item>
+      <v-divider />
 
-      <v-card-text>
-        <v-table>
+      <v-card-text class="pt-4 dialog-body">
+        <v-alert v-if="!invoices?.length" type="info" variant="tonal">
+          {{ __('No draft invoices found.') }}
+        </v-alert>
+
+        <v-table v-else class="load-invoice-table" density="compact">
           <thead>
             <tr>
-              <th>Invoice ID</th>
-              <th>Customer Name</th>
-              <th>Amount</th>
-              <th>Action</th>
+              <th>{{ __('Invoice ID') }}</th>
+              <th>{{ __('Customer Name') }}</th>
+              <th>{{ __('Amount') }}</th>
+              <th>{{ __('Action') }}</th>
             </tr>
           </thead>
-
           <tbody>
             <tr v-for="inv in invoices" :key="inv.name">
               <td>{{ inv.name }}</td>
@@ -25,9 +32,10 @@
                 <v-btn
                   size="small"
                   color="primary"
+                  variant="tonal"
                   @click="selectInvoice(inv)"
                 >
-                  LOAD
+                  {{ __('Load') }}
                 </v-btn>
               </td>
             </tr>
@@ -35,9 +43,9 @@
         </v-table>
       </v-card-text>
 
-      <v-card-actions>
+      <v-card-actions class="px-4 pb-4 pt-0">
         <v-spacer />
-        <v-btn text @click="closeDialog">Close</v-btn>
+        <v-btn variant="tonal" @click="closeDialog">{{ __('Close') }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -52,6 +60,7 @@
   });
 
   const emit = defineEmits(["update:modelValue", "load", "close"]);
+  const __ = window.__;
 
   const internalModel = ref(props.modelValue);
 
@@ -74,3 +83,21 @@
     internalModel.value = false;
   }
 </script>
+
+<style scoped>
+  .load-invoice-dialog {
+    border: 1px solid var(--v-pos-panel-border);
+    background: var(--v-pos-panel-background);
+    transition: var(--v-theme-transition);
+  }
+
+  .dialog-body {
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  .load-invoice-table :deep(th) {
+    font-weight: 700;
+    white-space: nowrap;
+  }
+</style>

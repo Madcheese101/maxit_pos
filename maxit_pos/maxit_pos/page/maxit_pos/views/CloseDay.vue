@@ -1,15 +1,15 @@
 <template>
-	<v-main class="close-day-view pa-2 pa-md-4" v-if="closeDayEnabled" :style="layoutVars">
+	<PageSurface glow="info-success" class="close-day-view pa-2 pa-md-4" v-if="closeDayEnabled" :style="layoutVars">
 		<v-row class="close-day-shell" align="stretch" dense>
 			<v-col cols="12" class="close-day-tabs-col">
-				<v-card class="close-day-panel close-day-tabs-panel" rounded="xl" variant="flat">
+				<SurfaceCard class="close-day-panel close-day-tabs-panel">
 					<v-card-item class="py-2 px-3 px-md-4">
 						<v-tabs v-model="activeTab" color="primary" fixed-tabs class="close-day-tabs">
 							<v-tab value="note-count" v-if="noteCountEnabled">{{ __('Note Count') }}</v-tab>
 							<v-tab value="payment-entry">{{ __('Payment Entry') }}</v-tab>
 						</v-tabs>
 					</v-card-item>
-				</v-card>
+				</SurfaceCard>
 			</v-col>
 
 			<v-col cols="12" class="close-day-main-col">
@@ -17,14 +17,13 @@
 					<v-window-item value="note-count" v-if="noteCountEnabled">
 						<v-row class="close-day-content" align="stretch" dense>
 							<v-col v-show="!smAndDown || !showDetailsOnMobile" cols="12" md="5" lg="4" class="close-day-column">
-								<v-card class="close-day-panel" rounded="xl" variant="flat">
+								<SurfaceCard class="close-day-panel">
 									<v-card-item class="pb-2">
 										<div class="d-flex align-center justify-space-between gap-2 mb-2">
 											<div>
 												<div class="text-overline text-medium-emphasis">{{ __('Close Day') }}</div>
 												<div class="text-h6 font-weight-bold">{{ __('Select Note Count') }}</div>
 											</div>
-
 											<v-menu location="bottom end" offset="8">
 												<template #activator="{ props }">
 													<v-btn
@@ -36,7 +35,7 @@
 													/>
 												</template>
 
-												<v-card class="close-day-menu" rounded="lg" variant="flat" min-width="180">
+												<SurfaceCard surface="menu" class="close-day-menu" min-width="180">
 													<v-card-text class="pa-2 d-flex flex-column ga-2">
 														<v-btn
 															color="primary"
@@ -48,6 +47,15 @@
 															{{ __('New Note Count') }}
 														</v-btn>
 														<v-btn
+															color="primary"
+															variant="text"
+															prepend-icon="mdi-wallet-outline"
+															size="small"
+															@click="checkBalance"
+														>
+															{{ __('Check Balance') }}
+														</v-btn>
+														<v-btn
 															color="secondary"
 															variant="text"
 															prepend-icon="mdi-refresh"
@@ -56,8 +64,9 @@
 														>
 															{{ __('Refresh') }}
 														</v-btn>
+														
 													</v-card-text>
-												</v-card>
+												</SurfaceCard>
 											</v-menu>
 										</div>
 
@@ -120,17 +129,17 @@
 											{{ __('No note counts found for this filter.') }}
 										</v-alert>
 									</v-card-text>
-								</v-card>
+								</SurfaceCard>
 							</v-col>
 
 							<v-col v-show="!smAndDown || showDetailsOnMobile" cols="12" md="7" lg="8" class="close-day-column">
-								<v-card class="close-day-panel h-100" rounded="xl" variant="flat">
+								<SurfaceCard class="close-day-panel h-100">
 									<v-card-item class="pb-0">
 										<div class="d-flex align-center justify-space-between flex-wrap gap-2">
 											<div class="d-flex align-center gap-2">
 												<v-btn
 													v-if="smAndDown"
-													icon="mdi-arrow-left"
+													:icon="backIcon"
 													variant="text"
 													size="small"
 													@click="showDetailsOnMobile = false"
@@ -168,41 +177,37 @@
 										<template v-else>
 											<v-row dense class="mb-1">
 												<v-col cols="12" sm="6" md="4">
-													<v-card class="stat-card" rounded="lg" variant="tonal" color="primary">
-														<v-card-text class="py-2">
-															<div class="text-caption text-medium-emphasis">{{ __('Mode of Payment') }}</div>
-															<div class="text-body-2 font-weight-bold text-truncate">{{ selectedNoteEntry.mode_of_payment }}</div>
-														</v-card-text>
-													</v-card>
+													<StatMetricCard
+														class="stat-card"
+														color="primary"
+														:label="__('Mode of Payment')"
+														:value="selectedNoteEntry.mode_of_payment"
+														truncate
+														compact
+													/>
 												</v-col>
 
 												<v-col cols="12" sm="6" md="4">
-													<v-card class="stat-card" rounded="lg" variant="tonal" color="success">
-														<v-card-text class="py-2">
-															<div class="text-caption text-medium-emphasis">{{ __('Type') }}</div>
-															<div class="text-body-2 font-weight-bold">{{ selectedNoteEntry.type }}</div>
-														</v-card-text>
-													</v-card>
+													<StatMetricCard
+														class="stat-card"
+														color="success"
+														:label="__('Type')"
+														:value="selectedNoteEntry.type"
+														compact
+													/>
 												</v-col>
 
 												<v-col cols="12" sm="6" md="4">
-													<v-card class="stat-card" rounded="lg" variant="tonal" color="warning">
-														<v-card-text class="py-2">
-															<div class="text-caption text-medium-emphasis">{{ __('Total') }}</div>
-															<div class="text-body-2 font-weight-bold">{{ formatAmount(selectedNoteEntry.total) }}</div>
-														</v-card-text>
-													</v-card>
+													<StatMetricCard
+														class="stat-card"
+														color="warning"
+														:label="__('Total')"
+														:value="formatAmount(selectedNoteEntry.total)"
+														compact
+													/>
 												</v-col>
 											</v-row>
-
-											<v-row class="mb-1" dense>
-												<v-col cols="12" md="7">
-													<div class="meta-row"><strong>{{ __('Status') }}:</strong> {{ selectedNoteEntry.status }}</div>
-													<div class="meta-row"><strong>{{ __('Posting Date') }}:</strong> {{ selectedNoteEntry.posting_date }}</div>
-												</v-col>
-											</v-row>
-
-											<v-card class="section-card mt-3" rounded="lg" variant="outlined">
+											<SurfaceCard surface="section" class="section-card mt-3">
 												<v-card-item class="pb-1">
 													<div class="text-subtitle-1 font-weight-bold">
 														{{ selectedNoteEntry.type === 'Cash' ? __('Cash Breakdown') : __('Bank Breakdown') }}
@@ -233,7 +238,7 @@
 														/>
 													</div>
 												</v-card-text>
-											</v-card>
+											</SurfaceCard>
 
 											<div class="actions-wrap mt-4">
 												<v-btn color="primary" variant="elevated" prepend-icon="mdi-printer" size="small" :disabled="!selectedNoteEntry?.name" @click="print_note_count()">
@@ -245,7 +250,7 @@
 											</div>
 										</template>
 									</v-card-text>
-								</v-card>
+								</SurfaceCard>
 							</v-col>
 						</v-row>
 					</v-window-item>
@@ -253,7 +258,7 @@
 					<v-window-item value="payment-entry">
 						<v-row class="close-day-content" align="stretch" dense>
 							<v-col v-show="!smAndDown || !showDetailsOnMobile" cols="12" md="5" lg="4" class="close-day-column">
-								<v-card class="close-day-panel" rounded="xl" variant="flat">
+								<SurfaceCard class="close-day-panel">
 									<v-card-item class="pb-2">
 										<div class="d-flex align-center justify-space-between gap-2 mb-2">
 											<div>
@@ -272,8 +277,17 @@
 													/>
 												</template>
 
-												<v-card class="close-day-menu" rounded="lg" variant="flat" min-width="180">
+												<SurfaceCard surface="menu" class="close-day-menu" min-width="180">
 													<v-card-text class="pa-2 d-flex flex-column ga-2">
+														<v-btn
+															color="primary"
+															variant="text"
+															prepend-icon="mdi-wallet-outline"
+															size="small"
+															@click="checkBalance"
+														>
+															{{ __('Check Balance') }}
+														</v-btn>
 														<v-btn
 															color="primary"
 															variant="text"
@@ -302,7 +316,7 @@
 															{{ __('Refresh') }}
 														</v-btn>
 													</v-card-text>
-												</v-card>
+												</SurfaceCard>
 											</v-menu>
 										</div>
 
@@ -365,17 +379,17 @@
 											{{ __('No payment entries found for this filter.') }}
 										</v-alert>
 									</v-card-text>
-								</v-card>
+								</SurfaceCard>
 							</v-col>
 
 							<v-col v-show="!smAndDown || showDetailsOnMobile" cols="12" md="7" lg="8" class="close-day-column">
-								<v-card class="close-day-panel" rounded="xl" variant="flat">
+								<SurfaceCard class="close-day-panel">
 									<v-card-item class="pb-0">
 										<div class="d-flex align-center justify-space-between flex-wrap gap-2">
 											<div class="d-flex align-center gap-2">
 												<v-btn
 													v-if="smAndDown"
-													icon="mdi-arrow-left"
+													:icon="backIcon"
 													variant="text"
 													size="small"
 													@click="showDetailsOnMobile = false"
@@ -413,40 +427,42 @@
 										<template v-else>
 											<v-row dense class="mb-1">
 												<v-col cols="12" sm="6" md="4">
-													<v-card class="stat-card" rounded="lg" variant="tonal" color="primary">
-														<v-card-text class="py-2">
-															<div class="text-caption text-medium-emphasis">{{ __('Mode of Payment') }}</div>
-															<div class="text-body-2 font-weight-bold text-truncate">{{ selectedPaymentEntry.mode_of_payment }}</div>
-														</v-card-text>
-													</v-card>
+													<StatMetricCard
+														class="stat-card"
+														color="primary"
+														:label="__('Mode of Payment')"
+														:value="selectedPaymentEntry.mode_of_payment"
+														truncate
+														compact
+													/>
 												</v-col>
 
 												<v-col cols="12" sm="6" md="4">
-													<v-card class="stat-card" rounded="lg" variant="tonal" color="success">
-														<v-card-text class="py-2">
-															<div class="text-caption text-medium-emphasis">{{ __('Amount') }}</div>
-															<div class="text-body-2 font-weight-bold">{{ formatAmount(selectedPaymentEntry.amount) }}</div>
-														</v-card-text>
-													</v-card>
+													<StatMetricCard
+														class="stat-card"
+														color="success"
+														:label="__('Amount')"
+														:value="formatAmount(selectedPaymentEntry.amount)"
+														compact
+													/>
 												</v-col>
 
 												<v-col cols="12" sm="6" md="4">
-													<v-card class="stat-card" rounded="lg" variant="tonal" color="warning">
-														<v-card-text class="py-2">
-															<div class="text-caption text-medium-emphasis">{{ __('Note Count') }}</div>
-															<div class="text-body-2 font-weight-bold">{{ selectedPaymentEntry.note_count || __('Not linked') }}</div>
-														</v-card-text>
-													</v-card>
+													<StatMetricCard
+														class="stat-card"
+														color="warning"
+														:label="__('Note Count')"
+														:value="selectedPaymentEntry.note_count || __('Not linked')"
+														compact
+													/>
 												</v-col>
 											</v-row>
 
 											<v-row class="mb-1" dense>
 												<v-col cols="12" md="6">
-													<div class="meta-row"><strong>{{ __('Status') }}:</strong> {{ selectedPaymentEntry.status }}</div>
-													<div class="meta-row"><strong>{{ __('Posting Date') }}:</strong> {{ selectedPaymentEntry.posting_date }}</div>
+													<div class="meta-row"><strong>{{ __('From Account') }}:</strong> {{ selectedPaymentEntry.paid_from }}</div>
 												</v-col>
 												<v-col cols="12" md="6">
-													<div class="meta-row"><strong>{{ __('From Account') }}:</strong> {{ selectedPaymentEntry.paid_from }}</div>
 													<div class="meta-row"><strong>{{ __('To Account') }}:</strong> {{ selectedPaymentEntry.paid_to }}</div>
 												</v-col>
 											</v-row>
@@ -466,7 +482,7 @@
 											</div>
 										</template>
 									</v-card-text>
-								</v-card>
+								</SurfaceCard>
 							</v-col>
 						</v-row>
 					</v-window-item>
@@ -484,7 +500,7 @@
 			:posProfile="posProfileData?.name || ''"
 			:costCenter="posProfileData?.cost_center || ''"
 		/>
-	</v-main>
+	</PageSurface>
 </template>
 
 <script setup>
@@ -494,11 +510,15 @@
 	import NoteCountDialog from './components/close_day/NoteCountDialog.vue';
 	import PaymentEntryDialog from './components/close_day/PaymentEntryDialog.vue';
     import { usePosStore } from '../store/posStore';
+	import PageSurface from './components/ui/PageSurface.vue';
+	import SurfaceCard from './components/ui/SurfaceCard.vue';
+	import StatMetricCard from './components/ui/StatMetricCard.vue';
 	const __ = window.__;
 	const frappe_ = window.frappe;
 	const { smAndDown, height: viewportHeight } = useDisplay();
     const posStore = usePosStore();
     const { posProfileData } = storeToRefs(posStore);
+    const { isAppRTL } = posStore;
 	const noteSearchTerm = ref('');
 	const paymentSearchTerm = ref('');
 	const showDetailsOnMobile = ref(false);
@@ -519,6 +539,7 @@
 	const selectedPaymentEntryName = ref('');
 	const hasInitializedTab = ref(false);
 	const isMobile = computed(() => smAndDown.value);
+	const backIcon = computed(() => isAppRTL() ? 'mdi-arrow-right' : 'mdi-arrow-left');
 	const canCancelSelectedNoteEntry = computed(() => Number(selectedNoteEntry.value?.docstatus) === 1 && !isCancellingNoteEntry.value);
 	const canCancelSelectedPaymentEntry = computed(() => Number(selectedPaymentEntry.value?.docstatus) === 1 && !isCancellingPaymentEntry.value);
 	const profileContextKey = computed(() => JSON.stringify({
@@ -577,7 +598,7 @@
 	return roles.some(role => frappe.user.has_role(role));
 	});
 	const noteCountEnabled = computed(() => {
-	return closeDayEnabled.value && posProfileData.value?.enable_note_count;
+	return Boolean(closeDayEnabled.value && posProfileData.value?.enable_note_count);
 	});
 	const activeTab = ref(noteCountEnabled.value ? 'note-count' : 'payment-entry');
 	
@@ -1025,6 +1046,22 @@
 			isCancellingPaymentEntry.value = false;
 		}
 	}
+	async function checkBalance() {
+		frappe.prompt({
+			label: __('Select Date'),
+			fieldname: 'date',
+			fieldtype: 'Date',
+			reqd: true,
+		}, (values) => {
+			frappe.call({
+				method: 'maxit_pos.maxit_pos.page.maxit_pos.api.close_day_vue.get_current_balance_msg',
+				args: {
+					date: values.date,
+					mode_of_payments: modeOfPayments.value || [],
+				},
+			});
+		});
+	}
 </script>
 
 <style scoped>
@@ -1033,8 +1070,8 @@
 		height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
 		overflow: hidden;
 		background:
-			radial-gradient(circle at top right, rgba(25, 118, 210, 0.08), transparent 40%),
-			radial-gradient(circle at left bottom, rgba(76, 175, 80, 0.07), transparent 35%);
+			radial-gradient(circle at top right, var(--v-pos-info-glow), transparent 40%),
+			radial-gradient(circle at left bottom, var(--v-pos-success-glow), transparent 35%);
 	}
 
 	.close-day-shell {
@@ -1079,9 +1116,10 @@
 
 	.close-day-panel,
 	.close-day-menu {
-		border: 1px solid rgba(120, 144, 156, 0.24);
-		background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(248, 251, 255, 0.97));
-		box-shadow: 0 8px 20px rgba(12, 28, 43, 0.08);
+		border: 1px solid var(--v-pos-panel-border);
+		background: var(--v-pos-panel-background);
+		box-shadow: var(--v-pos-panel-shadow);
+		transition: var(--v-theme-transition);
 	}
 
 	.close-day-panel {
@@ -1134,11 +1172,11 @@
 	}
 
 	.close-day-list :deep(.v-list-item--active) {
-		background: rgba(25, 118, 210, 0.13);
+		background: var(--v-pos-nav-active);
 	}
 
 	.section-card {
-		border-color: rgba(120, 144, 156, 0.28) !important;
+		border-color: var(--v-pos-panel-border-strong) !important;
 	}
 
 	.close-day-table {
@@ -1154,7 +1192,8 @@
 
 	.stat-card,
 	.summary-card {
-		border: 1px solid rgba(120, 144, 156, 0.18);
+		border: 1px solid var(--v-pos-panel-border-soft);
+		transition: var(--v-theme-transition);
 	}
 
 	.meta-row {

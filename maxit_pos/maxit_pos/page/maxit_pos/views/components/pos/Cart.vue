@@ -1,7 +1,5 @@
 <template>
     <VCard rounded="xl" class="cart-card pa-3" flat>
-        <div class="text-subtitle-1 mb-2">{{ __('Invoice Items') }}</div>
-
         <div class="cart-scroll-container">
             <v-data-table
                 v-model:expanded="expanded"
@@ -14,7 +12,6 @@
                 hide-default-header
                 expand-on-click
                 class="cart-table"
-                height="50vh"
             >
                 <template #item.item_name="{ item }">
                     <div class="cart-item-name">
@@ -129,6 +126,50 @@
             <div class="text-h6" v-html="frappe_.format(posFrm?.doc?.total, {'fieldtype': 'Currency'})"></div>
         </div>
 
+        <div v-if="allow_discount_change" class="d-flex justify-space-between align-center mt-2 gap-3" @click.stop>
+            <div class="text-subtitle-2 text-medium-emphasis flex-shrink-0">{{ __('Discount') }}</div>
+            <div class="invoice-discount-input">
+                <v-number-input
+                    v-if="invoiceDiscountType === 'Amount'"
+                    v-model="posFrm.doc.discount_amount"
+                    control-variant="hidden"
+                    variant="outlined"
+                    density="compact"
+                    :precision="2"
+                    :min="0"
+                    hide-details
+                    @change="applyInvoiceDiscount"
+                >
+                    <template #append-inner>
+                        <v-btn size="x-small" variant="text" @click.stop="toggleInvoiceDiscountType">
+                            {{ priceListCurrency }}
+                        </v-btn>
+                    </template>
+                </v-number-input>
+                <v-number-input
+                    v-else
+                    v-model="posFrm.doc.additional_discount_percentage"
+                    control-variant="hidden"
+                    variant="outlined"
+                    density="compact"
+                    :precision="2"
+                    :min="0"
+                    :max="100"
+                    hide-details
+                    @change="applyInvoiceDiscount"
+                >
+                    <template #append-inner>
+                        <v-btn size="x-small" variant="text" @click.stop="toggleInvoiceDiscountType" text="%" />
+                    </template>
+                </v-number-input>
+            </div>
+        </div>
+
+        <div class="d-flex justify-space-between align-center mt-1">
+            <div class="text-subtitle-1 font-weight-bold">{{ __('Net Total') }}</div>
+            <div class="text-h6 font-weight-bold" v-html="frappe_.format(posFrm?.doc?.grand_total, {'fieldtype': 'Currency'})"></div>
+        </div>
+
         <v-btn color="green-lighten-1" class="mt-3" block @click="emit('checkout')">
             {{ __('Checkout') }}
         </v-btn>
@@ -136,7 +177,7 @@
 </template>
 
 <script setup>
-    import { computed, ref } from 'vue'
+    import { computed, ref, triggerRef } from 'vue'
     import { usePosStore } from '../../../store/posStore';
     import {storeToRefs} from 'pinia';
     import { VCard } from 'vuetify/components';
@@ -186,19 +227,38 @@
         item.discount_type =
         item.discount_type === 'Percentage' ? 'Amount' : 'Percentage'
     }
+
+    const invoiceDiscountType = ref('Amount')
+
+    async function applyInvoiceDiscount() {
+        await posFrm.value.script_manager.trigger("calculate_taxes_and_totals");
+        triggerRef(posFrm);
+    }
+
+    function toggleInvoiceDiscountType() {
+        if (invoiceDiscountType.value === 'Percentage') {
+            invoiceDiscountType.value = 'Amount'
+            posFrm.value.doc.additional_discount_percentage = 0
+        } else {
+            invoiceDiscountType.value = 'Percentage'
+            posFrm.value.doc.discount_amount = 0
+        }
+        applyInvoiceDiscount()
+    }
 </script>
 
 <style scoped>
     .cart-card {
-        border: 1px solid rgba(120, 144, 156, 0.24);
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(248, 251, 255, 0.97));
-        box-shadow: 0 8px 20px rgba(12, 28, 43, 0.08);
+        border: 1px solid var(--v-pos-panel-border);
+        background: var(--v-pos-panel-background);
+        box-shadow: var(--v-pos-panel-shadow);
+        transition: var(--v-theme-transition);
     }
 
     .cart-scroll-container {
-        max-height: 55vh;
+        max-height: clamp(160px, 40dvh, 700px);
         overflow-y: auto;
-        padding-right: 4px;
+        padding-inline-end: 4px;
     }
 
     .cart-table {
@@ -215,26 +275,26 @@
     }
 
     .cart-table :deep(tbody tr) {
-        background: rgba(255, 255, 255, 0.92);
+        background: var(--v-pos-field-background);
     }
 
     .cart-table :deep(tbody tr:not(.cart-expanded-row) td) {
-        border-top: 1px solid rgba(120, 144, 156, 0.2);
-        border-bottom: 1px solid rgba(120, 144, 156, 0.2);
+        border-top: 1px solid var(--v-pos-panel-border-soft);
+        border-bottom: 1px solid var(--v-pos-panel-border-soft);
         padding-top: 10px;
         padding-bottom: 10px;
     }
 
     .cart-table :deep(tbody tr:not(.cart-expanded-row) td:first-child) {
-        border-left: 1px solid rgba(120, 144, 156, 0.2);
-        border-top-left-radius: 12px;
-        border-bottom-left-radius: 12px;
+        border-inline-start: 1px solid var(--v-pos-panel-border-soft);
+        border-start-start-radius: 12px;
+        border-end-start-radius: 12px;
     }
 
     .cart-table :deep(tbody tr:not(.cart-expanded-row) td:last-child) {
-        border-right: 1px solid rgba(120, 144, 156, 0.2);
-        border-top-right-radius: 12px;
-        border-bottom-right-radius: 12px;
+        border-inline-end: 1px solid var(--v-pos-panel-border-soft);
+        border-start-end-radius: 12px;
+        border-end-end-radius: 12px;
     }
 
     .cart-item-name {
@@ -247,7 +307,7 @@
 
     .cart-item-amount {
         font-size: 0.9rem;
-        color: rgba(60, 75, 90, 0.76);
+        color: rgb(var(--v-pos-text-muted));
     }
 
     .cart-qty-wrap {
@@ -259,12 +319,13 @@
     }
 
     .cart-expanded-row td {
-        padding: 0 12px 12px !important;
-        border: 1px solid rgba(120, 144, 156, 0.2);
+        padding-block-end: 12px !important;
+        padding-inline: 12px !important;
+        border: 1px solid var(--v-pos-panel-border-soft);
         border-top: 0;
-        border-bottom-left-radius: 12px;
-        border-bottom-right-radius: 12px;
-        background: rgba(248, 251, 255, 0.97);
+        border-end-start-radius: 12px;
+        border-end-end-radius: 12px;
+        background: var(--v-pos-panel-background);
     }
 
     .cart-table :deep(.v-data-table__td) {
@@ -273,22 +334,21 @@
 
     .cart-table :deep(.v-data-table__tr--expanded td) {
         border-bottom: 0;
-        border-bottom-left-radius: 0 !important;
-        border-bottom-right-radius: 0 !important;
+        border-end-start-radius: 0 !important;
+        border-end-end-radius: 0 !important;
     }
 
     .cart-table :deep(.v-btn--icon.v-data-table-expand__content) {
-        color: rgba(60, 75, 90, 0.76);
+        color: rgb(var(--v-pos-text-muted));
     }
-    .v-input.v-input--horizontal.v-input--center-affix.v-input--density-compact.v-theme--light.v-locale--is-ltr.v-input--dirty.v-text-field.v-number-input.cart-qty-input {
-        width: 5vw;
+    .cart-qty-input {
+        width: 100%;
     }
     td.v-data-table__td.v-data-table-column--no-padding.v-data-table-column--align-start.v-data-table__td--expanded-row {
         display: none;
     }
-    @media (max-width: 960px) {
-        .v-input.v-input--horizontal.v-input--center-affix.v-input--density-compact.v-theme--light.v-locale--is-ltr.v-input--dirty.v-text-field.v-number-input.cart-qty-input {
-            width: 5vw;
-        }
+
+    .invoice-discount-input {
+        width: 160px;
     }
 </style>

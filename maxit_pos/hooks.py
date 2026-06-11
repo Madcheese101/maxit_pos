@@ -146,11 +146,11 @@ doctype_js = {
 # Hook on document methods and events
 
 # doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
+	# "*": {
+	# 	"on_update": "method",
+	# 	"on_cancel": "method",
+	# 	"on_trash": "method"
+	# }
 # }
 
 doc_events = {
@@ -163,28 +163,37 @@ doc_events = {
         "on_trash": "maxit_pos.maxit_pos.page.maxit_pos.api.api.on_item_group_cache_invalidate",
         "after_rename": "maxit_pos.maxit_pos.page.maxit_pos.api.api.on_item_group_cache_invalidate",
     },
+    "Stock Entry": {
+        "before_submit": "maxit_pos.events.stock_entry_before_submit",
+    }
 }
 
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"maxit_pos.tasks.all"
-# 	],
-# 	"daily": [
-# 		"maxit_pos.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"maxit_pos.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"maxit_pos.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"maxit_pos.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+	# "all": [
+	# 	"maxit_pos.tasks.all"
+	# ],
+	# "daily": [
+	# 	"maxit_pos.tasks.daily"
+	# ],
+	# "hourly": [
+	# 	"maxit_pos.tasks.hourly"
+	# ],
+	# "weekly": [
+	# 	"maxit_pos.tasks.weekly"
+	# ],
+	# "monthly": [
+	# 	"maxit_pos.tasks.monthly"
+	# ],
+    "cron": {
+        # run at 12AM
+        "0 0 * * *":[
+            "maxit_pos.tasks.close_sifts",
+        ]
+	}
+}
 
 # Testing
 # -------
@@ -321,7 +330,19 @@ fixtures = [
                 ]
             ]
         ]
-    }
+    },
+    {
+        "doctype": "Custom DocPerm",
+        "filters": {
+            "parent": [
+                "in",
+                [
+                    "POS Closing Entry", 
+                    "POS Opening Entry",
+                ]
+            ]
+        }
+    },
 ]
 
 from maxit_pos.overrides import override_methods

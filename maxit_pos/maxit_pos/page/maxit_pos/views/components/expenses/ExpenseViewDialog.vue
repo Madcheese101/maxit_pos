@@ -25,39 +25,39 @@
 				<template v-else>
 					<v-row dense class="mb-2">
 						<v-col cols="12" sm="6" md="3">
-							<v-card class="stat-card" rounded="lg" variant="tonal" color="primary">
-								<v-card-text>
-									<div class="text-caption text-medium-emphasis">{{ __('Posting Date') }}</div>
-									<div class="text-body-1 font-weight-bold">{{ doc.posting_date || __('N/A') }}</div>
-								</v-card-text>
-							</v-card>
+							<StatMetricCard
+								class="stat-card"
+								color="primary"
+								:label="__('Posting Date')"
+								:value="doc.posting_date || __('N/A')"
+							/>
 						</v-col>
 
 						<v-col cols="12" sm="6" md="3">
-							<v-card class="stat-card" rounded="lg" variant="tonal" color="success">
-								<v-card-text>
-									<div class="text-caption text-medium-emphasis">{{ __('Employee') }}</div>
-									<div class="text-body-1 font-weight-bold">{{ doc.employee_name || doc.employee || __('N/A') }}</div>
-								</v-card-text>
-							</v-card>
+							<StatMetricCard
+								class="stat-card"
+								color="success"
+								:label="__('Employee')"
+								:value="doc.employee_name || doc.employee || __('N/A')"
+							/>
 						</v-col>
 
 						<v-col cols="12" sm="6" md="3">
-							<v-card class="stat-card" rounded="lg" variant="tonal" color="warning">
-								<v-card-text>
-									<div class="text-caption text-medium-emphasis">{{ __('Branch') }}</div>
-									<div class="text-body-1 font-weight-bold">{{ doc.branch || __('N/A') }}</div>
-								</v-card-text>
-							</v-card>
+							<StatMetricCard
+								class="stat-card"
+								color="warning"
+								:label="__('Branch')"
+								:value="doc.branch || __('N/A')"
+							/>
 						</v-col>
 
 						<v-col cols="12" sm="6" md="3">
-							<v-card class="stat-card" rounded="lg" variant="tonal" color="info">
-								<v-card-text>
-									<div class="text-caption text-medium-emphasis">{{ __('Total Claimed') }}</div>
-									<div class="text-body-1 font-weight-bold">{{ formatCurrency(doc.total_claimed_amount, doc.currency) }}</div>
-								</v-card-text>
-							</v-card>
+							<StatMetricCard
+								class="stat-card"
+								color="info"
+								:label="__('Total Claimed')"
+								:value="formatCurrency(doc.total_claimed_amount, doc.currency)"
+							/>
 						</v-col>
 					</v-row>
 
@@ -74,7 +74,7 @@
 						</v-col>
 					</v-row>
 
-					<v-card class="section-card" rounded="lg" variant="outlined">
+					<SurfaceCard surface="section" class="section-card">
 						<v-card-item class="pb-1">
 							<div class="text-subtitle-1 font-weight-bold">{{ __('Expense Rows') }}</div>
 						</v-card-item>
@@ -105,7 +105,7 @@
 								</v-data-table>
 							</div>
 						</v-card-text>
-					</v-card>
+					</SurfaceCard>
 				</template>
 			</v-card-text>
 
@@ -141,6 +141,9 @@
 
 <script setup>
 	import { computed, ref, watch } from 'vue';
+	import { usePosStore } from '../../../store/posStore';
+	import SurfaceCard from '../ui/SurfaceCard.vue';
+	import StatMetricCard from '../ui/StatMetricCard.vue';
 
 	const props = defineProps({
 		modelValue: {
@@ -157,6 +160,7 @@
 
 	const __ = window.__;
 	const frappe_ = window.frappe;
+	const { buildPrintViewUrl } = usePosStore();
 	const doc = ref(null);
 	const isLoading = ref(false);
 	const isSubmitting = ref(false);
@@ -234,7 +238,13 @@
 			return;
 		}
 
-		const printUrl = `/printview?doctype=${encodeURIComponent('Expense Claim')}&name=${encodeURIComponent(doc.value.name)}&format=Standard&no_letterhead=1&letterhead=No%20Letterhead&settings=%7B%7D&_lang=en&pdf_generator=wkhtmltopdf&trigger_print=1`;
+		const printUrl = buildPrintViewUrl({
+			doctype: 'Expense Claim',
+			name: doc.value.name,
+			format: 'Standard',
+			no_letterhead: 1,
+			letterhead: 'No Letterhead',
+		});
 		window.open(printUrl, '_blank');
 	}
 
@@ -271,9 +281,10 @@
 
 <style scoped>
 	.expense-view-dialog {
-		border: 1px solid rgba(120, 144, 156, 0.24);
-		background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(248, 251, 255, 0.97));
-		box-shadow: 0 8px 20px rgba(12, 28, 43, 0.08);
+		border: 1px solid var(--v-pos-panel-border);
+		background: var(--v-pos-panel-background);
+		box-shadow: var(--v-pos-panel-shadow);
+		transition: var(--v-theme-transition);
 	}
 
 	.dialog-body {
@@ -282,11 +293,12 @@
 	}
 
 	.stat-card {
-		border: 1px solid rgba(120, 144, 156, 0.18);
+		border: 1px solid var(--v-pos-panel-border-soft);
+		transition: var(--v-theme-transition);
 	}
 
 	.section-card {
-		border-color: rgba(120, 144, 156, 0.28) !important;
+		border-color: var(--v-pos-panel-border-strong) !important;
 	}
 
 	.meta-row {

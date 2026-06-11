@@ -4,7 +4,8 @@ import frappe
 from erpnext.setup.utils import get_exchange_rate
 from frappe import _
 from frappe.query_builder import DocType, Order
-from frappe.utils import flt, nowdate
+from frappe.utils import flt, nowdate,today
+from erpnext.accounts.utils import get_balance_on
 
 
 EXPENSE_ACCESS_ROLES = (
@@ -142,12 +143,16 @@ def create_expense(doc):
 				"cost_center": cost_center,
 			},
 		)
-
 	expense_claim.set_expense_account()
 	expense_claim.calculate_total_amount()
 	expense_claim.calculate_taxes()
 	_populate_claim_advances(expense_claim)
 	_update_employee_advance_claimed_amount(expense_claim)
+	if expense_claim.total_sanctioned_amount > expense_claim.total_advance_amount:
+		frappe.throw(
+			(_("Custody Account Balance is insufficient, still need {0} more.")
+				.format(expense_claim.total_sanctioned_amount - expense_claim.total_advance_amount))
+		)
 	expense_claim.flags.ignore_permissions = True
 	expense_claim.save()
 	expense_claim.submit()
@@ -270,3 +275,15 @@ def _parse_payload(doc):
 	if isinstance(doc, str):
 		return json.loads(doc)
 	return doc
+@frappe.whitelist()
+def get_custody_account_balance():
+	branch = frappe.session.data.get("user_branch")
+	msg = ''
+	user_roles = frappe.get_roles(frappe.session.user)
+	has_permission = set(user_roles).intersection({"Expense User", "Expense Manager"})
+	if(has_permission):
+		expense_account = frappe.db.get_value("Branch", branch, "branch_custody_account")
+		if not expense_account:
+			frappe.throw(_("Branch Custody Account is required to view the balance. Please contact your administrator."))
+		balance = get_balance_on(expense_account, today(), ignore_account_permission=True) or 0
+		frappe.msgprint(str(balance) + " دينار")	

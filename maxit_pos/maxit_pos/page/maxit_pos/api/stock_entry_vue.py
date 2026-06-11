@@ -4,6 +4,7 @@ from frappe.utils import cint, flt
 from frappe.model.mapper import get_mapped_doc
 from frappe.model.document import Document
 
+
 def _get_user_branch():
     user_branch = frappe.session.data.get("user_branch")
     if not user_branch:
@@ -70,6 +71,7 @@ def make_stock_in_entry(source_name: str, target_doc: str | Document | None = No
         target.from_branch = source.from_branch
         target.to_branch = source.to_branch
         target.set_missing_values()
+        target.add_to_transit = 0
 
         if not frappe.get_single_value("Stock Settings", "use_serial_batch_fields"):
             target.make_serial_and_batch_bundle_for_transfer()
@@ -153,6 +155,7 @@ def get_outgoing_transfers(filters): # filters should be a dict with keys (from_
         "stock_entry_type": "Material Transfer",
         "from_branch": user_branch,
         "add_to_transit": 1,
+        "outgoing_stock_entry": ["in", ("", None)],
     }
 
     if filters.get("from_date") and filters.get("to_date"):

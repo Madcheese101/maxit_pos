@@ -1,5 +1,5 @@
 <template>
-    <v-row height="70" dense>
+    <v-row dense>
         <!-- Search bar -->
         <v-col cols="4">
             <div >
@@ -23,11 +23,12 @@
                 :items="item_groups"
                 variant="outlined"
                 density="compact"
+                hide-details
                 flat>
             </v-select>
         </v-col>
         <!-- more filters -->
-        <v-col max-width="140" v-if="props.customFilters.length > 0">
+        <v-col cols="auto" v-if="props.customFilters.length > 0">
             <v-btn
                 color="primary"
                 density="comfortable"
@@ -42,7 +43,7 @@
                 color="error"
                 density="comfortable"
                 icon="mdi-filter-remove"
-                class="ml-2"
+                class="ms-2"
                 @click="reset_filters()"
                 variant="tonal"></v-btn>
                 
@@ -54,7 +55,7 @@
 <script setup>
     import { ref, watch} from 'vue';
     import _ from "lodash";
-    const emit = defineEmits(['GetItems']);
+    const emit = defineEmits(['getItems']);
     const props = defineProps(['customFilters', 'allowedItemGroups', 'posProfile']);
     const __ = window.__;
     const search_term = ref('');

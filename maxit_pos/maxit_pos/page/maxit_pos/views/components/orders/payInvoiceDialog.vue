@@ -139,16 +139,18 @@
 
 <style scoped>
 .pay-dialog {
-  border: 1px solid rgba(120, 144, 156, 0.24);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 251, 255, 0.97));
+  border: 1px solid var(--v-pos-panel-border);
+  background: var(--v-pos-panel-background);
+  box-shadow: var(--v-pos-panel-shadow);
+  transition: var(--v-theme-transition);
 }
 
 .payment-table {
-  border: 1px solid rgba(120, 144, 156, 0.2);
+  border: 1px solid var(--v-pos-panel-border-soft);
 }
 
 .summary-card {
   padding: 12px;
-  border: 1px solid rgba(120, 144, 156, 0.2);
+  border: 1px solid var(--v-pos-panel-border-soft);
 }
 </style>
