@@ -275,8 +275,8 @@ export const usePosStore = defineStore('posStore', () => {
         if (!item_code) return;
         if (rate == undefined || rate == 0) return maxit_pos.utils.errors.price_required();
 
-        const new_item = { item_code, item_name, batch_no, rate, amount: rate, uom, uoms, [field]: value, stock_uom, is_selected: false, max_discount };
-        
+        const new_item = { item_code, item_name, batch_no, rate, amount: rate, uom, uoms, [field]: value, stock_uom, is_selected: false, max_discount, discount_type: "Percentage" };
+        console.log("Adding item to cart:", new_item);
         if (serial_no) {
             await maxit_pos.utils.check_serial_no_availablilty(item_code, 
                 pos_warehouse.value, 

@@ -91,7 +91,7 @@
                                     </v-number-input>
 
                                     <v-number-input
-                                        v-if="item.discount_type === 'Percentage'"
+                                        v-if="!item.discount_type || item.discount_type === 'Percentage'"
                                         v-model="item.discount_percentage"
                                         control-variant="hidden"
                                         variant="outlined"
@@ -224,8 +224,13 @@
     }
 
     function toggleDiscountType(item) {
-        item.discount_type =
-        item.discount_type === 'Percentage' ? 'Amount' : 'Percentage'
+        if (item.discount_type === 'Percentage') {
+            item.discount_type = 'Amount'
+            update_cart({ field: 'discount_percentage', value: 0, item, is_number: true })
+        } else {
+            item.discount_type = 'Percentage'
+            update_cart({ field: 'discount_amount', value: 0, item, is_number: true })
+        }
     }
 
     const invoiceDiscountType = ref('Amount')
