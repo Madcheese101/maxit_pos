@@ -379,7 +379,7 @@ def get_sales_invoice_list(pos_profile, search_term="", customer="", item_code="
             SalesInvoice.status
         )
         .where(SalesInvoice.pos_profile == pos_profile)
-        .where(SalesInvoice.docstatus == 1)
+        # .where(SalesInvoice.docstatus == 1)
     )
 
     if item_code:
