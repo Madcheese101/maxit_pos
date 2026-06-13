@@ -126,7 +126,7 @@
             <div class="text-h6" v-html="frappe_.format(posFrm?.doc?.total, {'fieldtype': 'Currency'})"></div>
         </div>
 
-        <div v-if="allow_discount_change" class="d-flex justify-space-between align-center mt-2 gap-3" @click.stop>
+        <div v-if="allow_discount_change && posFrm?.doc" class="d-flex justify-space-between align-center mt-2 gap-3" @click.stop>
             <div class="text-subtitle-2 text-medium-emphasis flex-shrink-0">{{ __('Discount') }}</div>
             <div class="invoice-discount-input">
                 <v-number-input
