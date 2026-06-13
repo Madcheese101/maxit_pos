@@ -30,6 +30,7 @@ export const usePosStore = defineStore('posStore', () => {
     const activeVuetifyTheme = computed(() => {
         return resolveVuetifyThemeName(themeMode.value, darkPalette.value);
     });
+    const returnAgainst = ref(null);
 
     const getAppLanguage = () => {
         return frappe.boot?.lang || frappe.boot?.user?.language || 'en';
@@ -124,6 +125,7 @@ export const usePosStore = defineStore('posStore', () => {
             frappe.run_serially([
                 () => make_sales_invoice_frm(doc.doctype, 1),
                 () => make_return_invoice(doc),
+                () => returnAgainst.value = posFrm.value.doc.return_against || null,
             ]);
         });
     }
@@ -169,6 +171,7 @@ export const usePosStore = defineStore('posStore', () => {
 				posFrm.value.doc.is_pos = 1;
                 if (doctype == "Sales Invoice") posFrm.value.doc.is_created_using_pos = 1;
                 if (is_return) posFrm.value.doc.is_return = 1;
+                if (!is_return) returnAgainst.value = null;
 				resolve();
 			} 
             else {
@@ -178,6 +181,7 @@ export const usePosStore = defineStore('posStore', () => {
 					posFrm.value.doc.is_pos = 1;
                     if (doctype == "Sales Invoice") posFrm.value.doc.is_created_using_pos = 1;
                     if (is_return) posFrm.value.doc.is_return = 1;
+                    if (!is_return) returnAgainst.value = null;
 					resolve();
 				});
 			}
@@ -437,6 +441,7 @@ export const usePosStore = defineStore('posStore', () => {
         themeMode,
         darkPalette,
         activeVuetifyTheme,
+        returnAgainst,
         getAppLanguage,
         isAppRTL,
         getAppDirection,

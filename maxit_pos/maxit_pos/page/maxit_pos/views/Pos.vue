@@ -16,7 +16,7 @@
   import StatMetricCard from './components/ui/StatMetricCard.vue';
   
   const posStore = usePosStore();
-  const {posProfileData, pos_profile, pos_opening, posFrm} = storeToRefs(posStore);
+  const {posProfileData, pos_profile, pos_opening, posFrm, returnAgainst} = storeToRefs(posStore);
   const {make_new_invoice, update_cart, edit_invoice, setPosOpening, sales_order_to_invoice, buildPrintViewUrl} = posStore;
   // Local State
   const activeTab = ref('pos')
@@ -44,6 +44,8 @@
   const isReturnInvoice = computed(() => {
     return posFrm.value?.doc?.is_return || false;
   });
+
+  const isLinkedReturn = computed(() => isReturnInvoice.value && returnAgainst.value);
 
   const { height: viewportHeight } = useDisplay();
   const customerRules = computed(() => [
@@ -474,7 +476,7 @@
           <v-window-item value="pos">
             <v-row class="pos-content" dense align="stretch">
               <v-col cols="12" lg="6">
-                <SurfaceCard class="pos-panel" max-height="100vh" :disabled="isReturnInvoice">
+                <SurfaceCard class="pos-panel" max-height="100vh" :disabled="isLinkedReturn">
                   <v-card-text>
                     <FiltersSection
                       :customFilters="posProfileData.custom_filters"
@@ -518,7 +520,7 @@
                       rounded="lg"
                       :loading="loading"
                       :rules="customerRules"
-                      :disabled="isReturnInvoice"
+                      :disabled="isLinkedReturn"
                     >
                       <template #append-inner>
                         <v-btn
@@ -555,6 +557,7 @@
                           </v-btn>
 
                           <v-btn
+                            v-if="posProfileData?.allow_sales_order"
                             color="secondary"
                             variant="tonal"
                             @click="showLoadInvoiceDialog(true)"
@@ -563,6 +566,7 @@
                           </v-btn>
 
                           <v-btn
+                            v-if="posProfileData?.allow_sales_order"
                             color="warning"
                             variant="tonal"
                             :disabled="!hasCartItems"
