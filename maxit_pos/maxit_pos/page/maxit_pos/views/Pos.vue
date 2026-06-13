@@ -450,7 +450,7 @@
 
 <template>
   <PageSurface glow="info-success" class="pos-view pa-3 pa-md-6">
-    <v-row class="pos-shell" align="stretch">
+    <v-row>
       <v-col cols="12">
         <SurfaceCard class="pos-panel">
           <v-card-item class="pb-1">
@@ -470,11 +470,13 @@
           </v-card-item>
         </SurfaceCard>
       </v-col>
+    </v-row>
 
+    <v-row class="mt-n12">
       <v-col cols="12">
         <v-window v-model="activeTab">
           <v-window-item value="pos">
-            <v-row class="pos-content" dense align="stretch">
+            <v-row class="pos-content" dense>
               <v-col cols="12" lg="6">
                 <SurfaceCard class="pos-panel" max-height="100vh" :disabled="isLinkedReturn">
                   <v-card-text>
