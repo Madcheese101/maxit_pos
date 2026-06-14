@@ -16,7 +16,7 @@
   
   const posStore = usePosStore();
   const {posProfileData, pos_profile, pos_opening, posFrm, returnAgainst} = storeToRefs(posStore);
-  const {make_new_invoice, update_cart, edit_invoice, setPosOpening, sales_order_to_invoice, buildPrintViewUrl} = posStore;
+  const {make_new_invoice, update_cart, edit_invoice, setPosOpening, sales_order_to_invoice, buildPrintViewUrl, toggle_is_return} = posStore;
   // Local State
   const activeTab = ref('pos')
   const customerSearch = ref('')
@@ -45,6 +45,11 @@
   });
 
   const isLinkedReturn = computed(() => isReturnInvoice.value && returnAgainst.value);
+
+  const isReturn = computed({
+    get: () => !!posFrm.value?.doc?.is_return,
+    set: (val) => toggle_is_return(val),
+  });
 
   const customerRules = computed(() => [
     () => customers.value.length > 0 || __('No customers found'),
@@ -178,6 +183,13 @@
   }
 
   const changePaymentAmount = async (item_name) => {
+    if (isReturnInvoice.value) {
+      const payment = posPayments.value.find(p => p.item_name === item_name);
+      if (payment && Number(payment.amount) > 0) {
+        payment.amount = 0;
+        frappe.show_alert({ indicator: "red", message: __("Return payment amount cannot be positive") });
+      }
+    }
     await posFrm.value.script_manager.trigger("amount", "Sales Invoice Payment", item_name);
   }
 
@@ -498,31 +510,45 @@
               <v-col cols="12" lg="6">
                 <SurfaceCard class="pos-panel cart-side-panel">
                   <v-card-text>
-                    <v-combobox
-                      v-model="customer"
-                      :items="customers"
-                      item-title="customer_name"
-                      item-value="name"
-                      :label="__('Customer')"
-                      :search="customerSearch"
-                      @update:search="customerSearch = $event"
-                      @update:model-value="updateSelection"
-                      variant="solo-filled"
-                      density="comfortable"
-                      rounded="lg"
-                      :loading="loading"
-                      :rules="customerRules"
-                      :disabled="isLinkedReturn"
-                    >
-                      <template #append-inner>
-                        <v-btn
-                          icon="mdi-plus"
-                          size="small"
-                          variant="text"
-                          @click.stop="openAddCustomerDialog"
-                        />
-                      </template>
-                    </v-combobox>
+                    <div class="d-flex align-center ga-3 mb-1">
+                      <v-combobox
+                        v-model="customer"
+                        :items="customers"
+                        item-title="customer_name"
+                        item-value="name"
+                        :label="__('Customer')"
+                        :search="customerSearch"
+                        @update:search="customerSearch = $event"
+                        @update:model-value="updateSelection"
+                        variant="solo-filled"
+                        density="comfortable"
+                        rounded="lg"
+                        :loading="loading"
+                        :rules="customerRules"
+                        :disabled="isLinkedReturn"
+                        class="flex-grow-1"
+                      >
+                        <template #append-inner>
+                          <v-btn
+                            icon="mdi-plus"
+                            size="small"
+                            variant="text"
+                            @click.stop="openAddCustomerDialog"
+                          />
+                        </template>
+                      </v-combobox>
+
+                      <v-checkbox
+                        v-if="posProfileData?.allow_unlinked_return_invoice"
+                        v-model="isReturn"
+                        :label="__('Is Return')"
+                        color="error"
+                        density="comfortable"
+                        hide-details
+                        :disabled="isLinkedReturn"
+                        class="flex-grow-0"
+                      />
+                    </div>
 
                     <Cart @checkout="prepareCheckout" />
 
@@ -623,6 +649,7 @@
                                   variant="outlined"
                                   density="compact"
                                   :precision="2"
+                                  :max="isReturnInvoice ? 0 : undefined"
                                   :label="priceListCurrency"
                                   @change="changePaymentAmount(payment.item_name)"
                                 />
