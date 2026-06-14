@@ -5,7 +5,6 @@
   
   import {storeToRefs} from 'pinia';
   import { ref, computed, watch } from 'vue'
-  import { useDisplay } from 'vuetify';
   import { usePosStore } from '../store/posStore';
   import Cart from './components/pos/Cart.vue';
   import ItemsList from './components/pos/ItemsList.vue';
@@ -47,17 +46,14 @@
 
   const isLinkedReturn = computed(() => isReturnInvoice.value && returnAgainst.value);
 
-  const { height: viewportHeight } = useDisplay();
   const customerRules = computed(() => [
     () => customers.value.length > 0 || __('No customers found'),
   ]);
-  const cartPanelMaxHeight = computed(() => `${Math.max(380, viewportHeight.value - 130)}px`);
-  const checkoutListMaxHeight = computed(() => `${Math.max(180, Math.round(viewportHeight.value * 0.34))}px`);
-  
+
   const searchItems = async (filters) => {
-    search_term = filters ? filters.search_term : "";
-    item_group = filters ? filters.item_group : null;
-    custom_filters = filters ? filters.filters : [];
+    const search_term = filters ? filters.search_term : "";
+    const item_group = filters ? filters.item_group : null;
+    const custom_filters = filters ? filters.filters : [];
 
     const response = await frappe.call({
 			method: "maxit_pos.maxit_pos.page.maxit_pos.api.api.get_items",
@@ -145,6 +141,7 @@
 
   const prepareCheckout = async () => {
     if (!hasCartItems.value) return;
+    if (!validate()) return;
     const save_error = await posFrm.value.save();
     if(save_error) return;
     await posFrm.value.cscript.set_default_payment(posFrm.value.doc.grand_total, true);
@@ -305,7 +302,6 @@
   }
 
   const create_opening_voucher = async () => {
-    const me = this;
     const table_fields = [
       {
         fieldname: "mode_of_payment",
@@ -450,36 +446,30 @@
 
 <template>
   <PageSurface glow="info-success" class="pos-view pa-3 pa-md-6">
-    <v-row>
-      <v-col cols="12">
-        <SurfaceCard class="pos-panel">
-          <v-card-item class="pb-1">
-            <v-tabs
-              v-model="activeTab"
-              color="primary"
-              fixed-tabs
-              class="pos-tabs"
-            >
-              <v-tab value="pos">{{ __('POS') }}
-                <v-chip v-if="isReturnInvoice" class="ms-1" size="x-small" density="comfortable" color="error" variant="tonal">
-                  {{ __('Return') }}
-                </v-chip>
-              </v-tab>
-              <v-tab value="checkout" :disabled="!hasCartItems">{{ __('Checkout') }}</v-tab>
-            </v-tabs>
-          </v-card-item>
-        </SurfaceCard>
-      </v-col>
-    </v-row>
+    <SurfaceCard class="pos-panel">
+      <v-card-item class="pb-1">
+        <v-tabs
+          v-model="activeTab"
+          color="primary"
+          fixed-tabs
+          class="pos-tabs"
+        >
+          <v-tab value="pos">{{ __('POS') }}
+            <v-chip v-if="isReturnInvoice" class="ms-1" size="x-small" density="comfortable" color="error" variant="tonal">
+              {{ __('Return') }}
+            </v-chip>
+          </v-tab>
+          <v-tab value="checkout" :disabled="!hasCartItems">{{ __('Checkout') }}</v-tab>
+        </v-tabs>
+      </v-card-item>
+    </SurfaceCard>
 
-    <v-row class="mt-n12">
-      <v-col cols="12">
-        <v-window v-model="activeTab">
+    <v-window v-model="activeTab" class="mt-3">
           <v-window-item value="pos">
             <v-row class="pos-content" dense>
               <v-col cols="12" lg="6">
-                <SurfaceCard class="pos-panel" max-height="100vh" :disabled="isLinkedReturn">
-                  <v-card-text>
+                <SurfaceCard class="pos-panel items-side-panel" :disabled="isLinkedReturn">
+                  <v-card-text class="items-panel-body">
                     <FiltersSection
                       :customFilters="posProfileData.custom_filters"
                       :allowedItemGroups="posProfileData.item_groups"
@@ -506,7 +496,7 @@
               </v-col>
 
               <v-col cols="12" lg="6">
-                <SurfaceCard class="pos-panel cart-side-panel" :style="{ maxHeight: cartPanelMaxHeight }">
+                <SurfaceCard class="pos-panel cart-side-panel">
                   <v-card-text>
                     <v-combobox
                       v-model="customer"
@@ -615,7 +605,7 @@
                   <v-card-text>
                     <SurfaceCard surface="section" class="section-card">
                       <v-card-text>
-                        <v-list class="checkout-list" :style="{ maxHeight: checkoutListMaxHeight }">
+                        <v-list class="checkout-list">
                           <v-list-item
                             v-for="payment in posPayments"
                             :key="payment.idx"
@@ -712,8 +702,6 @@
             </v-row>
           </v-window-item>
         </v-window>
-      </v-col>
-    </v-row>
 
     <LoadInvoiceDialog
       v-model="LoadInvoiceDialogToggle"
@@ -757,11 +745,27 @@
   gap: 10px;
 }
 
+.items-side-panel {
+  max-height: clamp(360px, 78dvh, 1100px);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.items-panel-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 .cart-side-panel {
+  max-height: clamp(380px, 80dvh, 1100px);
   overflow-y: auto;
 }
 
 .checkout-list {
+  max-height: clamp(180px, 34dvh, 520px);
   overflow-y: auto;
 }
 

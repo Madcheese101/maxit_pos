@@ -1,10 +1,9 @@
 <template>
-    <VCard rounded="lg" class="ma-auto" flat>
+    <VCard rounded="lg" class="items-list-card" flat>
       <VCardText class="items-list-shell">
         <v-row
           v-if="props.viewMode === 'grid'"
-          class="overflow-y-auto"
-          :style="{ maxHeight: itemsHeight + 'px' }"
+          class="overflow-y-auto items-scroll"
         >
           <v-col
             v-for="(item, idx) in props.items"
@@ -21,11 +20,10 @@
 
         <v-list
           v-else
-          class="item-rows"
+          class="item-rows items-scroll"
           bg-color="transparent"
           density="compact"
           lines="one"
-          :max-height="itemsHeight"
         >
           <template v-for="(item, idx) in props.items" :key="item.item_code || idx">
           <v-tooltip :text="item.item_code" location="top" open-delay="400">
@@ -54,13 +52,9 @@
 
 <script setup>
     import Item from "./Item.vue";
-    import { computed } from 'vue';
-    import { useDisplay } from 'vuetify';
     import { usePosStore } from '../../../store/posStore';
     const __ = window.__;
     const posStore = usePosStore();
-    const { height: viewportHeight } = useDisplay();
-    const itemsHeight = computed(() => Math.max(300, (viewportHeight.value || window.innerHeight || 800) - 320));
     const props = defineProps({
       items: {
         type: Array,
@@ -83,8 +77,26 @@
 </script>
 
 <style scoped>
+.items-list-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: transparent;
+}
+
 .items-list-shell {
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.items-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .item-rows {
