@@ -51,6 +51,54 @@
     set: (val) => toggle_is_return(val),
   });
 
+  const salesPersonOptions = ref([]);
+  const salesPersonLoading = ref(false);
+  const salesPersonSearch = ref('');
+
+  const showSalesPerson = computed(() => !!posProfileData.value?.allow_set_sales_person);
+  const salesPersonRequired = computed(() => !!posProfileData.value?.sales_person_is_mandatory);
+  const salesPersonUsers = computed(() =>
+    (posProfileData.value?.applicable_for_users || []).map(r => r.user).filter(Boolean));
+  const salesPerson = computed({
+    get: () => posFrm.value?.doc?.sales_person || null,
+    set: (val) => { if (posFrm.value) posFrm.value.doc.sales_person = val || ''; },
+  });
+  const salesPersonRules = computed(() =>
+    salesPersonRequired.value ? [v => !!v || __('Sales Person is required')] : []);
+
+  const loadSalesPersonOptions = async (search = '') => {
+    salesPersonLoading.value = true;
+    try {
+      const response = await frappe.call({
+        method: 'maxit_pos.maxit_pos.api.custom_search_link',
+        args: {
+          doctype: 'Employee',
+          txt: search || '',
+          page_length: 20,
+          ignore_user_permissions: 1,
+          label_fieldname: 'employee_name',
+          filters: { user_id: ['in', salesPersonUsers.value] },
+        },
+      });
+      salesPersonOptions.value = (response.message || []).map(item => ({
+        value: item.value,
+        label: item.label || item.value,
+        description: item.description || '',
+      }));
+    } catch (error) {
+      frappe.msgprint({ title: __('Sales Person search failed'), indicator: 'red', message: error?.message || String(error) });
+    } finally {
+      salesPersonLoading.value = false;
+    }
+  };
+
+  let salesPersonTimeout;
+  watch(salesPersonSearch, (val) => {
+    clearTimeout(salesPersonTimeout);
+    salesPersonTimeout = setTimeout(() => loadSalesPersonOptions(val), 300);
+  });
+  if (showSalesPerson.value) loadSalesPersonOptions();
+
   const customerRules = computed(() => [
     () => customers.value.length > 0 || __('No customers found'),
   ]);
@@ -179,6 +227,10 @@
         value = false;
       }
     });
+    if (salesPersonRequired.value && !posFrm.value.doc.sales_person) {
+      frappe.show_alert({ indicator: 'red', message: __('Sales Person is required') });
+      value = false;
+    }
     return value;
   }
 
@@ -510,7 +562,7 @@
               <v-col cols="12" lg="6">
                 <SurfaceCard class="pos-panel cart-side-panel">
                   <v-card-text>
-                    <div class="d-flex align-center ga-3 mb-1">
+                    <div class="d-flex align-center ga-3 mb-1 flex-wrap">
                       <v-combobox
                         v-model="customer"
                         :items="customers"
@@ -537,7 +589,24 @@
                           />
                         </template>
                       </v-combobox>
-
+                      <v-autocomplete
+                        v-if="showSalesPerson"
+                        v-model="salesPerson"
+                        :items="salesPersonOptions"
+                        item-title="label"
+                        item-value="value"
+                        :label="__('Sales Person')"
+                        :search="salesPersonSearch"
+                        @update:search="salesPersonSearch = $event"
+                        variant="solo-filled"
+                        density="comfortable"
+                        rounded="lg"
+                        hide-details="auto"
+                        :loading="salesPersonLoading"
+                        :rules="salesPersonRules"
+                        :disabled="isLinkedReturn"
+                        class="flex-grow-1"
+                      />
                       <v-checkbox
                         v-if="posProfileData?.allow_unlinked_return_invoice"
                         v-model="isReturn"
