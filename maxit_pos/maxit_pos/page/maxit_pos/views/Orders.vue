@@ -177,6 +177,11 @@
                 </v-col>
               </v-row>
 
+              <div v-if="invoice.sales_person" class="d-flex align-baseline gap-2 mb-2">
+                <span class="text-subtitle-1 font-weight-bold">{{ __('Sales Person') }}:</span>
+                <span class="text-body-1 font-weight-bold">{{ salesPersonName || invoice.sales_person }}</span>
+              </div>
+
               <SurfaceCard v-if="invoice.items?.length" surface="section" class="section-card mt-3">
                 <v-card-item class="pb-1">
                   <div class="text-subtitle-1 font-weight-bold">{{ __('Items') }}</div>
@@ -341,6 +346,7 @@
     const paymentEntries = ref([]);
     const isLoadingList = ref(false);
     const isLoadingInvoice = ref(false);
+    const salesPersonName = ref('');
     const router = useRouter();
     const route = useRoute();
     const { smAndDown, height: viewportHeight } = useDisplay();
@@ -467,6 +473,11 @@
       isLoadingInvoice.value = true;
       frappe.db.get_doc('Sales Invoice', invoice_id).then((doc) => {
           invoice.value = doc;
+          salesPersonName.value = '';
+          if (doc.sales_person) {
+            frappe.db.get_value('Employee', doc.sales_person, 'employee_name')
+              .then((r) => { salesPersonName.value = r?.message?.employee_name || doc.sales_person; });
+          }
           frappe.call("maxit_pos.maxit_pos.page.maxit_pos.api.api.get_invoice_payment_entries", {
             sales_invoice: invoice_id
           }).then((res) => {

@@ -30,6 +30,7 @@ export const usePosStore = defineStore('posStore', () => {
     const activeVuetifyTheme = computed(() => {
         return resolveVuetifyThemeName(themeMode.value, darkPalette.value);
     });
+    const returnAgainst = ref(null);
 
     const getAppLanguage = () => {
         return frappe.boot?.lang || frappe.boot?.user?.language || 'en';
@@ -124,8 +125,18 @@ export const usePosStore = defineStore('posStore', () => {
             frappe.run_serially([
                 () => make_sales_invoice_frm(doc.doctype, 1),
                 () => make_return_invoice(doc),
+                () => returnAgainst.value = posFrm.value.doc.return_against || null,
             ]);
         });
+    }
+    const toggle_is_return = async (value) => {
+        posFrm.value.doc.is_return = value ? 1 : 0;
+        for (const item of posFrm.value.doc.items) {
+            item.qty = value ? -Math.abs(flt(item.qty)) : Math.abs(flt(item.qty));
+            await posFrm.value.script_manager.trigger("qty", item.doctype, item.name);
+        }
+        if (!value) returnAgainst.value = null;
+        triggerRef(posFrm);
     }
     const edit_invoice = (invoice_name) => {
         return frappe.run_serially([
@@ -169,6 +180,7 @@ export const usePosStore = defineStore('posStore', () => {
 				posFrm.value.doc.is_pos = 1;
                 if (doctype == "Sales Invoice") posFrm.value.doc.is_created_using_pos = 1;
                 if (is_return) posFrm.value.doc.is_return = 1;
+                if (!is_return) returnAgainst.value = null;
 				resolve();
 			} 
             else {
@@ -178,6 +190,7 @@ export const usePosStore = defineStore('posStore', () => {
 					posFrm.value.doc.is_pos = 1;
                     if (doctype == "Sales Invoice") posFrm.value.doc.is_created_using_pos = 1;
                     if (is_return) posFrm.value.doc.is_return = 1;
+                    if (!is_return) returnAgainst.value = null;
 					resolve();
 				});
 			}
@@ -231,7 +244,10 @@ export const usePosStore = defineStore('posStore', () => {
         const from_selector = field === "qty" && value === "+1";
         const item_row = item_row_exists ? posFrm.value.doc.items[index] : {};
 
-        if (from_selector) value = flt(item_row.qty) + flt(value);
+        if (from_selector) {
+            const step = posFrm.value.doc.is_return ? -1 : 1;
+            value = flt(item_row.qty) + step;
+        }
 
         if (item_row_exists) {
             update_item(field, value, item_row, item, is_number, from_selector);
@@ -275,8 +291,8 @@ export const usePosStore = defineStore('posStore', () => {
         if (!item_code) return;
         if (rate == undefined || rate == 0) return maxit_pos.utils.errors.price_required();
 
-        const new_item = { item_code, item_name, batch_no, rate, amount: rate, uom, uoms, [field]: value, stock_uom, is_selected: false, max_discount };
-        
+        const new_item = { item_code, item_name, batch_no, rate, amount: rate, uom, uoms, [field]: value, stock_uom, is_selected: false, max_discount, discount_type: "Percentage" };
+
         if (serial_no) {
             await maxit_pos.utils.check_serial_no_availablilty(item_code, 
                 pos_warehouse.value, 
@@ -288,7 +304,7 @@ export const usePosStore = defineStore('posStore', () => {
         
         if (field === "serial_no") new_item["qty"] = value.split(`\n`).length || 0;
         
-        if (field === "qty" && value !== 0 && !posFrm.value.allow_negative_stock) {
+        if (field === "qty" && value > 0 && !posFrm.value.allow_negative_stock) {
             const qty_needed = value * new_item.conversion_factor;
             const is_low_stock = await check_stock_availability(new_item, qty_needed, pos_warehouse.value);
             if (is_low_stock) return;
@@ -437,6 +453,7 @@ export const usePosStore = defineStore('posStore', () => {
         themeMode,
         darkPalette,
         activeVuetifyTheme,
+        returnAgainst,
         getAppLanguage,
         isAppRTL,
         getAppDirection,
@@ -458,6 +475,7 @@ export const usePosStore = defineStore('posStore', () => {
         setPosOpening,
         trigger_item_update,
         process_return,
+        toggle_is_return,
         hydrateThemePreferences,
         setThemePreferences
     }

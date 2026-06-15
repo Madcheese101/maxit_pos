@@ -91,7 +91,7 @@
                                     </v-number-input>
 
                                     <v-number-input
-                                        v-if="item.discount_type === 'Percentage'"
+                                        v-if="!item.discount_type || item.discount_type === 'Percentage'"
                                         v-model="item.discount_percentage"
                                         control-variant="hidden"
                                         variant="outlined"
@@ -126,7 +126,7 @@
             <div class="text-h6" v-html="frappe_.format(posFrm?.doc?.total, {'fieldtype': 'Currency'})"></div>
         </div>
 
-        <div v-if="allow_discount_change" class="d-flex justify-space-between align-center mt-2 gap-3" @click.stop>
+        <div v-if="allow_discount_change && posFrm?.doc" class="d-flex justify-space-between align-center mt-2 gap-3" @click.stop>
             <div class="text-subtitle-2 text-medium-emphasis flex-shrink-0">{{ __('Discount') }}</div>
             <div class="invoice-discount-input">
                 <v-number-input
@@ -224,8 +224,13 @@
     }
 
     function toggleDiscountType(item) {
-        item.discount_type =
-        item.discount_type === 'Percentage' ? 'Amount' : 'Percentage'
+        if (item.discount_type === 'Percentage') {
+            item.discount_type = 'Amount'
+            update_cart({ field: 'discount_percentage', value: 0, item, is_number: true })
+        } else {
+            item.discount_type = 'Percentage'
+            update_cart({ field: 'discount_amount', value: 0, item, is_number: true })
+        }
     }
 
     const invoiceDiscountType = ref('Amount')

@@ -84,9 +84,14 @@ export const resolveVuetifyThemeName = (mode = DEFAULT_THEME_MODE, darkPalette =
   }
 };
 
+const userScopedKey = (key) => {
+  const user = frappe?.session?.user || 'guest';
+  return `${key}__${user}`;
+};
+
 const readStorageValue = (key) => {
   try {
-    return window.localStorage.getItem(key);
+    return window.localStorage.getItem(userScopedKey(key));
   } catch (error) {
     return null;
   }
@@ -106,8 +111,8 @@ export const persistThemePreferences = ({ mode, darkPalette }) => {
   };
 
   try {
-    window.localStorage.setItem(THEME_MODE_STORAGE_KEY, normalizedPreferences.mode);
-    window.localStorage.setItem(DARK_PALETTE_STORAGE_KEY, normalizedPreferences.darkPalette);
+    window.localStorage.setItem(userScopedKey(THEME_MODE_STORAGE_KEY), normalizedPreferences.mode);
+    window.localStorage.setItem(userScopedKey(DARK_PALETTE_STORAGE_KEY), normalizedPreferences.darkPalette);
   } catch (error) {
     return normalizedPreferences;
   }
