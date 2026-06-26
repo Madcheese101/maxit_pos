@@ -132,7 +132,6 @@
     if(isReturnInvoice.value){
       isReturn = returnAgainst.value ? 1 : 0;
     };
-    console.log("isReturn:", isReturn);
     const response = await frappe.call({
 			method: "maxit_pos.maxit_pos.page.maxit_pos.api.api.get_items",
 			freeze: true,
@@ -229,7 +228,6 @@
     if (!validate()) return;
     const save_error = await posFrm.value.save();
     if(save_error) return;
-    await posFrm.value.cscript.set_default_payment(posFrm.value.doc.grand_total, true);
     posFrm.value.refresh_field("payments");
     activeTab.value = 'checkout';
   }

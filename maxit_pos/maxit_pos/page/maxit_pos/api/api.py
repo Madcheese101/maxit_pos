@@ -20,6 +20,34 @@ from erpnext.accounts.doctype.bank_account.bank_account import get_party_bank_ac
 from erpnext.accounts.doctype.pos_closing_entry.pos_closing_entry import get_invoices
 
 @frappe.whitelist()
+def get_pos_payment_modes(pos_profile, company):
+    """Full payment-mode list (with accounts) for a POS profile.
+
+    Returns get only the modes the POS profile defines, mirroring what
+    update_multi_mode_option builds for a normal invoice. Used to repopulate
+    payments on returns, where ERPNext skips this (for_validate=True).
+    """
+    from erpnext.accounts.doctype.sales_invoice.sales_invoice import get_mode_of_payments_info
+
+    pos = frappe.get_cached_doc("POS Profile", pos_profile)
+    mode_of_payments = [d.mode_of_payment for d in pos.payments]
+    info = get_mode_of_payments_info(mode_of_payments, company)
+
+    modes = []
+    for row in pos.payments:
+        pm = info.get(row.mode_of_payment)
+        if not pm:
+            continue
+        modes.append({
+            "mode_of_payment": row.mode_of_payment,
+            "default": row.default,
+            "account": pm.get("default_account"),
+            "type": pm.get("type"),
+        })
+    return modes
+
+
+@frappe.whitelist()
 def save_invoice_as_sales_order(invoice_name):
     invoice = frappe.get_doc("Sales Invoice", invoice_name)
 

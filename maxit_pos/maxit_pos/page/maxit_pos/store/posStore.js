@@ -31,6 +31,7 @@ export const usePosStore = defineStore('posStore', () => {
         return resolveVuetifyThemeName(themeMode.value, darkPalette.value);
     });
     const returnAgainst = ref(null);
+    const returnSourcePayments = ref([]);
 
     const getAppLanguage = () => {
         return frappe.boot?.lang || frappe.boot?.user?.language || 'en';
@@ -125,6 +126,7 @@ export const usePosStore = defineStore('posStore', () => {
             frappe.run_serially([
                 () => make_sales_invoice_frm(doc.doctype, 1),
                 () => make_return_invoice(doc),
+                () => reload_return_payment_modes(),
                 () => returnAgainst.value = posFrm.value.doc.return_against || null,
                 () => triggerRef(posFrm),
             ]);
@@ -136,7 +138,10 @@ export const usePosStore = defineStore('posStore', () => {
             item.qty = value ? -Math.abs(flt(item.qty)) : Math.abs(flt(item.qty));
             await posFrm.value.script_manager.trigger("qty", item.doctype, item.name);
         }
-        if (!value) returnAgainst.value = null;
+        if (!value) {
+            returnAgainst.value = null;
+            returnSourcePayments.value = [];
+        }
         triggerRef(posFrm);
     }
     const edit_invoice = (invoice_name) => {
@@ -214,6 +219,31 @@ export const usePosStore = defineStore('posStore', () => {
 		});
 	}
 
+    // ERPNext skips repopulating payments for returns (for_validate=True), so a
+    // return only keeps the source invoice's surviving (non-zero) payment rows.
+    // Rebuild the full POS profile mode list (with accounts) so every method is
+    // selectable at checkout.
+    const reload_return_payment_modes = async () => {
+        const pos_profile = posProfileData.value?.name;
+        const company_name = posFrm.value?.doc?.company || posProfileData.value?.company || company.value;
+        if (!pos_profile || !company_name) return;
+        const { message: modes } = await frappe.call({
+            method: "maxit_pos.maxit_pos.page.maxit_pos.api.api.get_pos_payment_modes",
+            args: { pos_profile, company: company_name },
+        });
+        if (!modes || !modes.length) return;
+        posFrm.value.doc.payments = [];
+        modes.forEach((m) => {
+            const row = frappe.model.add_child(posFrm.value.doc, "Sales Invoice Payment", "payments");
+            row.mode_of_payment = m.mode_of_payment;
+            row.default = m.default;
+            row.account = m.account;
+            row.type = m.type;
+            row.amount = 0;
+            row.base_amount = 0;
+        });
+    };
+
     const make_return_invoice = async (doc) => {
 		return frappe.call({
 			method:
@@ -228,11 +258,11 @@ export const usePosStore = defineStore('posStore', () => {
 				frappe.model.sync(r.message);
 				frappe.get_doc(r.message.doctype, r.message.name).__run_link_triggers = false;
 				// this.set_pos_profile_data();
+                // above line sets pos profile data for invoice according to current pos profile
+                // useful when returning an invoice created in different pos profile.
                 const items = r.message.items || [];
                 posFrm.value.doc.items = [...items];
                 posFrm.value.doc.sales_person = doc.sales_person || r.message.sales_person || "";
-                // above line sets pos profile data for invoice according to current pos profile
-                // useful when returning an invoice created in different pos profile.
 			},
 		});
 	}
@@ -456,6 +486,7 @@ export const usePosStore = defineStore('posStore', () => {
         darkPalette,
         activeVuetifyTheme,
         returnAgainst,
+        returnSourcePayments,
         getAppLanguage,
         isAppRTL,
         getAppDirection,
