@@ -345,6 +345,7 @@ fixtures = [
                 [
                     "POS Closing Entry", 
                     "POS Opening Entry",
+                    "Item Price",
                 ]
             ]
         }
