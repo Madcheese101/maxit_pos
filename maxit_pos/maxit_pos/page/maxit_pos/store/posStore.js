@@ -31,7 +31,6 @@ export const usePosStore = defineStore('posStore', () => {
         return resolveVuetifyThemeName(themeMode.value, darkPalette.value);
     });
     const returnAgainst = ref(null);
-    const returnSourcePayments = ref([]);
 
     const getAppLanguage = () => {
         return frappe.boot?.lang || frappe.boot?.user?.language || 'en';
@@ -140,7 +139,6 @@ export const usePosStore = defineStore('posStore', () => {
         }
         if (!value) {
             returnAgainst.value = null;
-            returnSourcePayments.value = [];
         }
         triggerRef(posFrm);
     }
@@ -486,7 +484,6 @@ export const usePosStore = defineStore('posStore', () => {
         darkPalette,
         activeVuetifyTheme,
         returnAgainst,
-        returnSourcePayments,
         getAppLanguage,
         isAppRTL,
         getAppDirection,
