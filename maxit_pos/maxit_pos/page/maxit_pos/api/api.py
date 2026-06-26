@@ -1032,8 +1032,8 @@ def get_items_browser(pos_profile_data, search_term="", custom_filters=[]):
     return {"items": result, "items_uoms": items_uoms}
 
 @frappe.whitelist()
-def get_items(pos_profile_data, search_term="", item_group=None, custom_filters=[]):
-    
+def get_items(pos_profile_data, search_term="", item_group=None, custom_filters=[], is_return=0):
+
     if isinstance(pos_profile_data, str):
         pos_profile_data = json.loads(pos_profile_data)
 
@@ -1045,7 +1045,8 @@ def get_items(pos_profile_data, search_term="", item_group=None, custom_filters=
     warehouse = pos_profile_data.warehouse
     price_list = pos_profile_data.selling_price_list
     pos_profile = pos_profile_data.name
-    hide_unavailable_items = pos_profile_data.hide_unavailable_items
+    # returns don't consume stock, so show all items regardless of availability
+    hide_unavailable_items = 0 if frappe.utils.cint(is_return) else pos_profile_data.hide_unavailable_items
     allowed_item_groups = pos_profile_data.item_groups or []
     item_table = frappe.qb.DocType("Item")
 

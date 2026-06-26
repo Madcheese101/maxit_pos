@@ -116,12 +116,16 @@
 			args: {pos_profile_data: posProfileData.value,
         search_term: search_term,
         item_group: item_group,
-        custom_filters: custom_filters},
+        custom_filters: custom_filters,
+        is_return: isReturnInvoice.value ? 1 : 0},
       });
     // items.value = response.message.items;
     items.value = response.message[0];
     items_uoms.value = response.message[1];
   };
+
+  // re-fetch items when toggling return so unavailable items become listable
+  watch(isReturnInvoice, () => searchItems());
 
   const fetchCustomers = async (query = '') => {
     const filters = query ? { customer_name: ['like', `%${query}%`] } : {}
