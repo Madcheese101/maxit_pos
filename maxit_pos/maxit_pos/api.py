@@ -101,6 +101,7 @@ def custom_search_link(
             filters={"name": ["in", names]},
             fields=["name", label_fieldname],
             limit_page_length=0,
+            ignore_user_permissions=ignore_user_permissions,
         )
         labels = {
             row.name: row.get(label_fieldname)

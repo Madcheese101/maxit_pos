@@ -76,6 +76,8 @@
           txt: search || '',
           page_length: 20,
           ignore_user_permissions: 1,
+          reference_doctype: 'Sales Invoice',
+          link_fieldname: 'sales_person',
           label_fieldname: 'employee_name',
           filters: { user_id: ['in', salesPersonUsers.value] },
         },
