@@ -94,12 +94,31 @@
     }
   };
 
+  // make sure the currently selected employee is present in the options so the
+  // autocomplete can render its label (e.g. when loaded from a return invoice)
+  const ensureSalesPersonOption = async (employee) => {
+    if (!employee) return;
+    if (salesPersonOptions.value.some(o => o.value === employee)) return;
+    const employee_name = await frappe.db.get_value('Employee', employee, 'employee_name')
+      .then(r => r?.message?.employee_name)
+      .catch(() => null);
+    salesPersonOptions.value = [
+      { value: employee, label: employee_name || employee, description: '' },
+      ...salesPersonOptions.value,
+    ];
+  };
+
   let salesPersonTimeout;
   watch(salesPersonSearch, (val) => {
     clearTimeout(salesPersonTimeout);
     salesPersonTimeout = setTimeout(() => loadSalesPersonOptions(val), 300);
   });
   if (showSalesPerson.value) loadSalesPersonOptions();
+
+  // when a return invoice loads its source's sales person, surface it in the field
+  watch(returnAgainst, () => {
+    if (showSalesPerson.value) ensureSalesPersonOption(posFrm.value?.doc?.sales_person);
+  });
 
   const customerRules = computed(() => [
     () => customers.value.length > 0 || __('No customers found'),
@@ -610,7 +629,6 @@
                         hide-details="auto"
                         :loading="salesPersonLoading"
                         :rules="salesPersonRules"
-                        :disabled="isLinkedReturn"
                         class="flex-grow-1"
                       />
                       <v-checkbox

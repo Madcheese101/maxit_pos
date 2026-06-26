@@ -126,6 +126,7 @@ export const usePosStore = defineStore('posStore', () => {
                 () => make_sales_invoice_frm(doc.doctype, 1),
                 () => make_return_invoice(doc),
                 () => returnAgainst.value = posFrm.value.doc.return_against || null,
+                () => triggerRef(posFrm),
             ]);
         });
     }
@@ -229,6 +230,7 @@ export const usePosStore = defineStore('posStore', () => {
 				// this.set_pos_profile_data();
                 const items = r.message.items || [];
                 posFrm.value.doc.items = [...items];
+                posFrm.value.doc.sales_person = doc.sales_person || r.message.sales_person || "";
                 // above line sets pos profile data for invoice according to current pos profile
                 // useful when returning an invoice created in different pos profile.
 			},
