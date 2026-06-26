@@ -116,8 +116,8 @@
   if (showSalesPerson.value) loadSalesPersonOptions();
 
   // when a return invoice loads its source's sales person, surface it in the field
-  watch(returnAgainst, () => {
-    if (showSalesPerson.value) ensureSalesPersonOption(posFrm.value?.doc?.sales_person);
+  watch(() => posFrm.value?.doc?.sales_person, (val) => {
+    if (showSalesPerson.value) ensureSalesPersonOption(val);
   });
 
   const customerRules = computed(() => [
@@ -128,7 +128,11 @@
     const search_term = filters ? filters.search_term : "";
     const item_group = filters ? filters.item_group : null;
     const custom_filters = filters ? filters.filters : [];
-
+    let isReturn = 0;
+    if(isReturnInvoice.value){
+      isReturn = returnAgainst.value ? 1 : 0;
+    };
+    console.log("isReturn:", isReturn);
     const response = await frappe.call({
 			method: "maxit_pos.maxit_pos.page.maxit_pos.api.api.get_items",
 			freeze: true,
@@ -136,7 +140,7 @@
         search_term: search_term,
         item_group: item_group,
         custom_filters: custom_filters,
-        is_return: isReturnInvoice.value ? 1 : 0},
+        is_return: isReturn},
       });
     // items.value = response.message.items;
     items.value = response.message[0];
@@ -144,7 +148,10 @@
   };
 
   // re-fetch items when toggling return so unavailable items become listable
-  watch(isReturnInvoice, () => searchItems());
+  watch(isReturnInvoice, () => {
+    if (returnAgainst.value) return;
+    searchItems()
+  });
 
   const fetchCustomers = async (query = '') => {
     const filters = query ? { customer_name: ['like', `%${query}%`] } : {}
@@ -348,6 +355,7 @@
       activeTab.value = 'pos';
       customer.value = posFrm.value.doc.customer;
       fetchCustomers()
+      searchItems();
     })
   }
 
