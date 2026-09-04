@@ -308,6 +308,7 @@ fixtures = [
                     "POS Profile-custom_source_erp_customer",
                     "POS Profile-custom_purchase_doctype",
                     "POS Profile-custom_ignore_purchase_item_rate",
+                    "POS Profile-custom_purchase_cost_center",
                     "Mode of Payment-custom_middle_man_account",
                     "Payment Entry-custom_note_count",
                     "Payment Entry-custom_pos_profile",

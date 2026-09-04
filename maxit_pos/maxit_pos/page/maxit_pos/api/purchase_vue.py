@@ -20,7 +20,7 @@ def get_purchase_receipt_list(pos_profile, search_term=""):
             PurchaseReceipt.bill_no,
             PurchaseReceipt.bill_date,
         )
-        .where(PurchaseReceipt.cost_center == pos_profile.get("cost_center"))
+        .where(PurchaseReceipt.cost_center == pos_profile.get("purchase_cost_center"))
         .orderby(PurchaseReceipt.modified, order=Order.desc)
         .limit(50)
     )
@@ -96,7 +96,7 @@ def sync_invoices_(pos_profile):
     invoices_done = []
 
     supplier_branch = frappe.get_all("Supplier Branch", 
-        filters={"cost_center": pos_profile.get("cost_center")}, 
+        filters={"cost_center": pos_profile.get("purchase_cost_center")}, 
         fields=["name", "supplier","supplier_pos_profile"])
     
     supplier_branch_map = {sb.supplier_pos_profile: sb for sb in supplier_branch}
@@ -202,7 +202,7 @@ def create_purchase_receipt(invoice, pos_profile, supplier_branch_map):
     prec = frappe.new_doc(purchase_doctype)
     prec.supplier = supplier_branch_map.get(invoice.get("pos_profile")).supplier
     prec.supplier_branch = supplier_branch_map.get(invoice.get("pos_profile")).name
-    prec.cost_center = pos_profile.get("cost_center")
+    prec.cost_center = pos_profile.get("purchase_cost_center")
     prec.bill_no = invoice.get("name")
     prec.bill_date = invoice.get("posting_date")
     prec.posting_date = invoice.get("posting_date")
