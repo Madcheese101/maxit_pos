@@ -474,6 +474,7 @@
                 items: values.items,
                 cost_center: posProfileData.value?.cost_center || '',
                 warehouse: posProfileData.value?.warehouse || '',
+                purchase_doctype: posProfileData.value?.purchase_doctype || 'Purchase Receipt',
               },
             }).then((res) => {
               frappe.show_alert({

@@ -10,25 +10,26 @@ def get_purchase_receipt_list(pos_profile, search_term=""):
     if isinstance(pos_profile, str):
         pos_profile = json.loads(pos_profile)
 
-    PurchaseReceipt = DocType("Purchase Receipt")
-    query = (frappe.qb.from_(PurchaseReceipt)
+    purchase_doctype = pos_profile.get("purchase_doctype") or "Purchase Receipt"
+    PurchaseDoc = DocType(purchase_doctype)
+    query = (frappe.qb.from_(PurchaseDoc)
         .select(
-            PurchaseReceipt.name,
-            PurchaseReceipt.posting_date,
-            PurchaseReceipt.status,
-            PurchaseReceipt.supplier_branch,
-            PurchaseReceipt.bill_no,
-            PurchaseReceipt.bill_date,
+            PurchaseDoc.name,
+            PurchaseDoc.posting_date,
+            PurchaseDoc.status,
+            PurchaseDoc.supplier_branch,
+            PurchaseDoc.bill_no,
+            PurchaseDoc.bill_date,
         )
-        .where(PurchaseReceipt.cost_center == pos_profile.get("purchase_cost_center"))
-        .orderby(PurchaseReceipt.modified, order=Order.desc)
+        .where(PurchaseDoc.cost_center == pos_profile.get("purchase_cost_center"))
+        .orderby(PurchaseDoc.modified, order=Order.desc)
         .limit(50)
     )
 
     if search_term:
         query = query.where(
-            PurchaseReceipt.name.like(f"%{search_term}%")
-            | PurchaseReceipt.bill_no.like(f"%{search_term}%")
+            PurchaseDoc.name.like(f"%{search_term}%")
+            | PurchaseDoc.bill_no.like(f"%{search_term}%")
         )
 
     invoices = query.run(as_dict=1)
@@ -208,6 +209,7 @@ def create_purchase_receipt(invoice, pos_profile, supplier_branch_map):
     prec.posting_date = invoice.get("posting_date")
     prec.set_warehouse = pos_profile.get("warehouse")
     prec.set_posting_time = 1
+    prec.disable_rounded_total = 1
     if purchase_doctype == "Purchase Invoice":
         prec.update_stock = 1
 
@@ -230,11 +232,11 @@ def create_purchase_receipt(invoice, pos_profile, supplier_branch_map):
     return True
 
 @frappe.whitelist()
-def create_return_invoice(supplier_branch, items, cost_center, warehouse):
+def create_return_invoice(supplier_branch, items, cost_center, warehouse, purchase_doctype="Purchase Receipt"):
     if isinstance(items, str): items = json.loads(items)
     supplier = frappe.db.get_value("Supplier Branch", supplier_branch, "supplier")
-    
-    prec = frappe.new_doc("Purchase Receipt")
+
+    prec = frappe.new_doc(purchase_doctype)
     prec.supplier = supplier
     prec.supplier_branch = supplier_branch
     prec.cost_center = cost_center
@@ -243,7 +245,9 @@ def create_return_invoice(supplier_branch, items, cost_center, warehouse):
     prec.posting_date = frappe.utils.today()
     prec.price_list = "Standard Buying"
     prec.set_warehouse = warehouse
-    prec.naming_series = "ACC-PR-RET-.YYYY.-"
+    prec.disable_rounded_total = 1
+    if purchase_doctype == "Purchase Receipt":
+        prec.naming_series = "ACC-PR-RET-.YYYY.-"
     for item in items:
         prec.append("items", {
             "item_code": item.get("item_code"),
