@@ -104,12 +104,13 @@ def sync_invoices_(pos_profile):
     if not supplier_branch_map:
         frappe.throw(_("No Supplier Branches found for the given POS Profile's Cost Center."))
 
-    result = get_parent_company_sales_invoices()
+    result = get_parent_company_sales_invoices(pos_profile.get("source_erp_customer"))
     if isinstance(result, str):
         result = json.loads(result)
 
+    purchase_doctype = pos_profile.get("purchase_doctype") or "Purchase Receipt"
     invoices_map = [inv.get("name") for inv in result]
-    existsing_invoices = frappe.db.get_list("Purchase Receipt", filters={"bill_no": ["in", invoices_map]}, pluck="bill_no")
+    existsing_invoices = frappe.db.get_list(purchase_doctype, filters={"bill_no": ["in", invoices_map]}, pluck="bill_no")
     for invoice in result:
         if invoice.get("name") in existsing_invoices:
             continue
@@ -142,12 +143,16 @@ def set_invoices_as_paid(invoices):
 
     return payload.get("message", [])
 
-def get_parent_company_sales_invoices():
+def get_parent_company_sales_invoices(source_erp_customer=None):
 
     endpoint, headers, timeout = _get_parent_company_request_config("/api/method/get_internal_customer_invoices")
 
+    params = {}
+    if source_erp_customer:
+        params["customer"] = source_erp_customer
+
     try:
-        response = requests.get(endpoint, headers=headers, timeout=timeout, params={})
+        response = requests.get(endpoint, headers=headers, timeout=timeout, params=params)
         response.raise_for_status()
         payload = response.json() or {}
     except requests.exceptions.Timeout as exc:
@@ -191,7 +196,10 @@ def _get_parent_company_request_config(endpoint_path):
 def create_purchase_receipt(invoice, pos_profile, supplier_branch_map):
     # Implement the logic to create a purchase receipt based on the provided data
     # You can use the pos_profile data to set additional fields or configurations
-    prec = frappe.new_doc("Purchase Receipt")
+    purchase_doctype = pos_profile.get("purchase_doctype") or "Purchase Receipt"
+    ignore_item_rate = pos_profile.get("ignore_purchase_item_rate")
+
+    prec = frappe.new_doc(purchase_doctype)
     prec.supplier = supplier_branch_map.get(invoice.get("pos_profile")).supplier
     prec.supplier_branch = supplier_branch_map.get(invoice.get("pos_profile")).name
     prec.cost_center = pos_profile.get("cost_center")
@@ -199,11 +207,12 @@ def create_purchase_receipt(invoice, pos_profile, supplier_branch_map):
     prec.bill_date = invoice.get("posting_date")
     prec.posting_date = invoice.get("posting_date")
     prec.set_warehouse = pos_profile.get("warehouse")
-    # prec.update_stock = 1
     prec.set_posting_time = 1
+    if purchase_doctype == "Purchase Invoice":
+        prec.update_stock = 1
 
     for item in invoice.get("items", []):
-        prec.append("items", {
+        row = {
             "item_code": item.get("item_code"),
             "item_name": item.get("item_name"),
             "item_group": item.get("item_group"),
@@ -211,9 +220,10 @@ def create_purchase_receipt(invoice, pos_profile, supplier_branch_map):
             "qty": item.get("qty"),
             "uom": item.get("uom"),
             "conversion_factor": item.get("conversion_factor") or 1,
-            # "rate": item.get("rate"),
-            # "amount": item.get("amount"),
-        })
+        }
+        if not ignore_item_rate:
+            row["rate"] = item.get("rate")
+        prec.append("items", row)
     prec.set_missing_values()
     prec.save()
     prec.submit()
