@@ -60,12 +60,12 @@ For multi-step tasks, state a brief plan:
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
-## 5. Vue Layout And Link Field Rules
+<!-- ## 5. Vue Layout And Link Field Rules
 
 - For full-page Vue screens, size the root container to the usable viewport with `100dvh` minus layout offsets.
 - Use flex column layout with `min-height: 0` on the parent panel, body wrapper, and scroll wrapper so only the intended inner section scrolls.
 - For data tables that should fill remaining space, put the table inside a flex child that grows with `flex: 1` and use `fixed-header` with `height="100%"`.
-- Avoid hard-coded table heights when the page structure can determine the available height through flex layout.
+- Avoid hard-coded table heights when the page structure can determine the available height through flex layout. -->
 
 ## 6. Frappe Link Fields In Vue
 

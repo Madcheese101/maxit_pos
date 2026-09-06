@@ -76,6 +76,8 @@
           txt: search || '',
           page_length: 20,
           ignore_user_permissions: 1,
+          reference_doctype: 'Sales Invoice',
+          link_fieldname: 'sales_person',
           label_fieldname: 'employee_name',
           filters: { user_id: ['in', salesPersonUsers.value] },
         },
@@ -92,12 +94,31 @@
     }
   };
 
+  // make sure the currently selected employee is present in the options so the
+  // autocomplete can render its label (e.g. when loaded from a return invoice)
+  const ensureSalesPersonOption = async (employee) => {
+    if (!employee) return;
+    if (salesPersonOptions.value.some(o => o.value === employee)) return;
+    const employee_name = await frappe.db.get_value('Employee', employee, 'employee_name')
+      .then(r => r?.message?.employee_name)
+      .catch(() => null);
+    salesPersonOptions.value = [
+      { value: employee, label: employee_name || employee, description: '' },
+      ...salesPersonOptions.value,
+    ];
+  };
+
   let salesPersonTimeout;
   watch(salesPersonSearch, (val) => {
     clearTimeout(salesPersonTimeout);
     salesPersonTimeout = setTimeout(() => loadSalesPersonOptions(val), 300);
   });
   if (showSalesPerson.value) loadSalesPersonOptions();
+
+  // when a return invoice loads its source's sales person, surface it in the field
+  watch(() => posFrm.value?.doc?.sales_person, (val) => {
+    if (showSalesPerson.value) ensureSalesPersonOption(val);
+  });
 
   const customerRules = computed(() => [
     () => customers.value.length > 0 || __('No customers found'),
@@ -107,19 +128,29 @@
     const search_term = filters ? filters.search_term : "";
     const item_group = filters ? filters.item_group : null;
     const custom_filters = filters ? filters.filters : [];
-
+    let isReturn = 0;
+    if(isReturnInvoice.value){
+      isReturn = returnAgainst.value ? 1 : 0;
+    };
     const response = await frappe.call({
 			method: "maxit_pos.maxit_pos.page.maxit_pos.api.api.get_items",
 			freeze: true,
 			args: {pos_profile_data: posProfileData.value,
         search_term: search_term,
         item_group: item_group,
-        custom_filters: custom_filters},
+        custom_filters: custom_filters,
+        is_return: isReturn},
       });
     // items.value = response.message.items;
     items.value = response.message[0];
     items_uoms.value = response.message[1];
   };
+
+  // re-fetch items when toggling return so unavailable items become listable
+  watch(isReturnInvoice, () => {
+    if (returnAgainst.value) return;
+    searchItems()
+  });
 
   const fetchCustomers = async (query = '') => {
     const filters = query ? { customer_name: ['like', `%${query}%`] } : {}
@@ -197,7 +228,6 @@
     if (!validate()) return;
     const save_error = await posFrm.value.save();
     if(save_error) return;
-    await posFrm.value.cscript.set_default_payment(posFrm.value.doc.grand_total, true);
     posFrm.value.refresh_field("payments");
     activeTab.value = 'checkout';
   }
@@ -256,6 +286,14 @@
   }
 
   const submitInvoice = async (print=false) =>{
+    // Standalone return left fully unpaid: clear payments so ERPNext's
+    // set_total_amount_to_default_mop (runs on the submit-time recalc) has no
+    // default row to refill, leaving the return as an outstanding credit note
+    // instead of auto-refunding the total to the default mode of payment.
+    if (isReturnInvoice.value) {
+      const enteredPaid = posPayments.value.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+      if (!enteredPaid) posFrm.value.doc.payments = [];
+    }
     await posFrm.value.savesubmit();
     activeTab.value = 'pos';
     frappe.show_alert({
@@ -323,6 +361,7 @@
       activeTab.value = 'pos';
       customer.value = posFrm.value.doc.customer;
       fetchCustomers()
+      searchItems();
     })
   }
 
@@ -604,7 +643,6 @@
                         hide-details="auto"
                         :loading="salesPersonLoading"
                         :rules="salesPersonRules"
-                        :disabled="isLinkedReturn"
                         class="flex-grow-1"
                       />
                       <v-checkbox
