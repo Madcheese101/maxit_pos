@@ -286,6 +286,14 @@
   }
 
   const submitInvoice = async (print=false) =>{
+    // Standalone return left fully unpaid: clear payments so ERPNext's
+    // set_total_amount_to_default_mop (runs on the submit-time recalc) has no
+    // default row to refill, leaving the return as an outstanding credit note
+    // instead of auto-refunding the total to the default mode of payment.
+    if (isReturnInvoice.value) {
+      const enteredPaid = posPayments.value.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+      if (!enteredPaid) posFrm.value.doc.payments = [];
+    }
     await posFrm.value.savesubmit();
     activeTab.value = 'pos';
     frappe.show_alert({
