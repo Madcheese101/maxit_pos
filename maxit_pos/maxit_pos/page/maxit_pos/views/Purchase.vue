@@ -512,7 +512,8 @@
   
   const GetInvoiceDoc = async (invoice_id) => {
     isLoadingInvoice.value = true;
-    frappe.db.get_doc('Purchase Receipt', invoice_id).then((doc) => {
+    const purchaseDoctype = posProfileData.value?.purchase_doctype || 'Purchase Receipt';
+    frappe.db.get_doc(purchaseDoctype, invoice_id).then((doc) => {
         invoice.value = doc;
         isLoadingInvoice.value = false;
     }).catch(() => {
@@ -521,7 +522,7 @@
   };
 
   const printInvoice = () => {
-    const doctype = "Purchase Receipt";
+    const doctype = posProfileData.value?.purchase_doctype || 'Purchase Receipt';
     const printFormat = posProfileData.value?.purchase_receipt_print_format || 'Standard';
     const printUrl = buildPrintViewUrl({
       doctype,
