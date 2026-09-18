@@ -165,7 +165,10 @@ doc_events = {
     },
     "Stock Entry": {
         "before_submit": "maxit_pos.events.stock_entry_before_submit",
-    }
+    },
+    "Purchase Receipt": {
+        "before_cancel": "maxit_pos.events.purchase_receipt_before_cancel",
+    },
 }
 
 # Scheduled Tasks
