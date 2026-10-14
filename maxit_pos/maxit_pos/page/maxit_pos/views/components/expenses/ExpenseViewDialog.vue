@@ -1,115 +1,88 @@
 <template>
-	<v-dialog :model-value="modelValue" max-width="1100" @update:model-value="emit('update:modelValue', $event)">
-		<v-card class="expense-view-dialog" rounded="xl">
+	<v-dialog
+		:model-value="modelValue"
+		max-width="680"
+		:fullscreen="xs"
+		scrollable
+		@update:model-value="emit('update:modelValue', $event)"
+	>
+		<v-card class="expense-view-dialog" :rounded="xs ? 0 : 'xl'">
 			<v-card-item class="pb-2">
-				<div class="d-flex align-center justify-space-between gap-2 flex-wrap">
-					<div>
-						<div class="text-overline text-medium-emphasis">{{ __('Expense Claim') }}</div>
-						<div class="text-h6 font-weight-bold">{{ doc?.name || __('View Expense Claim') }}</div>
-					</div>
-					<v-chip v-if="doc" size="small" :color="statusChip.color" variant="tonal">
+				<div class="d-flex align-center flex-wrap ga-2">
+					<div class="text-h6 font-weight-bold">{{ doc?.name || __('View Expense Claim') }}</div>
+					<v-chip v-if="doc" size="small" :color="statusChip.color" variant="flat" class="font-weight-bold">
 						{{ statusChip.label }}
 					</v-chip>
+				</div>
+				<div v-if="doc" class="dialog-subtitle">
+					{{ formatDate(doc.posting_date) }} · {{ doc.employee_name || doc.employee || __('N/A') }}<template v-if="doc.branch"> · {{ doc.branch }}</template>
 				</div>
 			</v-card-item>
 
 			<v-divider />
 
-			<v-card-text class="pt-4 dialog-body">
-				<v-skeleton-loader v-if="isLoading" type="article, article, table" />
+			<v-card-text class="dialog-body">
+				<v-skeleton-loader v-if="isLoading" type="article, list-item-two-line, list-item-two-line" />
 
-				<v-alert v-else-if="!doc" type="info" variant="tonal">
+				<v-alert v-else-if="!doc" type="info" variant="tonal" density="compact">
 					{{ __('Select an expense claim to view its details.') }}
 				</v-alert>
 
 				<template v-else>
-					<v-row dense class="mb-2">
-						<v-col cols="12" sm="6" md="3">
-							<StatMetricCard
-								class="stat-card"
-								color="primary"
-								:label="__('Posting Date')"
-								:value="doc.posting_date || __('N/A')"
-							/>
-						</v-col>
+					<div class="claim-total">
+						<span class="text-medium-emphasis">{{ __('Total Claimed') }}</span>
+						<span class="claim-total__value">{{ formatCurrency(doc.total_claimed_amount, doc.currency) }}</span>
+					</div>
 
-						<v-col cols="12" sm="6" md="3">
-							<StatMetricCard
-								class="stat-card"
-								color="success"
-								:label="__('Employee')"
-								:value="doc.employee_name || doc.employee || __('N/A')"
-							/>
-						</v-col>
+					<div class="meta-grid">
+						<div class="meta-item">
+							<span class="meta-item__label">{{ __('Total Sanctioned') }}</span>
+							<span class="meta-item__value">{{ formatCurrency(doc.total_sanctioned_amount, doc.currency) }}</span>
+						</div>
+						<div class="meta-item">
+							<span class="meta-item__label">{{ __('Taxes and Charges') }}</span>
+							<span class="meta-item__value">{{ formatCurrency(doc.total_taxes_and_charges, doc.currency) }}</span>
+						</div>
+						<div class="meta-item">
+							<span class="meta-item__label">{{ __('Approval Status') }}</span>
+							<span class="meta-item__value">{{ doc.approval_status || __('N/A') }}</span>
+						</div>
+						<div class="meta-item">
+							<span class="meta-item__label">{{ __('Company') }}</span>
+							<span class="meta-item__value">{{ doc.company || __('N/A') }}</span>
+						</div>
+						<div class="meta-item meta-item--wide">
+							<span class="meta-item__label">{{ __('Payable Account') }}</span>
+							<span class="meta-item__value">{{ doc.payable_account || __('N/A') }}</span>
+						</div>
+						<div v-if="doc.remark" class="meta-item meta-item--wide">
+							<span class="meta-item__label">{{ __('Notes') }}</span>
+							<span class="meta-item__value meta-item__value--notes">{{ doc.remark }}</span>
+						</div>
+					</div>
 
-						<v-col cols="12" sm="6" md="3">
-							<StatMetricCard
-								class="stat-card"
-								color="warning"
-								:label="__('Branch')"
-								:value="doc.branch || __('N/A')"
-							/>
-						</v-col>
-
-						<v-col cols="12" sm="6" md="3">
-							<StatMetricCard
-								class="stat-card"
-								color="info"
-								:label="__('Total Claimed')"
-								:value="formatCurrency(doc.total_claimed_amount, doc.currency)"
-							/>
-						</v-col>
-					</v-row>
-
-					<v-row dense class="mb-3">
-						<v-col cols="12" md="6">
-							<div class="meta-row"><strong>{{ __('Company') }}:</strong> {{ doc.company || __('N/A') }}</div>
-							<div class="meta-row"><strong>{{ __('Approval Status') }}:</strong> {{ doc.approval_status || __('N/A') }}</div>
-							<div class="meta-row"><strong>{{ __('Payable Account') }}:</strong> {{ doc.payable_account || __('N/A') }}</div>
-						</v-col>
-						<v-col cols="12" md="6">
-							<div class="meta-row"><strong>{{ __('Total Sanctioned') }}:</strong> {{ formatCurrency(doc.total_sanctioned_amount, doc.currency) }}</div>
-							<div class="meta-row"><strong>{{ __('Taxes and Charges') }}:</strong> {{ formatCurrency(doc.total_taxes_and_charges, doc.currency) }}</div>
-							<div class="meta-row"><strong>{{ __('Notes') }}:</strong> {{ doc.remark || __('N/A') }}</div>
-						</v-col>
-					</v-row>
-
-					<SurfaceCard surface="section" class="section-card">
-						<v-card-item class="pb-1">
-							<div class="text-subtitle-1 font-weight-bold">{{ __('Expense Rows') }}</div>
-						</v-card-item>
-						<v-card-text>
-							<div class="expenses-table-wrap">
-								<v-data-table
-									:headers="itemHeaders"
-									:items="doc.expenses || []"
-									item-value="name"
-									density="compact"
-									fixed-header
-									height="260"
-									class="expense-items-table"
-								>
-									<template #item.amount="{ item }">
-										{{ formatCurrency(item.amount, doc.currency) }}
-									</template>
-
-									<template #item.sanctioned_amount="{ item }">
-										{{ formatCurrency(item.sanctioned_amount || item.amount, doc.currency) }}
-									</template>
-
-									<template #no-data>
-										<div class="pa-4 text-medium-emphasis text-center">
-											{{ __('No expense rows were found for this claim.') }}
-										</div>
-									</template>
-								</v-data-table>
+					<section class="expense-lines">
+						<div class="expense-lines__title">
+							{{ __('Expense Rows') }}
+							<span class="text-medium-emphasis">({{ (doc.expenses || []).length }})</span>
+						</div>
+						<div v-if="!(doc.expenses || []).length" class="text-medium-emphasis">
+							{{ __('No expense rows were found for this claim.') }}
+						</div>
+						<div v-for="item in doc.expenses || []" :key="item.name" class="expense-line">
+							<div class="expense-line__main">
+								<div class="expense-line__name">{{ item.idx }}. {{ item.expense_type }}</div>
+								<div class="expense-line__sub">
+									{{ formatDate(item.expense_date) }} · {{ __('Sanctioned Amount') }}: {{ formatAmount(item.sanctioned_amount || item.amount) }}
+								</div>
 							</div>
-						</v-card-text>
-					</SurfaceCard>
+							<div class="expense-line__amount">{{ formatAmount(item.amount) }}</div>
+						</div>
+					</section>
 				</template>
 			</v-card-text>
 
-			<v-card-actions class="px-4 pb-4 pt-0 d-flex gap-2 flex-wrap">
+			<v-card-actions class="px-4 pb-4 pt-2 ga-2 flex-wrap">
 				<v-spacer />
 				<v-btn variant="tonal" @click="emit('update:modelValue', false)">
 					{{ __('Close') }}
@@ -141,9 +114,8 @@
 
 <script setup>
 	import { computed, ref, watch } from 'vue';
+	import { useDisplay } from 'vuetify';
 	import { usePosStore } from '../../../store/posStore';
-	import SurfaceCard from '../ui/SurfaceCard.vue';
-	import StatMetricCard from '../ui/StatMetricCard.vue';
 
 	const props = defineProps({
 		modelValue: {
@@ -164,14 +136,7 @@
 	const doc = ref(null);
 	const isLoading = ref(false);
 	const isSubmitting = ref(false);
-
-	const itemHeaders = computed(() => [
-		{ title: __('No.'), key: 'idx', width: '72px' },
-		{ title: __('Expense Date'), key: 'expense_date' },
-		{ title: __('Expense Type'), key: 'expense_type' },
-		{ title: __('Amount'), key: 'amount', align: 'end' },
-		{ title: __('Sanctioned Amount'), key: 'sanctioned_amount', align: 'end' },
-	]);
+	const { xs } = useDisplay();
 
 	const canCancel = computed(() => Number(doc.value?.docstatus || 0) === 1);
 
@@ -202,7 +167,11 @@
 	);
 
 	function formatAmount(value) {
-		return Number(value || 0).toFixed(2);
+		return format_number(value || 0);
+	}
+
+	function formatDate(value) {
+		return value ? frappe_.datetime.str_to_user(value) : '';
 	}
 
 	function formatCurrency(value, currency = '') {
@@ -282,34 +251,109 @@
 <style scoped>
 	.expense-view-dialog {
 		border: 1px solid var(--v-pos-panel-border);
-		background: var(--v-pos-panel-background);
+		background: rgb(var(--v-theme-surface));
 		box-shadow: var(--v-pos-panel-shadow);
 		transition: var(--v-theme-transition);
 	}
 
+	.dialog-subtitle {
+		font-size: 0.875rem;
+		color: rgba(var(--v-theme-on-surface), 0.72);
+	}
+
 	.dialog-body {
-		max-height: 70vh;
-		overflow-y: auto;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
 	}
 
-	.stat-card {
+	.claim-total {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 10px 12px;
+		border-radius: 10px;
+		background: rgba(var(--v-theme-primary), 0.08);
+	}
+
+	.claim-total__value {
+		font-size: 1.25rem;
+		font-weight: 800;
+	}
+
+	.meta-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+		gap: 8px 16px;
+	}
+
+	.meta-item {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+	}
+
+	.meta-item--wide {
+		grid-column: 1 / -1;
+	}
+
+	.meta-item__label {
+		font-size: 0.75rem;
+		color: rgba(var(--v-theme-on-surface), 0.65);
+	}
+
+	.meta-item__value {
+		font-size: 0.875rem;
+		font-weight: 600;
+		overflow-wrap: anywhere;
+	}
+
+	.meta-item__value--notes {
+		white-space: pre-line;
+		font-weight: 500;
+	}
+
+	.expense-lines {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.expense-lines__title {
+		font-size: 0.875rem;
+		font-weight: 700;
+	}
+
+	.expense-line {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 6px 8px;
 		border: 1px solid var(--v-pos-panel-border-soft);
-		transition: var(--v-theme-transition);
+		border-radius: 8px;
+		background: var(--v-pos-field-background);
 	}
 
-	.section-card {
-		border-color: var(--v-pos-panel-border-strong) !important;
+	.expense-line__main {
+		flex: 1;
+		min-width: 0;
 	}
 
-	.meta-row {
-		padding: 4px 0;
+	.expense-line__name {
+		font-size: 0.875rem;
+		font-weight: 600;
 	}
 
-	.expenses-table-wrap {
-		min-height: 170px;
+	.expense-line__sub {
+		font-size: 0.8125rem;
+		font-weight: 500;
+		color: rgba(var(--v-theme-on-surface), 0.72);
 	}
 
-	.expense-items-table :deep(.v-table__wrapper) {
-		overflow-y: auto;
+	.expense-line__amount {
+		flex-shrink: 0;
+		font-size: 0.875rem;
+		font-weight: 700;
 	}
 </style>

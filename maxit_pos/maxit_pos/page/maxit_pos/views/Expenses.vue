@@ -1,170 +1,167 @@
 <template>
-	<PageSurface glow="success-warning" class="expenses-view pa-3 pa-md-6">
+	<PageSurface glow="success-warning" class="expenses-view pa-2">
 		<v-alert v-if="!canViewExpenses" type="warning" variant="tonal">
 			{{ __('You do not have permission to manage expenses.') }}
 		</v-alert>
 
-		<template v-else>
-			<SurfaceCard class="expenses-panel mb-2">
-				<v-card-item>
-					<div class="d-flex align-center justify-space-between flex-wrap gap-3">
-						<div>
-							<div class="text-h6 font-weight-bold">{{ __('Manage Expenses') }}</div>
-						</div>
-						<div class="d-flex align-center flex-wrap ga-1">
-							<v-btn
-								icon="mdi-wallet-outline"
-								variant="tonal"
-								size="small"
-								:title="__('Check Custody Balance')"
-								@click="checkCustodyBalance"
-							/>
-							<v-btn
-								color="primary"
-								variant="elevated"
-								prepend-icon="mdi-plus"
-								@click="expenseDialogOpen = true"
-							>
-								{{ __('New Expense') }}
-							</v-btn>
-						</div>
+		<SurfaceCard v-else class="expenses-pane">
+			<div class="expenses-pane__body">
+				<div class="pane-header">
+					<div class="pane-header__title">{{ __('Manage Expenses') }}</div>
+					<v-chip size="x-small" color="primary" variant="tonal">{{ expenses.length }}</v-chip>
+					<v-spacer />
+					<v-btn
+						icon="mdi-wallet-outline"
+						size="small"
+						variant="text"
+						:title="__('Check Custody Balance')"
+						:aria-label="__('Check Custody Balance')"
+						@click="checkCustodyBalance"
+					/>
+					<v-btn
+						v-if="xs"
+						icon="mdi-plus"
+						color="primary"
+						variant="elevated"
+						size="small"
+						:aria-label="__('New Expense')"
+						@click="expenseDialogOpen = true"
+					/>
+					<v-btn
+						v-else
+						color="primary"
+						variant="elevated"
+						prepend-icon="mdi-plus"
+						@click="expenseDialogOpen = true"
+					>
+						{{ __('New Expense') }}
+					</v-btn>
+				</div>
+
+				<div class="filters-row">
+					<v-text-field
+						v-model="searchTerm"
+						:placeholder="__('Search claim or notes')"
+						prepend-inner-icon="mdi-magnify"
+						variant="outlined"
+						density="compact"
+						hide-details
+						single-line
+						class="filters-row__search"
+						@keydown.enter="getExpenses"
+					/>
+					<v-btn
+						icon
+						size="small"
+						variant="tonal"
+						:color="showFilters ? 'primary' : undefined"
+						:title="__('Filter')"
+						:aria-label="__('Filter')"
+						@click="showFilters = !showFilters"
+					>
+						<v-badge v-if="activeFilterCount" :content="activeFilterCount" color="primary" floating>
+							<v-icon icon="mdi-filter-variant" />
+						</v-badge>
+						<v-icon v-else icon="mdi-filter-variant" />
+					</v-btn>
+					<v-btn
+						v-if="activeFilterCount || searchTerm"
+						icon="mdi-filter-remove-outline"
+						size="small"
+						variant="text"
+						:title="__('Clear Filters')"
+						:aria-label="__('Clear Filters')"
+						@click="resetFilters"
+					/>
+				</div>
+
+				<v-expand-transition>
+					<div v-show="showFilters" class="filters-panel">
+						<v-autocomplete
+							v-model="selectedExpenseType"
+							v-model:search="expenseTypeSearch"
+							:items="expenseTypeOptions"
+							item-title="label"
+							item-value="value"
+							:label="__('Expense Type')"
+							variant="outlined"
+							density="compact"
+							:loading="isLoadingExpenseTypes"
+							hide-details
+							clearable
+							no-filter
+							class="filters-panel__wide"
+						/>
+						<v-select
+							v-model="selectedStatus"
+							:items="statusOptions"
+							item-title="title"
+							item-value="value"
+							:label="__('Status')"
+							variant="outlined"
+							density="compact"
+							hide-details
+						/>
+						<v-select
+							v-model="selectedViewMode"
+							:items="viewModeOptions"
+							item-title="title"
+							item-value="value"
+							:label="__('View Mode')"
+							variant="outlined"
+							density="compact"
+							hide-details
+						/>
+						<v-text-field
+							v-model="fromDate"
+							type="date"
+							:label="__('From Date')"
+							variant="outlined"
+							density="compact"
+							hide-details
+						/>
+						<v-text-field
+							v-model="toDate"
+							type="date"
+							:label="__('To Date')"
+							variant="outlined"
+							density="compact"
+							hide-details
+						/>
 					</div>
-				</v-card-item>
+				</v-expand-transition>
 
-				<v-divider />
+				<div class="expenses-list">
+					<v-progress-linear v-if="isLoadingExpenses" indeterminate color="primary" class="mb-2" />
 
-				<v-card-text class="pt-1">
-					<v-row dense>
-						<v-col cols="12" md="3">
-							<v-text-field
-								v-model="searchTerm"
-								:placeholder="__('Search claim or notes')"
-								prepend-inner-icon="mdi-magnify"
-								variant="outlined"
-								density="compact"
-								hide-details
-								@keydown.enter="getExpenses"
-							/>
-						</v-col>
-
-						<v-col cols="12" md="3">
-							<v-autocomplete
-								v-model="selectedExpenseType"
-								v-model:search="expenseTypeSearch"
-								:items="expenseTypeOptions"
-								item-title="label"
-								item-value="value"
-								:label="__('Expense Type')"
-								variant="outlined"
-								density="compact"
-								:loading="isLoadingExpenseTypes"
-								hide-details
-								clearable
-								no-filter
-							/>
-						</v-col>
-
-						<v-col cols="12" md="2">
-							<v-select
-								v-model="selectedStatus"
-								:items="statusOptions"
-								item-title="title"
-								item-value="value"
-								:label="__('Status')"
-								variant="outlined"
-								density="compact"
-								hide-details
-							/>
-						</v-col>
-
-						<v-col cols="12" md="2">
-							<v-select
-								v-model="selectedViewMode"
-								:items="viewModeOptions"
-								item-title="title"
-								item-value="value"
-								:label="__('View Mode')"
-								variant="outlined"
-								density="compact"
-								hide-details
-							/>
-						</v-col>
-
-						<v-col cols="12" md="2">
-							<v-text-field
-								v-model="fromDate"
-								type="date"
-								:label="__('From Date')"
-								variant="outlined"
-								density="compact"
-								hide-details
-							/>
-						</v-col>
-
-						<v-col cols="12" md="2">
-							<v-text-field
-								v-model="toDate"
-								type="date"
-								:label="__('To Date')"
-								variant="outlined"
-								density="compact"
-								hide-details
-							/>
-						</v-col>
-					</v-row>
-
-					<div class="d-flex justify-end flex-wrap ga-2 mt-3">
-						<v-btn color="primary" variant="tonal" prepend-icon="mdi-filter-check" @click="getExpenses">
-							{{ __('Apply Filters') }}
-						</v-btn>
-						<v-btn variant="text" prepend-icon="mdi-filter-remove-outline" @click="resetFilters">
-							{{ __('Clear Filters') }}
-						</v-btn>
+					<div v-if="!expenses.length && !isLoadingExpenses" class="expenses-empty text-medium-emphasis">
+						{{ __('No expenses found for the selected filters.') }}
 					</div>
-				</v-card-text>
-			</SurfaceCard>
 
-			<SurfaceCard class="expenses-panel expenses-table-panel">
-				<v-card-text class="pa-0 expenses-table-body">
-					<div class="expenses-table-wrap">
-						<v-data-table
-							:headers="headers"
-							:items="expenses"
-							item-value="row_id"
-							:loading="isLoadingExpenses"
-							fixed-header
-							height="100%"
-							class="expenses-table"
+					<v-list v-else nav density="compact" bg-color="transparent" class="pa-0">
+						<v-list-item
+							v-for="item in expenses"
+							:key="item.row_id || item.name"
+							rounded="lg"
+							class="expense-row"
+							@click="openExpenseDialog(item.name)"
 						>
-						<template #item.name="{ item }">
-							<v-btn variant="text" color="primary" class="px-0 text-none" @click="openExpenseDialog(item.name)">
-								{{ item.name }}
-							</v-btn>
-						</template>
-
-						<template #item.expense_type="{ item }">
-							<span>{{ item.expense_type }}</span>
-						</template>
-
-						<template #item.amount="{ item }">
-							{{ formatAmount(item.amount) }}
-						</template>
-
-						<template #item.status="{ item }">
-							<v-chip size="small" :color="getStatusColor(item.docstatus)" variant="tonal">
-								{{ getStatusLabel(item.docstatus) }}
-							</v-chip>
-						</template>
-
-						<template #no-data>
-							<div class="pa-6 text-medium-emphasis text-center">
-								{{ __('No expenses found for the selected filters.') }}
+							<div class="expense-row__line">
+								<span class="expense-row__title">{{ item.expense_type || item.name }}</span>
+								<v-chip size="small" :color="getStatusColor(item.docstatus)" variant="flat" class="status-chip">
+									{{ getStatusLabel(item.docstatus) }}
+								</v-chip>
 							</div>
-						</template>
-						</v-data-table>
-					</div>
-				</v-card-text>
-			</SurfaceCard>
+							<div class="expense-row__line expense-row__line--sub">
+								<span class="expense-row__meta">
+									<template v-if="item.expense_type">{{ item.name }} · </template>{{ formatDate(item.posting_date) }}<template v-if="item.branch"> · {{ item.branch }}</template>
+								</span>
+								<span class="expense-row__amount">{{ formatAmount(item.amount) }}</span>
+							</div>
+						</v-list-item>
+					</v-list>
+				</div>
+			</div>
 
 			<ExpenseDialog v-model="expenseDialogOpen" @created="handleExpenseCreated" />
 			<ExpenseViewDialog
@@ -172,12 +169,13 @@
 				:docname="selectedExpenseName"
 				@updated="handleExpenseUpdated"
 			/>
-		</template>
+		</SurfaceCard>
 	</PageSurface>
 </template>
 
 <script setup>
 	import { computed, onMounted, ref, watch } from 'vue';
+	import { useDisplay } from 'vuetify';
 	import ExpenseDialog from './components/expenses/ExpenseDialog.vue';
 	import ExpenseViewDialog from './components/expenses/ExpenseViewDialog.vue';
 	import PageSurface from './components/ui/PageSurface.vue';
@@ -200,24 +198,16 @@
 	const expenseTypeOptions = ref([]);
 	const expenseTypeSearch = ref('');
 
-	const headers = computed(() => {
-		const result = [
-			{ title: __('Expense Claim'), key: 'name' },
-		];
-
-		if (selectedViewMode.value !== 'grouped') {
-			result.push({ title: __('Expense Type'), key: 'expense_type' });
-		}
-
-		result.push(
-			{ title: __('Posting Date'), key: 'posting_date' },
-			{ title: __('Branch'), key: 'branch' },
-			{ title: selectedViewMode.value === 'grouped' ? __('Total Amount') : __('Amount'), key: 'amount', align: 'end' },
-			{ title: __('Status'), key: 'status' },
-		);
-
-		return result;
-	});
+	// filters start open on laptops, collapsed on phones and tablets
+	const { mdAndUp, xs } = useDisplay();
+	const showFilters = ref(mdAndUp.value);
+	const activeFilterCount = computed(() => [
+		selectedExpenseType.value,
+		selectedStatus.value,
+		selectedViewMode.value !== 'expanded',
+		fromDate.value,
+		toDate.value,
+	].filter(Boolean).length);
 
 	const statusOptions = computed(() => [
 		{ title: __('All Statuses'), value: '' },
@@ -240,7 +230,7 @@
 		await loadExpenseTypeOptions(value);
 	});
 
-	watch(selectedViewMode, async () => {
+	watch([selectedExpenseType, selectedStatus, selectedViewMode, fromDate, toDate], async () => {
 		if (!canViewExpenses.value) {
 			return;
 		}
@@ -263,7 +253,11 @@
 	});
 
 	function formatAmount(value) {
-		return Number(value || 0).toFixed(2);
+		return format_number(value || 0);
+	}
+
+	function formatDate(value) {
+		return value ? frappe_.datetime.str_to_user(value) : '';
 	}
 
 	function getStatusLabel(docstatus) {
@@ -361,7 +355,8 @@
 	}
 
 	function resetFilters() {
-		const willReloadFromViewMode = selectedViewMode.value !== 'expanded';
+		// the filters watcher reloads the list when any of them changes
+		const willReloadFromFilters = activeFilterCount.value > 0;
 
 		searchTerm.value = '';
 		selectedExpenseType.value = '';
@@ -371,7 +366,7 @@
 		fromDate.value = '';
 		toDate.value = '';
 
-		if (!willReloadFromViewMode) {
+		if (!willReloadFromFilters) {
 			getExpenses();
 		}
 	}
@@ -390,44 +385,137 @@
 		background:
 			radial-gradient(circle at top right, var(--v-pos-success-glow), transparent 40%),
 			radial-gradient(circle at left bottom, var(--v-pos-warning-glow), transparent 38%);
-		height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
-		min-height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
-		display: flex;
-		flex-direction: column;
-		overflow: hidden;
 	}
 
-	.expenses-panel {
+	.expenses-pane {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 0;
 		border: 1px solid var(--v-pos-panel-border);
 		background: var(--v-pos-panel-background);
 		box-shadow: var(--v-pos-panel-shadow);
 		transition: var(--v-theme-transition);
 	}
 
-	.expenses-table-panel {
-		flex: 1;
-		min-height: 0;
+	.expenses-pane__body {
 		display: flex;
 		flex-direction: column;
-	}
-
-	.expenses-table-body {
+		gap: 8px;
 		flex: 1;
 		min-height: 0;
-		display: flex;
-		flex-direction: column;
+		padding: 10px;
 	}
 
-	.expenses-table :deep(th) {
+	.pane-header {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		min-height: 36px;
+	}
+
+	.pane-header__title {
+		min-width: 0;
+		font-size: 1rem;
+		font-weight: 700;
+		padding-inline: 4px;
 		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
-	.expenses-table-wrap {
+	.pane-header .v-chip {
+		flex-shrink: 0;
+	}
+
+	.filters-row {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.filters-row__search {
+		flex: 1;
+		max-width: 480px;
+	}
+
+	.filters-panel {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+		gap: 8px;
+	}
+
+	.filters-panel__wide {
+		grid-column: span 2;
+	}
+
+	@media (max-width: 599px) {
+		.filters-row__search {
+			max-width: none;
+		}
+
+		.filters-panel__wide {
+			grid-column: 1 / -1;
+		}
+	}
+
+	.expenses-list {
 		flex: 1;
 		min-height: 0;
+		overflow-y: auto;
 	}
 
-	.expenses-table {
-		height: 100%;
+	.expenses-empty {
+		padding: 24px 8px;
+		text-align: center;
+	}
+
+	.expense-row {
+		margin-block-end: 2px;
+		border: 1px solid var(--v-pos-panel-border-soft);
+	}
+
+	.expense-row :deep(.v-list-item__content) {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.expense-row__line {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+	}
+
+	.expense-row__title {
+		min-width: 0;
+		font-size: 0.875rem;
+		font-weight: 700;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.expense-row__line--sub {
+		font-size: 0.8125rem;
+	}
+
+	.expense-row__meta {
+		min-width: 0;
+		color: rgba(var(--v-theme-on-surface), 0.72);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.expense-row__amount {
+		flex-shrink: 0;
+		font-weight: 700;
+	}
+
+	.status-chip {
+		flex-shrink: 0;
+		font-weight: 700;
 	}
 </style>

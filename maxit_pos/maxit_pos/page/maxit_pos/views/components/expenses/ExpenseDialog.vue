@@ -1,32 +1,30 @@
 <template>
-	<v-dialog :model-value="modelValue" max-width="960" @update:model-value="emit('update:modelValue', $event)">
-		<v-form ref="expenseFormRef" v-model="isExpenseFormValid" @submit.prevent="submitExpense">
-			<v-card class="expense-dialog" rounded="xl">
-				<v-card-item class="pb-2">
-					<div class="d-flex align-center justify-space-between gap-2 flex-wrap">
-						<div>
-							<div class="text-overline text-medium-emphasis">{{ __('Expenses') }}</div>
-							<div class="text-h6 font-weight-bold">{{ __('Create Expense Claim') }}</div>
-						</div>
-					</div>
-				</v-card-item>
+	<v-dialog
+		:model-value="modelValue"
+		max-width="720"
+		:fullscreen="xs"
+		scrollable
+		@update:model-value="emit('update:modelValue', $event)"
+	>
+		<v-card class="expense-dialog" :rounded="xs ? 0 : 'xl'">
+			<v-card-item class="pb-2">
+				<div class="text-h6 font-weight-bold">{{ __('Create Expense Claim') }}</div>
+			</v-card-item>
 
-				<v-divider />
+			<v-divider />
 
-				<v-card-text class="pt-4">
-					<v-row dense>
-						<v-col cols="12" md="4">
-							<v-text-field
-								v-model="expenseForm.posting_date"
-								type="date"
-								:label="__('Posting Date')"
-								variant="outlined"
-								density="compact"
-								:rules="[requiredRule]"
-								hide-details="auto"
-							/>
-						</v-col>
-					</v-row>
+			<v-card-text ref="dialogBody" class="dialog-body">
+				<v-form ref="expenseFormRef" v-model="isExpenseFormValid" class="expense-form" @submit.prevent="submitExpense">
+					<v-text-field
+						v-model="expenseForm.posting_date"
+						type="date"
+						:label="__('Posting Date')"
+						variant="outlined"
+						density="compact"
+						:rules="[requiredRule]"
+						hide-details="auto"
+						class="expense-form__date"
+					/>
 
 					<v-textarea
 						v-model="expenseForm.notes"
@@ -34,121 +32,100 @@
 						variant="outlined"
 						density="compact"
 						auto-grow
-						rows="3"
+						rows="2"
 						hide-details="auto"
-						class="mt-2"
 					/>
 
-					<div class="d-flex align-center justify-space-between flex-wrap gap-2 mt-3 mb-2">
-						<div class="text-subtitle-1 font-weight-bold">{{ __('Expense Rows') }}</div>
+					<div class="text-subtitle-2 font-weight-bold">{{ __('Expense Rows') }}</div>
+
+					<div class="expense-rows">
+						<div v-for="(row, index) in expenseRows" :key="row.id" class="expense-row-card">
+							<div class="expense-row-card__index text-medium-emphasis">{{ index + 1 }}</div>
+							<v-autocomplete
+								v-model="row.expense_type"
+								v-model:search="row.search"
+								:items="row.expenseTypeOptions"
+								item-title="label"
+								item-value="value"
+								:label="__('Expense Claim Type')"
+								variant="outlined"
+								density="compact"
+								:loading="row.isLoading || isLoadingExpenseTypes"
+								hide-details="auto"
+								clearable
+								no-filter
+								class="expense-row-card__type"
+								@update:search="(search) => updateRowExpenseTypeSearch(row, search)"
+							>
+								<template #item="{ props, item }">
+									<v-list-item
+										v-bind="props"
+										:title="item.raw.label"
+										:subtitle="item.raw.description || undefined"
+									/>
+								</template>
+							</v-autocomplete>
+							<v-text-field
+								v-model="row.amount"
+								type="number"
+								min="0.01"
+								step="0.01"
+								:label="__('Amount')"
+								variant="outlined"
+								density="compact"
+								hide-details="auto"
+								class="expense-row-card__amount"
+							/>
+							<v-btn
+								icon="mdi-delete-outline"
+								variant="text"
+								color="error"
+								size="small"
+								:aria-label="__('Delete')"
+								:disabled="expenseRows.length === 1"
+								@click="removeExpenseRow(index)"
+							/>
+						</div>
+
+						<v-btn
+							variant="tonal"
+							color="primary"
+							prepend-icon="mdi-plus"
+							class="align-self-start"
+							@click="addExpenseRow"
+						>
+							{{ __('Add Row') }}
+						</v-btn>
 					</div>
 
-					<div ref="expenseRowsTableWrap" class="expense-rows-table-wrap">
-						<v-table density="comfortable" class="expense-rows-table">
-							<thead>
-								<tr>
-									<th class="expense-col-index">{{ __('No.') }}</th>
-									<th>{{ __('Expense Claim Type') }}</th>
-									<th class="expense-col-amount">{{ __('Amount') }}</th>
-									<th class="expense-col-actions">{{ __('Actions') }}</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr v-for="(row, index) in expenseRows" :key="row.id">
-									<td class="expense-col-index text-medium-emphasis">{{ index + 1 }}</td>
-									<td>
-										<v-autocomplete
-											v-model="row.expense_type"
-											v-model:search="row.search"
-											:items="row.expenseTypeOptions"
-											item-title="label"
-											item-value="value"
-											:label="__('Expense Claim Type')"
-											variant="outlined"
-											density="compact"
-											:loading="row.isLoading || isLoadingExpenseTypes"
-											hide-details="auto"
-											clearable
-											no-filter
-											@update:search="(search) => updateRowExpenseTypeSearch(row, search)"
-										>
-											<template #item="{ props, item }">
-												<v-list-item
-													v-bind="props"
-													:title="item.raw.label"
-													:subtitle="item.raw.description || undefined"
-												/>
-											</template>
-										</v-autocomplete>
-									</td>
-									<td class="expense-col-amount">
-										<v-text-field
-											v-model="row.amount"
-											type="number"
-											min="0.01"
-											step="0.01"
-											:label="__('Amount')"
-											variant="outlined"
-											density="compact"
-											hide-details="auto"
-										/>
-									</td>
-									<td class="expense-col-actions">
-										<v-btn
-											icon="mdi-delete-outline"
-											variant="text"
-											color="error"
-											:disabled="expenseRows.length === 1"
-											@click="removeExpenseRow(index)"
-										/>
-									</td>
-								</tr>
-							</tbody>
-							<tfoot>
-								<tr>
-									<td colspan="4" class="expense-add-row-cell">
-										<v-btn
-											variant="text"
-											color="primary"
-											prepend-icon="mdi-plus"
-											class="expense-add-row-btn"
-											@click="addExpenseRow"
-										>
-											{{ __('Add Row') }}
-										</v-btn>
-									</td>
-								</tr>
-							</tfoot>
-						</v-table>
-					</div>
-
-					<v-alert type="info" variant="tonal" density="compact" class="mt-4">
+					<v-alert type="info" variant="tonal" density="compact">
 						{{ __('Branch, expense approver, and advances are filled from your employee and branch defaults during submit.') }}
 					</v-alert>
-				</v-card-text>
+				</v-form>
+			</v-card-text>
 
-				<v-card-actions class="px-4 pb-4 pt-0 d-flex gap-2 flex-wrap">
-					<v-spacer />
-					<v-btn variant="tonal" @click="emit('update:modelValue', false)">
-						{{ __('Close') }}
-					</v-btn>
-					<v-btn
-						color="primary"
-						variant="elevated"
-						prepend-icon="mdi-content-save"
-						:loading="isSubmittingExpense"
-						type="submit"
-					>
-						{{ __('Create') }}
-					</v-btn>
-				</v-card-actions>
-			</v-card>
-		</v-form>
+			<v-card-actions class="px-4 pb-4 pt-2 ga-2">
+				<v-spacer />
+				<v-btn variant="tonal" @click="emit('update:modelValue', false)">
+					{{ __('Close') }}
+				</v-btn>
+				<v-btn
+					color="primary"
+					variant="elevated"
+					prepend-icon="mdi-content-save"
+					:loading="isSubmittingExpense"
+					@click="submitExpense"
+				>
+					{{ __('Create') }}
+				</v-btn>
+			</v-card-actions>
+		</v-card>
 	</v-dialog>
 </template>
 
 <script setup>
 	import { nextTick, reactive, ref, watch } from 'vue';
+	import { useDisplay } from 'vuetify';
 
 	const props = defineProps({
 		modelValue: {
@@ -166,7 +143,8 @@
 	const isSubmittingExpense = ref(false);
 	const isLoadingExpenseTypes = ref(false);
 	const defaultExpenseTypeOptions = ref([]);
-	const expenseRowsTableWrap = ref(null);
+	const dialogBody = ref(null);
+	const { xs } = useDisplay();
 	const expenseRows = ref([createEmptyRow()]);
 
 	const expenseForm = reactive({
@@ -220,8 +198,10 @@
 		expenseRows.value.push(createEmptyRow());
 		await nextTick();
 
-		if (expenseRowsTableWrap.value) {
-			expenseRowsTableWrap.value.scrollTop = expenseRowsTableWrap.value.scrollHeight;
+		// the dialog body is the scroll container; keep the new row in view
+		const bodyEl = dialogBody.value?.$el;
+		if (bodyEl) {
+			bodyEl.scrollTop = bodyEl.scrollHeight;
 		}
 	}
 
@@ -338,61 +318,60 @@
 <style scoped>
 	.expense-dialog {
 		border: 1px solid var(--v-pos-panel-border);
-		background: var(--v-pos-panel-background);
+		background: rgb(var(--v-theme-surface));
 		box-shadow: var(--v-pos-panel-shadow);
 		transition: var(--v-theme-transition);
 	}
 
-	.expense-rows-table-wrap {
-		max-height: 48vh;
-		overflow-x: auto;
-		overflow-y: auto;
+	.expense-form {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.expense-form__date {
+		max-width: 220px;
+	}
+
+	.expense-rows {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.expense-row-card {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-start;
+		gap: 8px;
+		padding: 8px;
 		border: 1px solid var(--v-pos-panel-border-soft);
-		border-radius: 16px;
+		border-radius: 10px;
 		background: var(--v-pos-field-background);
 	}
 
-	.expense-rows-table {
-		background: transparent;
-	}
-
-	.expense-rows-table :deep(table) {
-		min-width: 760px;
-	}
-
-	.expense-rows-table :deep(th) {
-		white-space: nowrap;
+	.expense-row-card__index {
+		width: 20px;
+		padding-block-start: 10px;
+		text-align: center;
 		font-weight: 700;
 	}
 
-	.expense-rows-table :deep(td) {
-		vertical-align: top;
-		padding-top: 12px;
-		padding-bottom: 12px;
+	.expense-row-card__type {
+		flex: 1 1 220px;
 	}
 
-	.expense-rows-table :deep(tfoot td) {
-		padding-top: 0;
+	.expense-row-card__amount {
+		flex: 0 1 140px;
 	}
 
-	.expense-col-index {
-		width: 72px;
-	}
+	@media (max-width: 599px) {
+		.expense-form__date {
+			max-width: none;
+		}
 
-	.expense-col-amount {
-		width: 180px;
-	}
-
-	.expense-col-actions {
-		width: 88px;
-		text-align: center;
-	}
-
-	.expense-add-row-cell {
-		text-align: left;
-	}
-
-	.expense-add-row-btn {
-		text-transform: none;
+		.expense-row-card__amount {
+			flex: 1 1 120px;
+		}
 	}
 </style>
