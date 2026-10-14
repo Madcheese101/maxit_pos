@@ -1,54 +1,49 @@
 <template>
-    <v-row dense>
-        <!-- Search bar -->
-        <v-col cols="4">
-            <div >
-                <v-text-field
-                    density="compact"
-                    :placeholder="__('Search')"
-                    prepend-inner-icon="mdi-magnify"
-                    variant="outlined"
-                    hide-details
-                    single-line
-                    v-model="search_term"
-                    @keydown.enter="emit_get_items"
-                ></v-text-field>
-            </div>
-        </v-col>
-        <!-- item group filter -->
-        <v-col cols="3">
-            <v-select
-                :label="__('Item Group')"
-                v-model="selectedItemGroup"
-                :items="item_groups"
-                variant="outlined"
-                density="compact"
-                hide-details
-                flat>
-            </v-select>
-        </v-col>
-        <!-- more filters -->
-        <v-col cols="auto" v-if="props.customFilters.length > 0">
+    <div class="filters-bar">
+        <v-text-field
+            class="filters-bar__search"
+            density="compact"
+            :placeholder="__('Search')"
+            prepend-inner-icon="mdi-magnify"
+            variant="outlined"
+            hide-details
+            single-line
+            v-model="search_term"
+            @keydown.enter="emit_get_items"
+        ></v-text-field>
+        <v-select
+            class="filters-bar__group"
+            :label="__('Item Group')"
+            v-model="selectedItemGroup"
+            :items="item_groups"
+            variant="outlined"
+            density="compact"
+            hide-details
+            flat>
+        </v-select>
+        <template v-if="props.customFilters.length > 0">
             <v-btn
                 color="primary"
-                density="comfortable"
-                append-icon="mdi-filter"
-                height="40"
                 variant="tonal"
+                icon
+                size="small"
+                :aria-label="__('Filter')"
+                :title="__('Filter')"
                 @click="showFiltersDialog()">
-                    {{ __('Filter') }}{{ active_filters > 0 ? ` (${active_filters})` : '' }}
+                <v-badge v-if="active_filters > 0" :content="active_filters" color="primary" floating>
+                    <v-icon icon="mdi-filter" />
+                </v-badge>
+                <v-icon v-else icon="mdi-filter" />
             </v-btn>
-            <!-- reset filters Button -->
-            <v-btn  v-if="active_filters > 0"
+            <v-btn v-if="active_filters > 0"
                 color="error"
-                density="comfortable"
+                variant="tonal"
                 icon="mdi-filter-remove"
-                class="ms-2"
-                @click="reset_filters()"
-                variant="tonal"></v-btn>
-                
-        </v-col>
-    </v-row>
+                size="small"
+                @click="reset_filters()"></v-btn>
+        </template>
+        <slot />
+    </div>
 
 </template>
 
@@ -156,3 +151,33 @@
     get_item_groups();
 
 </script>
+
+<style scoped>
+    .filters-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        container-type: inline-size;
+    }
+
+    .filters-bar__search {
+        flex: 2 1 160px;
+    }
+
+    .filters-bar__group {
+        flex: 1 1 120px;
+        max-width: 240px;
+    }
+
+    /* narrow panes: search gets its own row */
+    @container (max-width: 480px) {
+        .filters-bar__search {
+            flex-basis: 100%;
+        }
+
+        .filters-bar__group {
+            max-width: none;
+        }
+    }
+</style>

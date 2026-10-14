@@ -1,22 +1,20 @@
 <template>
-    <VCard rounded="lg" class="items-list-card" flat>
-      <VCardText class="items-list-shell">
-        <v-row
-          v-if="props.viewMode === 'grid'"
-          class="overflow-y-auto items-scroll"
+    <div class="items-list">
+        <div v-if="!props.items.length" class="items-empty text-medium-emphasis">
+          {{ __('No items found for this search/filter combination.') }}
+        </div>
+
+        <div
+          v-else-if="props.viewMode === 'grid'"
+          class="items-grid items-scroll"
         >
-          <v-col
+          <Item
             v-for="(item, idx) in props.items"
             :key="item.item_code || idx"
-            xl="2"
-            lg="3"
-            md="6"
-            sm="6"
-            cols="6"
-          >
-            <Item :item="item" @click="item_clicked(item)"/>
-          </v-col>
-        </v-row>
+            :item="item"
+            @click="item_clicked(item)"
+          />
+        </div>
 
         <v-list
           v-else
@@ -38,7 +36,7 @@
               <div class="item-row-grid">
                 <span class="item-row-name">{{ item.item_name }}</span>
                 <span class="item-row-value">{{ item.actual_qty ?? 0 }}</span>
-                <span class="item-row-value item-row-rate">{{ __('Rate:') }} {{ item.price_list_rate ?? 0 }} {{item.currency || ''}}</span>
+                <span class="item-row-value item-row-rate">{{ item.price_list_rate ?? 0 }} {{item.currency || ''}}</span>
               </div>
             </template>
           </v-list-item>
@@ -46,8 +44,7 @@
           </v-tooltip>
           </template>
         </v-list>
-      </VCardText>
-    </VCard>
+    </div>
 </template>
 
 <script setup>
@@ -77,16 +74,7 @@
 </script>
 
 <style scoped>
-.items-list-card {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  background: transparent;
-}
-
-.items-list-shell {
-  padding: 0;
+.items-list {
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -99,49 +87,36 @@
   overflow-y: auto;
 }
 
+.items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  /* cards clip overflow, so auto rows would shrink to 0 inside the scroll area */
+  grid-auto-rows: max-content;
+  align-content: start;
+  gap: 8px;
+  padding: 2px;
+}
+
+.items-empty {
+  padding: 24px 8px;
+  text-align: center;
+}
+
 .item-rows {
   padding: 0;
-  overflow-y: auto;
 }
 
-.item-rows-header-grid,
 .item-row-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.8fr) minmax(72px, 0.6fr) minmax(88px, 0.7fr);
+  grid-template-columns: minmax(0, 1fr) minmax(48px, auto) minmax(88px, auto);
   align-items: center;
   column-gap: 12px;
-}
-
-.item-rows-header {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  padding: 12px 16px !important;
-  min-height: auto;
-  background: var(--v-pos-field-background);
-  border-bottom: 1px solid var(--v-pos-panel-border-strong);
-  color: rgba(var(--v-theme-on-surface), 0.78);
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-.item-rows-header-grid {
-  width: 100%;
-}
-
-.item-col-qty {
-  justify-self: center;
-}
-
-.item-col-rate {
-  justify-self: end;
 }
 
 .item-row {
   border-radius: 0 !important;
   border-bottom: 1px solid var(--v-pos-panel-border-soft);
+  min-height: 0;
   transition: background-color 0.15s ease;
 }
 
@@ -151,38 +126,25 @@
 }
 
 .item-row :deep(.v-list-item__content) {
-  padding: 14px 16px;
+  padding: 8px 4px;
 }
 
 .item-row-name {
   color: rgb(var(--v-theme-on-surface));
+  font-size: 0.875rem;
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .item-row-value {
-  color: rgb(69, 90, 100);
+  color: rgb(var(--v-pos-text-muted));
+  font-size: 0.8125rem;
   font-weight: 500;
 }
 
 .item-row-rate {
   justify-self: end;
-}
-
-@media (max-width: 600px) {
-  .item-rows-header-grid,
-  .item-row-grid {
-    grid-template-columns: minmax(0, 1.4fr) minmax(56px, 0.5fr) minmax(72px, 0.6fr);
-    column-gap: 8px;
-  }
-
-  .item-rows-header,
-  .item-row :deep(.v-list-item__content) {
-    padding-inline: 12px;
-  }
-
-  .item-row-name,
-  .item-row-value {
-    font-size: 0.9rem;
-  }
 }
 </style>

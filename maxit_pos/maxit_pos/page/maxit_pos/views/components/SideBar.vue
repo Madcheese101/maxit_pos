@@ -2,8 +2,10 @@
     <v-navigation-drawer
       class="pos-sidebar"
         :location="isAppRTL() ? 'right' : 'left'"
-        rail
-        mobile-breakpoint="xs"
+        :model-value="props.modelValue"
+        :rail="!xs"
+        mobile-breakpoint="sm"
+        @update:model-value="emit('update:modelValue', $event)"
       >
         <v-list>
             <v-list-item
@@ -75,13 +77,16 @@
 
 <script setup>
     import { computed, ref } from 'vue';
+  import { useDisplay } from 'vuetify';
   import SettingsDialog from './SettingsDialog.vue';
   import { storeToRefs } from 'pinia';
   import { usePosStore } from '../../store/posStore';
 
   const __ = window.__;
 
-  const props = defineProps(['showPosProfileDependent']);
+  const props = defineProps(['showPosProfileDependent', 'modelValue']);
+  const emit = defineEmits(['update:modelValue']);
+  const { xs } = useDisplay();
   const posStore = usePosStore();
   const { pos_opening, posProfileData, themeMode, darkPalette } = storeToRefs(posStore);
   const { close_pos, isAppRTL, setThemePreferences } = posStore;

@@ -8,8 +8,13 @@
     ></v-progress-circular> -->
     <v-app :dir="getAppDirection()" class="maxit-pos-app">
       <v-locale-provider :rtl="isAppRTL()">
+        <!-- phones get an app bar to open the sidebar -->
+        <v-app-bar v-if="xs" density="compact" flat class="mobile-app-bar">
+          <v-app-bar-nav-icon :aria-label="__('Menu')" @click="drawer = !drawer" />
+          <v-app-bar-title class="text-body-1 font-weight-bold">{{ props.posProfileData?.name || 'MaxIT POS' }}</v-app-bar-title>
+        </v-app-bar>
         <!-- sidebar -->
-        <SideBar :showPosProfileDependent="showPosProfileDependent"/>
+        <SideBar v-model="drawer" :showPosProfileDependent="showPosProfileDependent"/>
         <!-- Pages Views Container -->
         <v-main class="main-body-container">
             <router-view v-slot="{ Component }">
@@ -39,8 +44,11 @@
     import { usePosStore } from './store/posStore';
     import {storeToRefs} from 'pinia';
     import {ref, watch, onMounted} from 'vue';
-    import { useTheme } from 'vuetify';
+    import { useDisplay, useTheme } from 'vuetify';
+    const __ = window.__;
     const isLoading = ref(true);
+    const { xs } = useDisplay();
+    const drawer = ref(null);
     const props = defineProps(['posProfileData', 'appDefaults']);
     const posStore = usePosStore();
     const {activeVuetifyTheme} = storeToRefs(posStore);
@@ -82,6 +90,11 @@
     background: var(--v-pos-shell-background);
     color: rgb(var(--v-theme-on-background));
     transition: var(--v-theme-transition);
+  }
+
+  .mobile-app-bar {
+    border-bottom: 1px solid var(--v-pos-panel-border-soft);
+    background: var(--v-pos-drawer-background) !important;
   }
 
   .main-body-container{
