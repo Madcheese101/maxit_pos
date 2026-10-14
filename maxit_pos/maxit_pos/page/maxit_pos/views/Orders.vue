@@ -1,78 +1,81 @@
 <template>
-  <PageSurface glow="info-success" class="orders-view pa-3 pa-md-6" :style="layoutVars">
-    <v-row class="orders-shell" align="stretch">
-      <v-col v-show="!isMobile || !showDetailsOnMobile" cols="12" md="4" lg="3" class="orders-column">
-        <SurfaceCard class="orders-panel h-100">
-          <v-card-item class="pb-2">
-            <div class="d-flex align-center justify-space-between gap-2 mb-3">
-              <div>
-                <div class="text-overline text-medium-emphasis">{{ __('Orders') }}</div>
-                <div class="text-h6 font-weight-bold">{{ __('Select Invoice') }}</div>
-              </div>
-              <v-chip size="small" color="primary" variant="tonal">
-                {{ invoices.length }}
-              </v-chip>
-            </div>
-            <v-text-field
-              v-model="searchTerm"
-              density="comfortable"
-              :placeholder="__('Search invoice, customer, mobile')"
-              prepend-inner-icon="mdi-magnify"
-              variant="solo-filled"
-              hide-details
-              single-line
-              rounded="lg"
-              @keydown.enter="getInvoices()"
+  <PageSurface glow="info-success" class="orders-view pa-2">
+    <div class="orders-layout">
+      <SurfaceCard v-show="!isMobile || !showDetailsOnMobile" class="orders-pane orders-pane--list">
+        <div class="orders-pane__body">
+          <div class="pane-header">
+            <div class="pane-header__title">{{ __('Orders') }}</div>
+            <v-chip size="x-small" color="primary" variant="tonal">{{ invoices.length }}</v-chip>
+            <v-spacer />
+            <v-btn
+              icon="mdi-refresh"
+              size="small"
+              variant="text"
+              :title="__('Refresh')"
+              :aria-label="__('Refresh')"
+              @click="getInvoices()"
             />
+          </div>
 
-      <div v-if="selectedItemCodeFilter" class="mt-3 px-1">
-        <v-chip
-        closable
-        color="secondary"
-        variant="tonal"
-        prepend-icon="mdi-barcode"
-        @click:close="clearItemFilter"
-        >
-        {{ __('Item') }}: {{ selectedItemCodeFilter }}
-        </v-chip>
-      </div>
-          </v-card-item>
+          <v-text-field
+            v-model="searchTerm"
+            density="compact"
+            :placeholder="__('Search invoice, customer, mobile')"
+            prepend-inner-icon="mdi-magnify"
+            variant="outlined"
+            hide-details
+            single-line
+            class="flex-grow-0"
+            @keydown.enter="getInvoices()"
+          />
 
-          <v-divider />
+          <div v-if="selectedItemCodeFilter">
+            <v-chip
+              closable
+              color="secondary"
+              variant="tonal"
+              prepend-icon="mdi-barcode"
+              @click:close="clearItemFilter"
+            >
+              {{ __('Item') }}: {{ selectedItemCodeFilter }}
+            </v-chip>
+          </div>
 
-          <v-card-text class="pt-3 px-2 orders-list-body">
-            <div v-if="isLoadingList" class="px-2 py-5">
-              <v-skeleton-loader type="list-item-two-line, list-item-two-line, list-item-two-line" />
-            </div>
+          <div class="orders-list">
+            <v-skeleton-loader
+              v-if="isLoadingList"
+              type="list-item-two-line, list-item-two-line, list-item-two-line"
+            />
 
             <v-list
               v-else-if="invoices.length"
-              lines="two"
-              color="primary"
-              :style="invoiceListStyle"
               nav
-              rounded="lg"
-              class="orders-list overflow-y-auto"
-              v-model:selected="selected"
+              density="compact"
+              bg-color="transparent"
+              class="pa-0"
             >
               <v-list-item
                 v-for="inv in invoices"
                 :key="inv.name"
-                :value="inv.name"
-                :title="inv.name"
-                :subtitle="invoiceSubtitle(inv)"
+                :active="invoice?.name === inv.name"
+                color="primary"
                 rounded="lg"
-                class="mb-1"
+                class="order-row"
+                @click="openInvoice(inv.name)"
               >
-                <template #append>
-                  <v-chip
-                    size="small"
-                    :color="getStatusColor(inv.status, inv.docstatus)"
-                    variant="tonal"
-                  >
-                    {{ inv.status || __('Draft') }}
+                <div class="order-row__line">
+                  <span class="order-row__name">{{ inv.name }}</span>
+                  <v-chip size="small" :color="getStatusColor(inv.status, inv.docstatus)" variant="flat" class="status-chip">
+                    {{ __(inv.status || 'Draft') }}
                   </v-chip>
-                </template>
+                </div>
+                <div class="order-row__line order-row__line--sub">
+                  <span class="order-row__customer">
+                    {{ inv.customer || __('Unknown Customer') }}
+                    <span v-if="inv.posting_date" class="text-medium-emphasis"> · {{ formatDate(inv.posting_date) }}</span>
+                  </span>
+                  <span class="order-row__total">{{ formatNumber(inv.grand_total) }}</span>
+                </div>
               </v-list-item>
             </v-list>
 
@@ -81,219 +84,179 @@
               type="info"
               variant="tonal"
               density="compact"
-              class="mt-2"
             >
               {{ __('No invoices found for this filter.') }}
             </v-alert>
-          </v-card-text>
-        </SurfaceCard>
-      </v-col>
+          </div>
+        </div>
+      </SurfaceCard>
 
-      <v-col v-show="!isMobile || showDetailsOnMobile" cols="12" md="8" lg="9" class="orders-column">
-        <SurfaceCard class="orders-panel h-100">
-          <v-card-item class="pb-0">
-            <div class="d-flex align-center justify-space-between flex-wrap gap-3">
-              <div class="d-flex align-center gap-2">
-                <v-btn
-                  v-if="isMobile"
-                  :icon="backIcon"
-                  variant="text"
-                  size="small"
-                  @click="showDetailsOnMobile = false"
-                />
-
-                <div v-if="invoice">
-                  <div class="text-overline text-medium-emphasis">{{ __('Invoice Details') }}</div>
-                  <div class="text-h6 font-weight-bold d-flex align-center flex-wrap gap-2">
-                    {{ invoice.name }}
-                    <v-chip size="small" :color="statusChip.color" variant="tonal">
-                      {{ invoice.status }}
-                    </v-chip>
-                  </div>
-                </div>
-
-                <div v-else>
-                  <div class="text-overline text-medium-emphasis">{{ __('Invoice Details') }}</div>
-                  <div class="text-h6 font-weight-bold">{{ __('No Invoice Selected') }}</div>
-                </div>
+      <SurfaceCard v-show="!isMobile || showDetailsOnMobile" class="orders-pane orders-pane--details">
+        <div class="orders-pane__body">
+          <div class="pane-header">
+            <v-btn
+              v-if="isMobile"
+              :icon="backIcon"
+              size="small"
+              variant="text"
+              :aria-label="__('Back')"
+              @click="showDetailsOnMobile = false"
+            />
+            <div v-if="invoice" class="pane-header__info">
+              <div class="pane-header__title">
+                {{ invoice.name }}
+                <v-chip size="small" :color="statusChip.color" variant="flat" class="status-chip">
+                  {{ __(invoice.status) }}
+                </v-chip>
               </div>
-
-              <v-chip v-if="invoice" size="small" color="secondary" variant="outlined">
-                {{ __('Date') }}: {{ invoice.posting_date }}
-              </v-chip>
+              <div class="pane-header__sub">
+                <span class="font-weight-medium">{{ invoice.customer || 'N/A' }}</span>
+                <span class="text-medium-emphasis"> · {{ formatDate(invoice.posting_date) }}</span>
+              </div>
             </div>
-          </v-card-item>
+            <div v-else class="pane-header__title">{{ __('Invoice Details') }}</div>
+          </div>
 
-          <v-card-text class="pt-4 orders-details-body">
+          <div class="details-scroll">
             <v-skeleton-loader
               v-if="isLoadingInvoice"
-              type="table, article, article"
+              type="article, list-item-two-line, list-item-two-line"
             />
 
             <v-alert
               v-else-if="!invoice"
               type="info"
               variant="tonal"
+              density="compact"
             >
               {{ __('Select an invoice from the left panel to view full details.') }}
             </v-alert>
 
             <template v-else>
-              <v-row dense class="mb-2">
-                <v-col cols="12" sm="6" md="4">
-                  <StatMetricCard
-                    class="stat-card"
-                    color="primary"
-                    :label="__('Customer')"
-                    :value="invoice.customer || 'N/A'"
-                    truncate
-                  />
-                </v-col>
-
-                <v-col cols="12" sm="6" md="3">
-                  <StatMetricCard
-                    class="stat-card"
-                    color="primary"
-                    :label="__('Grand Total')"
-                    :value="`${invoice.grand_total} ${invoice.price_list_currency}`"
-                  />
-                </v-col>
-
-                <v-col cols="12" sm="6" md="3">
-                  <StatMetricCard
-                    class="stat-card"
-                    color="success"
-                    :label="__('Paid Amount')"
-                    :value="`${invoice.paid_amount} ${invoice.price_list_currency}`"
-                  />
-                </v-col>
-                <v-col cols="12" sm="6" md="2">
-                  <StatMetricCard
-                    class="stat-card"
-                    color="warning"
-                    :label="__('Outstanding')"
-                    :value="`${invoice.outstanding_amount} ${invoice.price_list_currency}`"
-                  />
-                </v-col>
-              </v-row>
-
-              <div v-if="invoice.sales_person" class="d-flex align-baseline gap-2 mb-2">
-                <span class="text-subtitle-1 font-weight-bold">{{ __('Sales Person') }}:</span>
-                <span class="text-body-1 font-weight-bold">{{ salesPersonName || invoice.sales_person }}</span>
+              <div class="totals-strip">
+                <div class="totals-strip__item">
+                  <span class="totals-strip__label">{{ __('Grand Total') }}</span>
+                  <span class="totals-strip__value">{{ formatNumber(invoice.grand_total) }}</span>
+                </div>
+                <div class="totals-strip__item">
+                  <span class="totals-strip__label">{{ __('Paid Amount') }}</span>
+                  <span class="totals-strip__value text-success">{{ formatNumber(invoice.paid_amount) }}</span>
+                </div>
+                <div class="totals-strip__item">
+                  <span class="totals-strip__label">{{ __('Outstanding') }}</span>
+                  <span class="totals-strip__value" :class="invoice.outstanding_amount > 0 ? 'text-warning' : ''">
+                    {{ formatNumber(invoice.outstanding_amount) }}
+                  </span>
+                </div>
               </div>
 
-              <SurfaceCard v-if="invoice.items?.length" surface="section" class="section-card mt-3">
-                <v-card-item class="pb-1">
-                  <div class="text-subtitle-1 font-weight-bold">{{ __('Items') }}</div>
-                </v-card-item>
-                <v-card-text>
-                  <v-data-table-virtual
-                    :headers="invoiceItemHeaders"
-                    :items="invoice.items"
-                    item-value="item_name"
-                    :height="itemsTableHeight"
-                    class="orders-table"
-                  />
-                </v-card-text>
-              </SurfaceCard>
-
-              <SurfaceCard v-if="invoice.payments?.length" surface="section" class="section-card mt-3">
-                <v-card-item class="pb-1">
-                  <div class="text-subtitle-1 font-weight-bold">{{ __('Payments') }}</div>
-                </v-card-item>
-                <v-card-text>
-                  <v-data-table-virtual
-                    :headers="invoicePaymentHeaders"
-                    :items="invoice.payments"
-                    item-value="mode_of_payment"
-                    :height="paymentsTableHeight"
-                    class="orders-table"
-                  />
-                </v-card-text>
-              </SurfaceCard>
-
-              <SurfaceCard v-if="paymentEntries?.length" surface="section" class="section-card mt-3">
-                <v-card-item class="pb-1">
-                  <div class="text-subtitle-1 font-weight-bold">{{ __('Payment Entries') }}</div>
-                </v-card-item>
-                <v-card-text>
-                  <v-data-table-virtual
-                    :headers="paymentEntryHeaders"
-                    :items="paymentEntries"
-                    item-value="name"
-                    :height="itemsTableHeight"
-                    class="orders-table"
-                  >
-                    <template #item.print="{ item }">
-                      <v-btn
-                        size="small"
-                        color="primary"
-                        variant="tonal"
-                        @click="printPaymentEntry(item.name)"
-                      >
-                        {{ __('Print') }}
-                      </v-btn>
-                    </template>
-                  </v-data-table-virtual>
-                </v-card-text>
-              </SurfaceCard>
-
-              <div class="actions-wrap mt-4">
-                <v-btn
-                  v-if="invoice.docstatus !== 0"
-                  color="primary"
-                  variant="elevated"
-                  prepend-icon="mdi-printer"
-                  @click="printInvoice()"
-                >
-                  {{ __('Print') }}
-                </v-btn>
-
-                <v-btn
-                  v-if="invoice.docstatus == 0"
-                  color="primary"
-                  variant="elevated"
-                  prepend-icon="mdi-pencil"
-                  @click="editInvoice()"
-                >
-                  {{ __('Edit') }}
-                </v-btn>
-
-                <v-btn
-                  v-if="!invoice.is_return && !invoice.is_consolidated"
-                  color="warning"
-                  variant="tonal"
-                  prepend-icon="mdi-backup-restore"
-                  @click="returnInvoice()"
-                >
-                  {{ __('Return') }}
-                </v-btn>
-
-                <v-btn
-                  v-if="!invoice.is_consolidated && invoice.docstatus == 1"
-                  color="error"
-                  variant="tonal"
-                  prepend-icon="mdi-cancel"
-                  @click="cancelInvoice()"
-                >
-                  {{ __('Cancel') }}
-                </v-btn>
-
-                <v-btn
-                  v-if="invoice.outstanding_amount > 0 && invoice.is_return == 0"
-                  color="success"
-                  variant="elevated"
-                  prepend-icon="mdi-cash-multiple"
-                  @click="payClick()"
-                >
-                  {{ __('Pay') }}
-                </v-btn>
+              <div v-if="invoice.sales_person" class="text-body-2">
+                <span class="text-medium-emphasis">{{ __('Sales Person') }}:</span>
+                <span class="font-weight-bold"> {{ salesPersonName || invoice.sales_person }}</span>
               </div>
+
+              <section v-if="invoice.items?.length" class="details-section">
+                <div class="details-section__title">
+                  {{ __('Items') }}
+                  <span class="text-medium-emphasis">({{ invoice.items.length }})</span>
+                </div>
+                <div v-for="item in invoice.items" :key="item.name" class="detail-line">
+                  <div class="detail-line__main">
+                    <div class="detail-line__name">{{ item.item_name }}</div>
+                    <div class="detail-line__sub">
+                      {{ item.item_code }} · {{ item.qty }} × {{ formatNumber(item.rate) }}
+                    </div>
+                  </div>
+                  <div class="detail-line__amount">{{ formatNumber(item.amount) }}</div>
+                </div>
+              </section>
+
+              <section v-if="invoice.payments?.length" class="details-section">
+                <div class="details-section__title">{{ __('Payments') }}</div>
+                <div v-for="payment in invoice.payments" :key="payment.name || payment.mode_of_payment" class="detail-line">
+                  <div class="detail-line__main">
+                    <div class="detail-line__name">{{ payment.mode_of_payment }}</div>
+                  </div>
+                  <div class="detail-line__amount">{{ formatNumber(payment.amount) }}</div>
+                </div>
+              </section>
+
+              <section v-if="paymentEntries?.length" class="details-section">
+                <div class="details-section__title">{{ __('Payment Entries') }}</div>
+                <div v-for="entry in paymentEntries" :key="entry.name" class="detail-line">
+                  <div class="detail-line__main">
+                    <div class="detail-line__name">{{ entry.mode_of_payment }}</div>
+                    <div class="detail-line__sub">{{ entry.name }} · {{ formatDate(entry.posting_date) }}</div>
+                  </div>
+                  <div class="detail-line__amount">{{ formatNumber(entry.paid_amount) }}</div>
+                  <v-btn
+                    icon="mdi-printer"
+                    size="small"
+                    variant="text"
+                    color="primary"
+                    :title="__('Print')"
+                    :aria-label="__('Print')"
+                    @click="printPaymentEntry(entry.name)"
+                  />
+                </div>
+              </section>
             </template>
-          </v-card-text>
-        </SurfaceCard>
-      </v-col>
-    </v-row>
+          </div>
+
+          <div v-if="invoice && !isLoadingInvoice" class="details-actions">
+            <v-btn
+              v-if="invoice.outstanding_amount > 0 && invoice.is_return == 0"
+              color="success"
+              variant="elevated"
+              prepend-icon="mdi-cash-multiple"
+              @click="payClick()"
+            >
+              {{ __('Pay') }}
+            </v-btn>
+
+            <v-btn
+              v-if="invoice.docstatus !== 0"
+              color="primary"
+              variant="elevated"
+              prepend-icon="mdi-printer"
+              @click="printInvoice()"
+            >
+              {{ __('Print') }}
+            </v-btn>
+
+            <v-btn
+              v-if="invoice.docstatus == 0"
+              color="primary"
+              variant="elevated"
+              prepend-icon="mdi-pencil"
+              @click="editInvoice()"
+            >
+              {{ __('Edit') }}
+            </v-btn>
+
+            <v-btn
+              v-if="!invoice.is_return && !invoice.is_consolidated"
+              color="warning"
+              variant="tonal"
+              prepend-icon="mdi-backup-restore"
+              @click="returnInvoice()"
+            >
+              {{ __('Return') }}
+            </v-btn>
+
+            <v-btn
+              v-if="!invoice.is_consolidated && invoice.docstatus == 1"
+              color="error"
+              variant="tonal"
+              prepend-icon="mdi-cancel"
+              @click="cancelInvoice()"
+            >
+              {{ __('Cancel') }}
+            </v-btn>
+          </div>
+        </div>
+      </SurfaceCard>
+    </div>
 
     <payInvoiceDialog
       v-model="payInvoiceDialogToggle"
@@ -315,30 +278,10 @@
     import payInvoiceDialog from './components/orders/payInvoiceDialog.vue';
     import PageSurface from './components/ui/PageSurface.vue';
     import SurfaceCard from './components/ui/SurfaceCard.vue';
-    import StatMetricCard from './components/ui/StatMetricCard.vue';
     const frappe_ = frappe;
     const __ = window.__;
-    const invoiceItemHeaders = [
-      { title: __('Item Code'), key: 'item_code' },
-      { title: __('Item Name'), key: 'item_name' },
-      { title: __('Qty'), key: 'qty' },
-      { title: __('Rate'), key: 'rate' },
-      { title: __('Amount'), key: 'amount' },
-    ];
-    const invoicePaymentHeaders = [
-      { title: __('Mode of Payment'), key: 'mode_of_payment' },
-      { title: __('Amount'), key: 'amount' },
-    ];
-    const paymentEntryHeaders = [
-      { title: __('Date'), key: 'posting_date' },
-      { title: __('Name'), key: 'name' },
-      { title: __('Mode of Payment'), key: 'mode_of_payment' },
-      { title: __('Amount'), key: 'paid_amount' },
-      { title: __('Print'), key: 'print', sortable: false },
-    ];
     const invoices = ref([]);
     const invoice = ref();
-    const selected = ref([]);
     const payInvoiceDialogToggle = ref(false);
     const outstandingAmount = ref(0);
     const currency = ref('');
@@ -349,22 +292,11 @@
     const salesPersonName = ref('');
     const router = useRouter();
     const route = useRoute();
-    const { smAndDown, height: viewportHeight } = useDisplay();
+    const { smAndDown } = useDisplay();
     const isMobile = computed(() => smAndDown.value);
     const showDetailsOnMobile = ref(false);
-    const viewportHeightPx = computed(() => viewportHeight.value || window.innerHeight || 800);
-    const listScrollHeight = computed(() => Math.max(220, viewportHeightPx.value - (isMobile.value ? 230 : 260)));
-    const detailsBodyHeight = computed(() => Math.max(400, viewportHeightPx.value - (isMobile.value ? 175 : 200)));
-    const itemsTableHeight = computed(() => Math.max(180, Math.round(viewportHeightPx.value * 0.22)));
-    const paymentsTableHeight = computed(() => Math.max(80, Math.round(viewportHeightPx.value * 0.12)));
-    const layoutVars = computed(() => ({
-      '--orders-list-height': `${listScrollHeight.value}px`,
-      '--orders-details-body-height': `${detailsBodyHeight.value}px`,
-    }));
-    const invoiceListStyle = computed(() => ({
-      height: 'var(--orders-list-height)',
-      maxHeight: 'var(--orders-list-height)',
-    }));
+    const formatNumber = (value) => format_number(value || 0);
+    const formatDate = (value) => value ? frappe.datetime.str_to_user(value) : '';
     const posStore = usePosStore();
     const {pos_profile, posProfileData} = storeToRefs(posStore);
     const {edit_invoice, process_return, buildPrintViewUrl, isAppRTL} = posStore;
@@ -376,6 +308,7 @@
       if (normalizedStatus == 'unpaid' || normalizedStatus == 'overdue') return 'error';
       if (normalizedStatus == 'paid' || normalizedStatus == 'completed') return 'success';
       if (normalizedStatus == 'partly paid') return 'warning';
+      if (normalizedStatus == 'return') return 'amber-darken-1';
       if (normalizedStatus == 'cancel') return 'error';
       if (docstatus === 0) return 'info';
       return 'secondary';
@@ -384,8 +317,6 @@
     const statusChip = computed(() => ({
       color: getStatusColor(invoice.value?.status, invoice.value?.docstatus)
     }));
-
-    const invoiceSubtitle = (inv) => `${inv.customer || __('Unknown Customer')} - ${inv.grand_total || 0}`;
 
     const normalizeQueryValue = (value) => {
       if (Array.isArray(value)) {
@@ -398,10 +329,7 @@
     const selectedCustomerFilter = computed(() => normalizeQueryValue(route.query.customer));
     const selectedItemCodeFilter = computed(() => normalizeQueryValue(route.query.item_code));
 
-    const clearInvoiceSelection = ({ keepSelected = false } = {}) => {
-      if (!keepSelected && selected.value.length) {
-        selected.value = [];
-      }
+    const clearInvoiceSelection = () => {
       if (invoice.value) {
         invoice.value = null;
       }
@@ -524,14 +452,10 @@
       window.open(printUrl, '_blank');
     };
 
-    watch(selected, (val) => {
-      if (!val.length) {
-        clearInvoiceSelection({ keepSelected: true });
-        return;
-      }
+    const openInvoice = (invoice_id) => {
       showDetailsOnMobile.value = true;
-      GetInvoiceDoc(val[0]);
-    });
+      if (invoice.value?.name !== invoice_id) GetInvoiceDoc(invoice_id);
+    };
 
     watch([selectedCustomerFilter, selectedItemCodeFilter], () => {
       clearInvoiceSelection();
@@ -563,93 +487,231 @@
 
 <style scoped>
 .orders-view {
-  height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
-  min-height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
-  overflow: hidden;
   background:
     radial-gradient(circle at top right, var(--v-pos-info-glow), transparent 42%),
     radial-gradient(circle at left bottom, var(--v-pos-success-glow), transparent 38%);
 }
 
-.orders-shell {
-  height: 100%;
-  min-height: 0;
-}
-
-.orders-column {
+.orders-layout {
   display: flex;
-  min-height: 0;
-}
-
-.orders-panel {
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.orders-list-body {
+  gap: 8px;
   flex: 1;
   min-height: 0;
-  overflow: hidden;
 }
 
-.orders-list {
-  overflow-y: auto;
-  height: var(--orders-list-height, 300px);
-  max-height: var(--orders-list-height, 300px);
-}
-
-.orders-details-body {
-  overflow-y: auto;
-  overflow-x: hidden;
-  max-height: var(--orders-details-body-height, 300px);
-}
-
-.orders-panel {
+.orders-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   border: 1px solid var(--v-pos-panel-border);
   background: var(--v-pos-panel-background);
   box-shadow: var(--v-pos-panel-shadow);
   transition: var(--v-theme-transition);
 }
 
-.orders-list :deep(.v-list-item--active) {
-  background: var(--v-pos-nav-active);
+.orders-pane--list {
+  flex: 0 0 clamp(340px, 38%, 480px);
 }
 
-.section-card {
-  border-color: var(--v-pos-panel-border-strong) !important;
+.orders-pane--details {
+  flex: 1;
+  min-width: 0;
 }
 
-.orders-table {
-  border-radius: 10px;
+@media (max-width: 959px) {
+  .orders-pane--list {
+    flex: 1;
+  }
+}
+
+.orders-pane__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+  padding: 10px;
+}
+
+.pane-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+}
+
+.pane-header__info {
+  min-width: 0;
+}
+
+.pane-header__title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 1rem;
+  font-weight: 700;
+  padding-inline: 4px;
+}
+
+.pane-header__sub {
+  font-size: 0.8125rem;
+  padding-inline: 4px;
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.stat-card {
+.orders-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.order-row {
+  margin-block-end: 2px;
   border: 1px solid var(--v-pos-panel-border-soft);
-  transition: var(--v-theme-transition);
 }
 
-.meta-row {
-  padding: 4px 0;
+.order-row :deep(.v-list-item__content) {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.actions-wrap {
+.order-row__line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.order-row__name {
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.order-row__line--sub {
+  font-size: 0.8125rem;
+}
+
+.order-row__customer {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.order-row__total {
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
+.details-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.totals-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid var(--v-pos-panel-border-soft);
+  border-radius: 10px;
+  background: var(--v-pos-field-background);
+}
+
+.totals-strip__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px;
+}
+
+.totals-strip__item + .totals-strip__item {
+  border-inline-start: 1px solid var(--v-pos-panel-border-soft);
+}
+
+.totals-strip__label {
+  font-size: 0.75rem;
+  color: rgb(var(--v-pos-text-muted));
+}
+
+.totals-strip__value {
+  font-size: clamp(0.8125rem, 3.4vw, 0.9375rem);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.details-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.details-section__title {
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.detail-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--v-pos-panel-border-soft);
+  border-radius: 8px;
+  background: var(--v-pos-field-background);
+}
+
+.detail-line__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.detail-line__name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.detail-line__sub {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: rgba(var(--v-theme-on-surface), 0.72);
+}
+
+.status-chip {
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
+/* yellow needs dark text to stay readable */
+.status-chip.bg-amber-darken-1 {
+  color: rgba(0, 0, 0, 0.87) !important;
+}
+
+.detail-line__amount {
+  flex-shrink: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.details-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
+  padding-block-start: 8px;
+  border-top: 1px solid var(--v-pos-panel-border-soft);
 }
 
-@media (max-width: 960px) {
-  .orders-view {
-    padding: 10px;
-  }
-
-  .actions-wrap {
-    display: grid;
-    grid-template-columns: 1fr;
-  }
+.details-actions .v-btn {
+  flex: 1 1 auto;
 }
 </style>

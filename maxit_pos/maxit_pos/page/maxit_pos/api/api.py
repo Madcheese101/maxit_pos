@@ -404,7 +404,8 @@ def get_sales_invoice_list(pos_profile, search_term="", customer="", item_code="
             SalesInvoice.name,
             SalesInvoice.customer,
             SalesInvoice.grand_total,
-            SalesInvoice.status
+            SalesInvoice.status,
+            SalesInvoice.posting_date
         )
         .where(SalesInvoice.pos_profile == pos_profile)
         # .where(SalesInvoice.docstatus == 1)

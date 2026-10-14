@@ -1,77 +1,60 @@
 <template>
-  <v-dialog v-model="internalModel" max-width="760">
-    <v-card class="pay-dialog" rounded="xl">
+  <v-dialog v-model="internalModel" max-width="520" :fullscreen="xs">
+    <v-card class="pay-dialog" :class="{ 'pay-dialog--fullscreen': xs }" :rounded="xs ? 0 : 'xl'">
       <v-card-item class="pb-2">
-        <div class="d-flex align-center justify-space-between gap-2">
-          <div>
-            <div class="text-overline text-medium-emphasis">{{ __('Payment') }}</div>
-            <div class="text-h6 font-weight-bold">{{ __('Allocate Invoice Payment') }}</div>
-          </div>
-          <v-chip color="primary" variant="tonal" size="small">
-            {{ currency }}
-          </v-chip>
-        </div>
+        <div class="text-h6 font-weight-bold">{{ __('Allocate Invoice Payment') }}</div>
       </v-card-item>
 
       <v-divider />
 
-      <v-card-text class="pt-4">
-        <v-table class="rounded-lg overflow-hidden payment-table" density="comfortable">
-          <thead>
-            <tr>
-              <th>{{ __('Payment Mode') }}</th>
-              <th class="text-right">{{ __('Amount') }}</th>
-            </tr>
-          </thead>
+      <v-card-text class="pay-dialog__body">
+        <div class="pay-dialog__due">
+          <span class="text-medium-emphasis">{{ __('Outstanding') }}</span>
+          <span class="font-weight-bold">{{ outstandingAmount }} {{ currency }}</span>
+        </div>
 
-          <tbody>
-            <tr v-for="payment in payments" :key="payment.mode_of_payment">
-              <td class="font-weight-medium">{{ payment.mode_of_payment }}</td>
-              <td>
-                <v-number-input
-                  v-model="payment.amount"
-                  :prefix="currency || ''"
-                  control-variant="hidden"
-                  variant="outlined"
-                  density="comfortable"
-                  :precision="2"
-                  hide-details
-                  @change="setTotal()"
-                />
-              </td>
-            </tr>
-          </tbody>
-        </v-table>
+        <div v-for="payment in payments" :key="payment.mode_of_payment" class="payment-row">
+          <div class="payment-row__mode">{{ payment.mode_of_payment }}</div>
+          <v-number-input
+            v-model="payment.amount"
+            control-variant="hidden"
+            variant="outlined"
+            density="compact"
+            :precision="2"
+            hide-details
+            class="payment-row__input"
+            @change="setTotal()"
+          />
+          <v-btn
+            icon="mdi-cash-marker"
+            variant="text"
+            color="primary"
+            size="small"
+            :title="__('Pay full amount')"
+            :aria-label="__('Pay full amount')"
+            @click="fillOutstanding(payment)"
+          />
+        </div>
 
-        <v-row class="mt-3" dense>
-          <v-col cols="12" sm="4">
-            <v-sheet class="summary-card" color="primary" rounded="lg" variant="tonal">
-              <div class="text-caption text-medium-emphasis">{{ __('Total Paid') }}</div>
-              <div class="text-body-1 font-weight-bold">{{ totalPaid }} {{ currency }}</div>
-            </v-sheet>
-          </v-col>
-          <v-col cols="12" sm="4">
-            <v-sheet class="summary-card" color="warning" rounded="lg" variant="tonal">
-              <div class="text-caption text-medium-emphasis">{{ __('Outstanding') }}</div>
-              <div class="text-body-1 font-weight-bold">{{ outstandingAmount }} {{ currency }}</div>
-            </v-sheet>
-          </v-col>
-          <v-col cols="12" sm="4">
-            <v-sheet class="summary-card" :color="unallocatedAmount === 0 ? 'success' : 'secondary'" rounded="lg" variant="tonal">
-              <div class="text-caption text-medium-emphasis">{{ __('Unallocated') }}</div>
-              <div class="text-body-1 font-weight-bold">{{ unallocatedAmount }} {{ currency }}</div>
-            </v-sheet>
-          </v-col>
-        </v-row>
+        <div class="pay-dialog__summary">
+          <div class="pay-dialog__summary-row">
+            <span>{{ __('Total Paid') }}</span>
+            <span class="font-weight-bold">{{ totalPaid }} {{ currency }}</span>
+          </div>
+          <div class="pay-dialog__summary-row" :class="unallocatedAmount === 0 ? 'text-success' : ''">
+            <span>{{ __('Unallocated') }}</span>
+            <span class="font-weight-bold">{{ unallocatedAmount }} {{ currency }}</span>
+          </div>
+        </div>
       </v-card-text>
 
-      <v-card-actions class="px-4 pb-4 pt-0 d-flex gap-2 flex-wrap">
+      <v-card-actions class="px-4 pb-4 pt-2 ga-2">
         <v-spacer />
-        <v-btn color="success" variant="elevated" prepend-icon="mdi-cash-check" @click="payInvoice">
-          {{ __('Pay') }}
-        </v-btn>
         <v-btn variant="tonal" @click="closeDialog">
           {{ __('Close') }}
+        </v-btn>
+        <v-btn color="success" variant="elevated" prepend-icon="mdi-cash-check" @click="payInvoice">
+          {{ __('Pay') }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -80,6 +63,7 @@
 
 <script setup>
   import { ref, watch } from "vue";
+  import { useDisplay } from "vuetify";
   const frappe_ = frappe;
   const __ = window.__;
   const props = defineProps({
@@ -98,6 +82,7 @@
   })));
   const unallocatedAmount = ref(0);
   const totalPaid = ref(0);
+  const { xs } = useDisplay();
   
 
   // Sync parent → child
@@ -110,6 +95,11 @@
   function setTotal() {
     totalPaid.value = payments.value.reduce((acc, payment) => acc + (payment.amount || 0), 0);
     unallocatedAmount.value = props.outstandingAmount - totalPaid.value;
+  }
+
+  function fillOutstanding(payment) {
+    payments.value.forEach((row) => { row.amount = row === payment ? props.outstandingAmount : 0; });
+    setTotal();
   }
 
   function closeDialog() {
@@ -139,18 +129,60 @@
 
 <style scoped>
 .pay-dialog {
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--v-pos-panel-border);
   background: var(--v-pos-panel-background);
   box-shadow: var(--v-pos-panel-shadow);
   transition: var(--v-theme-transition);
 }
 
-.payment-table {
-  border: 1px solid var(--v-pos-panel-border-soft);
+.pay-dialog--fullscreen {
+  background: rgb(var(--v-theme-surface));
 }
 
-.summary-card {
-  padding: 12px;
-  border: 1px solid var(--v-pos-panel-border-soft);
+.pay-dialog__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.pay-dialog__due,
+.pay-dialog__summary-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pay-dialog__due {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(var(--v-theme-primary), 0.08);
+}
+
+.payment-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.payment-row__mode {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.payment-row__input {
+  flex: 0 0 140px;
+}
+
+.pay-dialog__summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-block-start: 8px;
+  border-top: 1px solid var(--v-pos-panel-border-soft);
 }
 </style>
