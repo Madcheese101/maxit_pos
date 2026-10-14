@@ -1,494 +1,266 @@
 <template>
-	<PageSurface glow="info-success" class="close-day-view pa-2 pa-md-4" v-if="closeDayEnabled" :style="layoutVars">
-		<v-row class="close-day-shell" align="stretch" dense>
-			<v-col cols="12" class="close-day-tabs-col">
-				<SurfaceCard class="close-day-panel close-day-tabs-panel">
-					<v-card-item class="py-2 px-3 px-md-4">
-						<v-tabs v-model="activeTab" color="primary" fixed-tabs class="close-day-tabs">
-							<v-tab value="note-count" v-if="noteCountEnabled">{{ __('Note Count') }}</v-tab>
-							<v-tab value="payment-entry">{{ __('Payment Entry') }}</v-tab>
-						</v-tabs>
-					</v-card-item>
-				</SurfaceCard>
-			</v-col>
+	<PageSurface glow="info-success" class="close-day-view pa-2" v-if="closeDayEnabled">
+		<div class="close-day-layout">
+			<SurfaceCard v-show="!smAndDown || !showDetailsOnMobile" class="cd-pane cd-pane--list">
+				<div class="cd-pane__body">
+					<div class="pane-header">
+						<v-btn-toggle
+							v-if="noteCountEnabled"
+							v-model="activeTab"
+							mandatory
+							divided
+							density="compact"
+							color="primary"
+							variant="outlined"
+							class="cd-tabs"
+						>
+							<v-btn value="note-count">{{ __('Note Count') }}</v-btn>
+							<v-btn value="payment-entry">{{ __('Payment Entry') }}</v-btn>
+						</v-btn-toggle>
+						<div v-else class="pane-header__title">{{ __('Payment Entry') }}</div>
+						<v-spacer v-if="!noteCountEnabled" />
+						<v-btn
+							color="primary"
+							variant="elevated"
+							prepend-icon="mdi-plus"
+							:title="isNoteTab ? __('New Note Count') : __('New Payment Entry')"
+							@click="isNoteTab ? openNoteCountDialog() : openPaymentEntryDialog()"
+						>
+							{{ __('New') }}
+						</v-btn>
+					</div>
 
-			<v-col cols="12" class="close-day-main-col">
-				<v-window v-model="activeTab" class="close-day-window">
-					<v-window-item value="note-count" v-if="noteCountEnabled">
-						<v-row class="close-day-content" align="stretch" dense>
-							<v-col v-show="!smAndDown || !showDetailsOnMobile" cols="12" md="5" lg="4" class="close-day-column">
-								<SurfaceCard class="close-day-panel">
-									<v-card-item class="pb-2">
-										<div class="d-flex align-center justify-space-between gap-2 mb-2">
-											<div>
-												<div class="text-overline text-medium-emphasis">{{ __('Close Day') }}</div>
-												<div class="text-h6 font-weight-bold">{{ __('Select Note Count') }}</div>
-											</div>
-											<v-menu location="bottom end" offset="8">
-												<template #activator="{ props }">
-													<v-btn
-														v-bind="props"
-														icon="mdi-dots-vertical"
-														variant="text"
-														size="small"
-														color="secondary"
-													/>
-												</template>
+					<div class="search-row">
+						<v-text-field
+							v-if="isNoteTab"
+							v-model="noteSearchTerm"
+							density="compact"
+							:placeholder="__('Search note count')"
+							prepend-inner-icon="mdi-magnify"
+							variant="outlined"
+							hide-details
+							single-line
+							clearable
+							@keydown.enter="loadNoteCounts()"
+						/>
+						<v-text-field
+							v-else
+							v-model="paymentSearchTerm"
+							density="compact"
+							:placeholder="__('Search payment entry')"
+							prepend-inner-icon="mdi-magnify"
+							variant="outlined"
+							hide-details
+							single-line
+							clearable
+							@keydown.enter="loadPaymentEntries()"
+						/>
+						<v-btn
+							icon="mdi-wallet-outline"
+							size="small"
+							variant="text"
+							:title="__('Check Balance')"
+							:aria-label="__('Check Balance')"
+							@click="checkBalance"
+						/>
+						<v-btn
+							v-if="!isNoteTab"
+							icon="mdi-printer-outline"
+							size="small"
+							variant="text"
+							:title="__('Print Report')"
+							:aria-label="__('Print Report')"
+							@click="openPaymentEntryPrintDialog"
+						/>
+						<v-btn
+							icon="mdi-refresh"
+							size="small"
+							variant="text"
+							:title="__('Refresh')"
+							:aria-label="__('Refresh')"
+							@click="isNoteTab ? loadNoteCounts() : loadPaymentEntries()"
+						/>
+					</div>
 
-												<SurfaceCard surface="menu" class="close-day-menu" min-width="180">
-													<v-card-text class="pa-2 d-flex flex-column ga-2">
-														<v-btn
-															color="primary"
-															variant="text"
-															prepend-icon="mdi-plus-box"
-															size="small"
-															@click="openNoteCountDialog"
-														>
-															{{ __('New Note Count') }}
-														</v-btn>
-														<v-btn
-															color="primary"
-															variant="text"
-															prepend-icon="mdi-wallet-outline"
-															size="small"
-															@click="checkBalance"
-														>
-															{{ __('Check Balance') }}
-														</v-btn>
-														<v-btn
-															color="secondary"
-															variant="text"
-															prepend-icon="mdi-refresh"
-															size="small"
-															@click="loadNoteCounts()"
-														>
-															{{ __('Refresh') }}
-														</v-btn>
-														
-													</v-card-text>
-												</SurfaceCard>
-											</v-menu>
+					<div class="cd-list">
+						<v-skeleton-loader
+							v-if="isNoteTab ? isLoadingNoteList : isLoadingPaymentList"
+							type="list-item-two-line, list-item-two-line, list-item-two-line"
+						/>
+
+						<v-list
+							v-else-if="listEntries.length"
+							nav
+							density="compact"
+							bg-color="transparent"
+							class="pa-0"
+						>
+							<v-list-item
+								v-for="entry in listEntries"
+								:key="entry.name"
+								:active="(isNoteTab ? selectedNoteEntryName : selectedPaymentEntryName) === entry.name"
+								color="primary"
+								rounded="lg"
+								class="cd-row"
+								@click="isNoteTab ? selectNoteEntry(entry.name) : selectPaymentEntry(entry.name)"
+							>
+								<div class="cd-row__line">
+									<span class="cd-row__title">{{ entry.mode_of_payment }}</span>
+									<v-chip size="small" :color="entry.statusColor" variant="flat" class="status-chip">
+										{{ entry.status }}
+									</v-chip>
+								</div>
+								<div class="cd-row__line cd-row__line--sub">
+									<span class="cd-row__meta">{{ formatDate(entry.posting_date) }} · {{ entry.name }}</span>
+									<span class="cd-row__amount">{{ formatAmount(isNoteTab ? entry.total : entry.amount) }}</span>
+								</div>
+							</v-list-item>
+						</v-list>
+
+						<v-alert v-else type="info" variant="tonal" density="compact">
+							{{ isNoteTab ? __('No note counts found for this filter.') : __('No payment entries found for this filter.') }}
+						</v-alert>
+					</div>
+				</div>
+			</SurfaceCard>
+
+			<SurfaceCard v-show="!smAndDown || showDetailsOnMobile" class="cd-pane cd-pane--details">
+				<div class="cd-pane__body">
+					<div class="pane-header">
+						<v-btn
+							v-if="smAndDown"
+							:icon="backIcon"
+							variant="text"
+							size="small"
+							:aria-label="__('Back')"
+							@click="showDetailsOnMobile = false"
+						/>
+						<div v-if="detailEntry" class="pane-header__info">
+							<div class="pane-header__title">
+								{{ detailEntry.name }}
+								<v-chip size="small" :color="detailEntry.statusColor" variant="flat" class="status-chip">
+									{{ detailEntry.status }}
+								</v-chip>
+							</div>
+							<div class="pane-header__sub">
+								{{ detailEntry.mode_of_payment }} · {{ formatDate(detailEntry.posting_date) }}
+							</div>
+						</div>
+						<div v-else class="pane-header__title">
+							{{ isNoteTab ? __('Note Count Details') : __('Payment Entry Details') }}
+						</div>
+					</div>
+
+					<div class="details-scroll">
+						<v-skeleton-loader
+							v-if="isNoteTab ? isLoadingNoteDetail : isLoadingPaymentDetail"
+							type="article, list-item-two-line, list-item-two-line"
+						/>
+
+						<v-alert v-else-if="!detailEntry" type="info" variant="tonal" density="compact">
+							{{ isNoteTab
+								? __('Select a note count from the left panel to view full details.')
+								: __('Select a payment entry from the left panel to view full details.') }}
+						</v-alert>
+
+						<template v-else-if="isNoteTab">
+							<div class="totals-strip">
+								<div class="totals-strip__item">
+									<span class="totals-strip__label">{{ __('Type') }}</span>
+									<span class="totals-strip__value">{{ __(detailEntry.type) }}</span>
+								</div>
+								<div class="totals-strip__item">
+									<span class="totals-strip__label">{{ __('Total') }}</span>
+									<span class="totals-strip__value">{{ formatAmount(detailEntry.total) }}</span>
+								</div>
+							</div>
+
+							<section class="details-section">
+								<div class="details-section__title">
+									{{ detailEntry.type === 'Cash' ? __('Cash Breakdown') : __('Bank Breakdown') }}
+								</div>
+								<template v-if="detailEntry.type === 'Cash'">
+									<div v-for="row in detailEntry.cash || []" :key="row.note" class="detail-line">
+										<div class="detail-line__main">
+											<div class="detail-line__name">{{ row.note }} × {{ row.count }}</div>
 										</div>
-
-										<v-text-field
-											v-model="noteSearchTerm"
-											density="compact"
-											:placeholder="__('Search note count')"
-											prepend-inner-icon="mdi-magnify"
-											variant="solo-filled"
-											hide-details
-											single-line
-											clearable
-											rounded="lg"
-											@click:prepend-inner="loadNoteCounts()"
-											@keydown.enter="loadNoteCounts()"
-										/>
-									</v-card-item>
-
-									<v-divider />
-
-									<v-card-text class="pt-2 px-2 close-day-list-body">
-										<div v-if="isLoadingNoteList" class="px-2 py-5 close-day-state-loader">
-											<v-skeleton-loader type="list-item-two-line, list-item-two-line, list-item-two-line" />
-										</div>
-
-										<v-list
-											v-else-if="noteEntries.length"
-											lines="two"
-											color="primary"
-											nav
-											rounded="lg"
-											class="close-day-list"
-											density="compact"
-											:style="entryListStyle"
-										>
-											<v-list-item
-												v-for="entry in noteEntries"
-												:key="entry.name"
-												:title="entry.mode_of_payment"
-												:subtitle="entry.posting_date"
-												rounded="lg"
-												class="mb-1"
-												:active="selectedNoteEntryName === entry.name"
-												@click="selectNoteEntry(entry.name)"
-											>
-												<template #append>
-													<div class="d-flex align-center ga-2">
-														<v-chip size="small" color="secondary" variant="outlined">
-															{{ formatAmount(entry.total) }}
-														</v-chip>
-														<v-chip size="small" :color="entry.statusColor" variant="tonal">
-															{{ entry.status }}
-														</v-chip>
-													</div>
-												</template>
-											</v-list-item>
-										</v-list>
-
-										<v-alert v-else type="info" variant="tonal" density="compact" class="mt-2 close-day-state-message">
-											{{ __('No note counts found for this filter.') }}
-										</v-alert>
-									</v-card-text>
-								</SurfaceCard>
-							</v-col>
-
-							<v-col v-show="!smAndDown || showDetailsOnMobile" cols="12" md="7" lg="8" class="close-day-column">
-								<SurfaceCard class="close-day-panel h-100">
-									<v-card-item class="pb-0">
-										<div class="d-flex align-center justify-space-between flex-wrap gap-2">
-											<div class="d-flex align-center gap-2">
-												<v-btn
-													v-if="smAndDown"
-													:icon="backIcon"
-													variant="text"
-													size="small"
-													@click="showDetailsOnMobile = false"
-												/>
-
-												<div>
-													<div class="text-overline text-medium-emphasis">{{ __('Note Count Details') }}</div>
-													<div class="text-h6 font-weight-bold d-flex align-center flex-wrap gap-2">
-														{{ selectedNoteEntry?.name || __('No Note Count Selected') }}
-														<v-chip
-															v-if="selectedNoteEntry"
-															size="small"
-															:color="selectedNoteEntry.statusColor"
-															variant="tonal"
-														>
-															{{ selectedNoteEntry.status }}
-														</v-chip>
-													</div>
-												</div>
+										<div class="detail-line__amount">{{ formatAmount(row.amount) }}</div>
+									</div>
+								</template>
+								<template v-else>
+									<div v-for="(row, index) in detailEntry.bank || []" :key="row.reference_number || index" class="detail-line">
+										<div class="detail-line__main">
+											<div class="detail-line__name">{{ row.reference_number }}</div>
+											<div class="detail-line__sub">
+												{{ [row.bank, row.bank_branch, row.account_number, row.mobile_no].filter(Boolean).join(' · ') }}
 											</div>
-
-											<v-chip v-if="selectedNoteEntry" size="small" color="secondary" variant="outlined">
-												{{ __('Date') }}: {{ selectedNoteEntry.posting_date }}
-											</v-chip>
 										</div>
-									</v-card-item>
+										<div class="detail-line__amount">{{ formatAmount(row.amount) }}</div>
+									</div>
+								</template>
+							</section>
+						</template>
 
-									<v-card-text class="pt-3 close-day-details-body">
-										<v-skeleton-loader v-if="isLoadingNoteDetail" type="table, article" />
+						<template v-else>
+							<div class="totals-strip">
+								<div class="totals-strip__item">
+									<span class="totals-strip__label">{{ __('Amount') }}</span>
+									<span class="totals-strip__value">{{ formatAmount(detailEntry.amount) }}</span>
+								</div>
+								<div class="totals-strip__item">
+									<span class="totals-strip__label">{{ __('Note Count') }}</span>
+									<span class="totals-strip__value">{{ detailEntry.note_count || __('Not linked') }}</span>
+								</div>
+							</div>
 
-										<v-alert v-else-if="!selectedNoteEntry" type="info" variant="tonal" density="compact">
-											{{ __('Select a note count from the left panel to view full details.') }}
-										</v-alert>
+							<section class="details-section">
+								<div class="detail-line">
+									<div class="detail-line__main">
+										<div class="detail-line__sub">{{ __('From Account') }}</div>
+										<div class="detail-line__name">{{ detailEntry.paid_from }}</div>
+									</div>
+								</div>
+								<div class="detail-line">
+									<div class="detail-line__main">
+										<div class="detail-line__sub">{{ __('To Account') }}</div>
+										<div class="detail-line__name">{{ detailEntry.paid_to }}</div>
+									</div>
+								</div>
+							</section>
+						</template>
+					</div>
 
-										<template v-else>
-											<v-row dense class="mb-1">
-												<v-col cols="12" sm="6" md="4">
-													<StatMetricCard
-														class="stat-card"
-														color="primary"
-														:label="__('Mode of Payment')"
-														:value="selectedNoteEntry.mode_of_payment"
-														truncate
-														compact
-													/>
-												</v-col>
-
-												<v-col cols="12" sm="6" md="4">
-													<StatMetricCard
-														class="stat-card"
-														color="success"
-														:label="__('Type')"
-														:value="selectedNoteEntry.type"
-														compact
-													/>
-												</v-col>
-
-												<v-col cols="12" sm="6" md="4">
-													<StatMetricCard
-														class="stat-card"
-														color="warning"
-														:label="__('Total')"
-														:value="formatAmount(selectedNoteEntry.total)"
-														compact
-													/>
-												</v-col>
-											</v-row>
-											<SurfaceCard surface="section" class="section-card mt-3">
-												<v-card-item class="pb-1">
-													<div class="text-subtitle-1 font-weight-bold">
-														{{ selectedNoteEntry.type === 'Cash' ? __('Cash Breakdown') : __('Bank Breakdown') }}
-													</div>
-												</v-card-item>
-												<v-card-text>
-													<div v-if="selectedNoteEntry.type === 'Cash'" class="close-day-table-wrap close-day-table-wrap--lg" :style="detailsTableWrapStyle">
-														<v-data-table-virtual
-															:headers="noteHeaders"
-															:items="selectedNoteEntry.cash || []"
-															item-value="note"
-															density="compact"
-															:height="detailsTableHeight"
-															fixed-header
-															class="close-day-table"
-														/>
-													</div>
-
-													<div v-else class="close-day-table-wrap close-day-table-wrap--lg" :style="detailsTableWrapStyle">
-														<v-data-table-virtual
-															:headers="bankHeaders"
-															:items="selectedNoteEntry.bank || []"
-															item-value="reference_number"
-															density="compact"
-															:height="detailsTableHeight"
-															fixed-header
-															class="close-day-table"
-														/>
-													</div>
-												</v-card-text>
-											</SurfaceCard>
-
-											<div class="actions-wrap mt-4">
-												<v-btn color="primary" variant="elevated" prepend-icon="mdi-printer" size="small" :disabled="!selectedNoteEntry?.name" @click="print_note_count()">
-													{{ __('Print') }}
-												</v-btn>
-												<v-btn color="error" variant="elevated" prepend-icon="mdi-cancel" size="small" :disabled="!canCancelSelectedNoteEntry" :loading="isCancellingNoteEntry" @click="cancel_note_count()">
-													{{ __('Cancel') }}
-												</v-btn>
-											</div>
-										</template>
-									</v-card-text>
-								</SurfaceCard>
-							</v-col>
-						</v-row>
-					</v-window-item>
-
-					<v-window-item value="payment-entry">
-						<v-row class="close-day-content" align="stretch" dense>
-							<v-col v-show="!smAndDown || !showDetailsOnMobile" cols="12" md="5" lg="4" class="close-day-column">
-								<SurfaceCard class="close-day-panel">
-									<v-card-item class="pb-2">
-										<div class="d-flex align-center justify-space-between gap-2 mb-2">
-											<div>
-												<div class="text-overline text-medium-emphasis">{{ __('Close Day') }}</div>
-												<div class="text-h6 font-weight-bold">{{ __('Select Payment Entry') }}</div>
-											</div>
-
-											<v-menu location="bottom end" offset="8">
-												<template #activator="{ props }">
-													<v-btn
-														v-bind="props"
-														icon="mdi-dots-vertical"
-														variant="text"
-														size="small"
-														color="secondary"
-													/>
-												</template>
-
-												<SurfaceCard surface="menu" class="close-day-menu" min-width="180">
-													<v-card-text class="pa-2 d-flex flex-column ga-2">
-														<v-btn
-															color="primary"
-															variant="text"
-															prepend-icon="mdi-wallet-outline"
-															size="small"
-															@click="checkBalance"
-														>
-															{{ __('Check Balance') }}
-														</v-btn>
-														<v-btn
-															color="primary"
-															variant="text"
-															prepend-icon="mdi-plus-box"
-															size="small"
-															@click="openPaymentEntryDialog"
-														>
-															{{ __('New Payment Entry') }}
-														</v-btn>
-														<v-btn
-															color="secondary"
-															variant="text"
-															prepend-icon="mdi-printer"
-															size="small"
-															@click="openPaymentEntryPrintDialog"
-														>
-															{{ __('Print Report') }}
-														</v-btn>
-														<v-btn
-															color="secondary"
-															variant="text"
-															prepend-icon="mdi-refresh"
-															size="small"
-															@click="loadPaymentEntries()"
-														>
-															{{ __('Refresh') }}
-														</v-btn>
-													</v-card-text>
-												</SurfaceCard>
-											</v-menu>
-										</div>
-
-										<v-text-field
-											v-model="paymentSearchTerm"
-											density="compact"
-											:placeholder="__('Search payment entry')"
-											prepend-inner-icon="mdi-magnify"
-											variant="solo-filled"
-											hide-details
-											single-line
-											clearable
-											rounded="lg"
-											@click:prepend-inner="loadPaymentEntries()"
-											@keydown.enter="loadPaymentEntries()"
-										/>
-									</v-card-item>
-
-									<v-divider />
-
-									<v-card-text class="pt-2 px-2 close-day-list-body">
-										<div v-if="isLoadingPaymentList" class="px-2 py-5 close-day-state-loader">
-											<v-skeleton-loader type="list-item-two-line, list-item-two-line, list-item-two-line" />
-										</div>
-
-										<v-list
-											v-else-if="paymentEntries.length"
-											lines="two"
-											color="primary"
-											nav
-											rounded="lg"
-											class="close-day-list"
-											density="compact"
-											:style="entryListStyle"
-										>
-											<v-list-item
-												v-for="entry in paymentEntries"
-												:key="entry.name"
-												:title="entry.mode_of_payment"
-												:subtitle="entry.posting_date"
-												rounded="lg"
-												class="mb-1"
-												:active="selectedPaymentEntryName === entry.name"
-												@click="selectPaymentEntry(entry.name)"
-											>
-												<template #append>
-													<div class="d-flex align-center ga-2">
-														<v-chip size="small" color="secondary" variant="outlined">
-															{{ formatAmount(entry.amount) }}
-														</v-chip>
-														<v-chip size="x-small" :color="entry.statusColor" variant="tonal">
-															{{ entry.status }}
-														</v-chip>
-													</div>
-												</template>
-											</v-list-item>
-										</v-list>
-
-										<v-alert v-else type="info" variant="tonal" density="compact" class="mt-2 close-day-state-message">
-											{{ __('No payment entries found for this filter.') }}
-										</v-alert>
-									</v-card-text>
-								</SurfaceCard>
-							</v-col>
-
-							<v-col v-show="!smAndDown || showDetailsOnMobile" cols="12" md="7" lg="8" class="close-day-column">
-								<SurfaceCard class="close-day-panel">
-									<v-card-item class="pb-0">
-										<div class="d-flex align-center justify-space-between flex-wrap gap-2">
-											<div class="d-flex align-center gap-2">
-												<v-btn
-													v-if="smAndDown"
-													:icon="backIcon"
-													variant="text"
-													size="small"
-													@click="showDetailsOnMobile = false"
-												/>
-
-												<div>
-													<div class="text-overline text-medium-emphasis">{{ __('Payment Entry Details') }}</div>
-													<div class="text-h6 font-weight-bold d-flex align-center flex-wrap gap-2">
-														{{ selectedPaymentEntry?.name || __('No Payment Entry Selected') }}
-														<v-chip
-															v-if="selectedPaymentEntry"
-															size="x-small"
-															:color="selectedPaymentEntry.statusColor"
-															variant="tonal"
-														>
-															{{ selectedPaymentEntry.status }}
-														</v-chip>
-													</div>
-												</div>
-											</div>
-
-											<v-chip v-if="selectedPaymentEntry" size="x-small" color="secondary" variant="outlined">
-												{{ __('Date') }}: {{ selectedPaymentEntry.posting_date }}
-											</v-chip>
-										</div>
-									</v-card-item>
-
-									<v-card-text class="pt-3 close-day-details-body">
-										<v-skeleton-loader v-if="isLoadingPaymentDetail" type="table, article" />
-
-										<v-alert v-else-if="!selectedPaymentEntry" type="info" variant="tonal" density="compact">
-											{{ __('Select a payment entry from the left panel to view full details.') }}
-										</v-alert>
-
-										<template v-else>
-											<v-row dense class="mb-1">
-												<v-col cols="12" sm="6" md="4">
-													<StatMetricCard
-														class="stat-card"
-														color="primary"
-														:label="__('Mode of Payment')"
-														:value="selectedPaymentEntry.mode_of_payment"
-														truncate
-														compact
-													/>
-												</v-col>
-
-												<v-col cols="12" sm="6" md="4">
-													<StatMetricCard
-														class="stat-card"
-														color="success"
-														:label="__('Amount')"
-														:value="formatAmount(selectedPaymentEntry.amount)"
-														compact
-													/>
-												</v-col>
-
-												<v-col cols="12" sm="6" md="4">
-													<StatMetricCard
-														class="stat-card"
-														color="warning"
-														:label="__('Note Count')"
-														:value="selectedPaymentEntry.note_count || __('Not linked')"
-														compact
-													/>
-												</v-col>
-											</v-row>
-
-											<v-row class="mb-1" dense>
-												<v-col cols="12" md="6">
-													<div class="meta-row"><strong>{{ __('From Account') }}:</strong> {{ selectedPaymentEntry.paid_from }}</div>
-												</v-col>
-												<v-col cols="12" md="6">
-													<div class="meta-row"><strong>{{ __('To Account') }}:</strong> {{ selectedPaymentEntry.paid_to }}</div>
-												</v-col>
-											</v-row>
-
-											<div class="actions-wrap mt-4">
-												<v-btn
-													color="error"
-													variant="elevated"
-													prepend-icon="mdi-cancel"
-													size="small"
-													:disabled="!canCancelSelectedPaymentEntry"
-													:loading="isCancellingPaymentEntry"
-													@click="cancel_payment_entry()"
-												>
-													{{ __('Cancel Payment Entry') }}
-												</v-btn>
-											</div>
-										</template>
-									</v-card-text>
-								</SurfaceCard>
-							</v-col>
-						</v-row>
-					</v-window-item>
-				</v-window>
-			</v-col>
-		</v-row>
+					<div v-if="detailEntry && !(isNoteTab ? isLoadingNoteDetail : isLoadingPaymentDetail)" class="details-actions">
+						<template v-if="isNoteTab">
+							<v-btn color="primary" variant="elevated" prepend-icon="mdi-printer" @click="print_note_count()">
+								{{ __('Print') }}
+							</v-btn>
+							<v-btn
+								color="error"
+								variant="tonal"
+								prepend-icon="mdi-cancel"
+								:disabled="!canCancelSelectedNoteEntry"
+								:loading="isCancellingNoteEntry"
+								@click="cancel_note_count()"
+							>
+								{{ __('Cancel') }}
+							</v-btn>
+						</template>
+						<v-btn
+							v-else
+							color="error"
+							variant="tonal"
+							prepend-icon="mdi-cancel"
+							:disabled="!canCancelSelectedPaymentEntry"
+							:loading="isCancellingPaymentEntry"
+							@click="cancel_payment_entry()"
+						>
+							{{ __('Cancel Payment Entry') }}
+						</v-btn>
+					</div>
+				</div>
+			</SurfaceCard>
+		</div>
 
 		<NoteCountDialog v-model="noteCountDialogOpen" @created="handleNoteCountCreated" :modeOfPayments="modeOfPayments" :posProfile="posProfileData?.name || ''"/>
 		<PaymentEntryDialog
@@ -512,10 +284,9 @@
     import { usePosStore } from '../store/posStore';
 	import PageSurface from './components/ui/PageSurface.vue';
 	import SurfaceCard from './components/ui/SurfaceCard.vue';
-	import StatMetricCard from './components/ui/StatMetricCard.vue';
 	const __ = window.__;
 	const frappe_ = window.frappe;
-	const { smAndDown, height: viewportHeight } = useDisplay();
+	const { smAndDown } = useDisplay();
     const posStore = usePosStore();
     const { posProfileData } = storeToRefs(posStore);
     const { isAppRTL } = posStore;
@@ -538,7 +309,6 @@
 	const selectedPaymentEntry = ref(null);
 	const selectedPaymentEntryName = ref('');
 	const hasInitializedTab = ref(false);
-	const isMobile = computed(() => smAndDown.value);
 	const backIcon = computed(() => isAppRTL() ? 'mdi-arrow-right' : 'mdi-arrow-left');
 	const canCancelSelectedNoteEntry = computed(() => Number(selectedNoteEntry.value?.docstatus) === 1 && !isCancellingNoteEntry.value);
 	const canCancelSelectedPaymentEntry = computed(() => Number(selectedPaymentEntry.value?.docstatus) === 1 && !isCancellingPaymentEntry.value);
@@ -552,47 +322,6 @@
 	let suppressNoteSearchReload = false;
 	let suppressPaymentSearchReload = false;
 
-	const viewportHeightPx = computed(() => viewportHeight.value || window.innerHeight || 800);
-	const listScrollHeight = computed(() => {
-		const reserved = isMobile.value ? 320 : 300;
-		return Math.max(220, viewportHeightPx.value - reserved);
-	});
-
-	const detailsTableHeight = computed(() => {
-		const reserved = isMobile.value ? 600 : 540;
-		return Math.max(150, viewportHeightPx.value - reserved);
-	});
-
-	const layoutVars = computed(() => ({
-		'--close-day-list-scroll-height': `${listScrollHeight.value}px`,
-		'--close-day-table-height': `${detailsTableHeight.value}px`,
-	}));
-
-	const entryListStyle = computed(() => ({
-		height: 'var(--close-day-list-scroll-height)',
-		maxHeight: 'var(--close-day-list-scroll-height)',
-	}));
-
-	const detailsTableWrapStyle = computed(() => ({
-		height: 'var(--close-day-table-height)',
-		maxHeight: 'var(--close-day-table-height)',
-	}));
-
-	const noteHeaders = [
-		{ title: __('Note'), key: 'note' },
-		{ title: __('Count'), key: 'count' },
-		{ title: __('Amount'), key: 'amount' },
-	];
-
-	const bankHeaders = [
-		{ title: __('Reference Number'), key: 'reference_number' },
-		{ title: __('Amount'), key: 'amount' },
-		{ title: __('Bank'), key: 'bank' },
-		{ title: __('Bank Branch'), key: 'bank_branch' },
-		{ title: __('Account Number'), key: 'account_number' },
-		{ title: __('Mobile No'), key: 'mobile_no' },
-	];
-
 	const closeDayEnabled = computed(() => {
 	const roles = ['Accounts User', 'Accounts Manager', 'Administrator', 'System Manager'];
 	return roles.some(role => frappe.user.has_role(role));
@@ -601,6 +330,9 @@
 	return Boolean(closeDayEnabled.value && posProfileData.value?.enable_note_count);
 	});
 	const activeTab = ref(noteCountEnabled.value ? 'note-count' : 'payment-entry');
+	const isNoteTab = computed(() => activeTab.value === 'note-count');
+	const listEntries = computed(() => isNoteTab.value ? noteEntries.value : paymentEntries.value);
+	const detailEntry = computed(() => isNoteTab.value ? selectedNoteEntry.value : selectedPaymentEntry.value);
 	
 	watch(activeTab, () => {
 		showDetailsOnMobile.value = false;
@@ -647,7 +379,11 @@
 	}
 
 	function formatAmount(value) {
-		return Number(value || 0).toFixed(2);
+		return format_number(value || 0);
+	}
+
+	function formatDate(value) {
+		return value ? frappe_.datetime.str_to_user(value) : '';
 	}
 
 	function getDocstatusLabel(docstatus) {
@@ -1066,163 +802,252 @@
 
 <style scoped>
 	.close-day-view {
-		min-height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
-		height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
-		overflow: hidden;
 		background:
 			radial-gradient(circle at top right, var(--v-pos-info-glow), transparent 40%),
 			radial-gradient(circle at left bottom, var(--v-pos-success-glow), transparent 35%);
 	}
 
-	.close-day-shell {
+	.close-day-layout {
 		display: flex;
-		flex-direction: column;
-		flex-wrap: nowrap;
-		height: 100%;
-		min-height: 0;
-	}
-
-	.close-day-main-col {
-		flex: 1 1 auto;
-		display: flex;
-		min-height: 0;
-	}
-
-	.close-day-tabs-col {
-		flex: 0 0 auto;
-	}
-
-	.close-day-window {
+		gap: 8px;
 		flex: 1;
 		min-height: 0;
 	}
 
-	.close-day-window :deep(.v-window__container),
-	.close-day-window :deep(.v-window-item),
-	.close-day-window :deep(.v-window-item--active) {
-		height: 100%;
-		min-height: 0;
-	}
-
-	.close-day-content {
-		height: 100%;
-		min-height: 0;
-	}
-
-	.close-day-column {
+	.cd-pane {
 		display: flex;
+		flex-direction: column;
 		min-height: 0;
-	}
-
-	.close-day-panel,
-	.close-day-menu {
 		border: 1px solid var(--v-pos-panel-border);
 		background: var(--v-pos-panel-background);
 		box-shadow: var(--v-pos-panel-shadow);
 		transition: var(--v-theme-transition);
 	}
 
-	.close-day-panel {
-		width: 100%;
-		height: 100%;
-		min-height: 0;
+	.cd-pane--list {
+		flex: 0 0 clamp(340px, 38%, 480px);
+	}
+
+	.cd-pane--details {
+		flex: 1;
+		min-width: 0;
+	}
+
+	@media (max-width: 959px) {
+		.cd-pane--list {
+			flex: 1;
+		}
+	}
+
+	.cd-pane__body {
 		display: flex;
 		flex-direction: column;
-	}
-
-	.close-day-tabs-panel {
-		height: auto;
-		min-height: auto;
-		display: block;
-	}
-
-	.close-day-list-body {
+		gap: 8px;
 		flex: 1;
 		min-height: 0;
+		padding: 10px;
+	}
+
+	.pane-header {
 		display: flex;
-		flex-direction: column;
+		align-items: center;
+		gap: 6px;
+		min-height: 36px;
+	}
+
+	.pane-header__info {
+		min-width: 0;
+	}
+
+	.pane-header__title {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 6px;
+		font-size: 1rem;
+		font-weight: 700;
+		padding-inline: 4px;
+	}
+
+	.pane-header__sub {
+		font-size: 0.8125rem;
+		padding-inline: 4px;
+		color: rgba(var(--v-theme-on-surface), 0.72);
+		white-space: nowrap;
 		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
-	.close-day-list {
+	.cd-tabs {
 		flex: 1;
-		min-height: 0;
-		overflow-y: auto;
+		min-width: 0;
 	}
 
-	.close-day-state-message,
-	.close-day-state-loader {
-		flex: 0 0 auto;
-	}
-
-	.close-day-details-body {
+	.cd-tabs .v-btn {
 		flex: 1;
-		min-height: 0;
-		overflow-y: auto;
-		overflow-x: hidden;
-	}
-
-	.close-day-table-wrap {
-		min-height: 150px;
-		overflow: hidden;
-	}
-
-	.close-day-tabs :deep(.v-tab--selected) {
 		font-weight: 700;
 	}
 
-	.close-day-list :deep(.v-list-item--active) {
-		background: var(--v-pos-nav-active);
+	.search-row {
+		display: flex;
+		align-items: center;
+		gap: 2px;
 	}
 
-	.section-card {
-		border-color: var(--v-pos-panel-border-strong) !important;
+	.search-row .v-text-field {
+		flex: 1;
+		margin-inline-end: 4px;
 	}
 
-	.close-day-table {
-		border-radius: 10px;
-		height: 100%;
-	}
-
-	.close-day-table :deep(.v-table__wrapper) {
-		height: 100%;
-		max-height: 100%;
+	.cd-list {
+		flex: 1;
+		min-height: 0;
 		overflow-y: auto;
 	}
 
-	.stat-card,
-	.summary-card {
+	.cd-row {
+		margin-block-end: 2px;
 		border: 1px solid var(--v-pos-panel-border-soft);
-		transition: var(--v-theme-transition);
 	}
 
-	.meta-row {
-		padding: 3px 0;
-	}
-
-	.actions-wrap {
+	.cd-row :deep(.v-list-item__content) {
 		display: flex;
-		flex-wrap: wrap;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.cd-row__line {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
 		gap: 8px;
 	}
 
-	@media (max-width: 960px) {
-		.close-day-view {
-			min-height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
-			height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
-			padding: 10px;
-		}
-
-		.actions-wrap {
-			display: grid;
-			grid-template-columns: 1fr;
-		}
+	.cd-row__title {
+		min-width: 0;
+		font-size: 0.875rem;
+		font-weight: 700;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
-	@media (max-height: 720px) {
-		.close-day-view {
-			padding-top: 8px;
-			padding-bottom: 8px;
-		}
+	.cd-row__line--sub {
+		font-size: 0.8125rem;
+	}
+
+	.cd-row__meta {
+		min-width: 0;
+		color: rgba(var(--v-theme-on-surface), 0.72);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.cd-row__amount {
+		flex-shrink: 0;
+		font-weight: 700;
+	}
+
+	.status-chip {
+		flex-shrink: 0;
+		font-weight: 700;
+	}
+
+	.details-scroll {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		flex: 1;
+		min-height: 0;
+		overflow-y: auto;
+	}
+
+	.totals-strip {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		border: 1px solid var(--v-pos-panel-border-soft);
+		border-radius: 10px;
+		background: var(--v-pos-field-background);
+	}
+
+	.totals-strip__item {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		min-width: 0;
+		padding: 8px;
+	}
+
+	.totals-strip__item + .totals-strip__item {
+		border-inline-start: 1px solid var(--v-pos-panel-border-soft);
+	}
+
+	.totals-strip__label {
+		font-size: 0.75rem;
+		color: rgb(var(--v-pos-text-muted));
+	}
+
+	.totals-strip__value {
+		font-size: 0.9375rem;
+		font-weight: 700;
+		overflow-wrap: anywhere;
+	}
+
+	.details-section {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.details-section__title {
+		font-size: 0.875rem;
+		font-weight: 700;
+	}
+
+	.detail-line {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 6px 8px;
+		border: 1px solid var(--v-pos-panel-border-soft);
+		border-radius: 8px;
+		background: var(--v-pos-field-background);
+	}
+
+	.detail-line__main {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.detail-line__name {
+		font-size: 0.875rem;
+		font-weight: 600;
+		line-height: 1.35;
+		overflow-wrap: anywhere;
+	}
+
+	.detail-line__sub {
+		font-size: 0.8125rem;
+		font-weight: 500;
+		color: rgba(var(--v-theme-on-surface), 0.72);
+	}
+
+	.detail-line__amount {
+		flex-shrink: 0;
+		font-size: 0.875rem;
+		font-weight: 700;
+	}
+
+	.details-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		padding-block-start: 8px;
+		border-top: 1px solid var(--v-pos-panel-border-soft);
+	}
+
+	.details-actions .v-btn {
+		flex: 1 1 auto;
 	}
 </style>

@@ -1,127 +1,103 @@
 <template>
-	<v-dialog :model-value="modelValue" max-width="920" @update:model-value="emit('update:modelValue', $event)">
-		<v-form ref="paymentEntryFormRef" v-model="isPaymentEntryFormValid" @submit.prevent="submitPaymentEntries">
-			<v-card class="payment-entry-dialog" rounded="xl">
-				<v-card-item>
-					<div class="d-flex align-center justify-space-between flex-wrap gap-2">
-						<div>
-							<div class="text-overline text-medium-emphasis">{{ __('Close Day') }}</div>
-						</div>
+	<v-dialog
+		:model-value="modelValue"
+		max-width="720"
+		:fullscreen="xs"
+		scrollable
+		@update:model-value="emit('update:modelValue', $event)"
+	>
+		<v-card class="payment-entry-dialog" :rounded="xs ? 0 : 'xl'">
+			<v-card-item class="pb-2">
+				<div class="text-h6 font-weight-bold">{{ __('New Payment Entry') }}</div>
+			</v-card-item>
+
+			<v-divider />
+
+			<v-card-text class="dialog-body">
+				<v-form ref="paymentEntryFormRef" v-model="isPaymentEntryFormValid" class="pe-form" @submit.prevent="submitPaymentEntries">
+					<v-text-field
+						v-model="paymentEntryForm.posting_date"
+						type="date"
+						:label="__('Posting Date')"
+						variant="outlined"
+						density="compact"
+						:rules="[requiredRule]"
+						hide-details="auto"
+						class="pe-form__date"
+					/>
+
+					<div class="section-title">
+						{{ __('Mode of Payments') }}
+						<v-chip v-if="noteCountEnabled" size="small" color="primary" variant="tonal">
+							{{ __('Note Count Enabled') }}
+						</v-chip>
 					</div>
-				</v-card-item>
-				<v-divider />
-				<v-card-text class="pt-1 pb-2">
-					<v-row dense>
-						<v-col cols="12" md="4">
-							<v-text-field
-								v-model="paymentEntryForm.posting_date"
-								type="date"
-								:label="__('Posting Date')"
-								variant="outlined"
-								density="compact"
-								:rules="[requiredRule]"
-								hide-details="auto"
-							/>
-						</v-col>
-					</v-row>
 
-					<SurfaceCard surface="section" class="section-card mt-1">
-						<v-card-item class="pb-1">
-							<div class="d-flex align-center justify-space-between gap-2 flex-wrap">
-								<div class="text-subtitle-1 font-weight-bold">{{ __('Mode of Payments') }}</div>
-								<v-chip v-if="noteCountEnabled" size="small" color="primary" variant="tonal">
-									{{ __('Note Count Enabled') }}
-								</v-chip>
-							</div>
-						</v-card-item>
-						<v-card-text class="pt-1">
-							<div v-if="!paymentEntryForm.payments.length" class="pa-2">
-								<v-alert type="info" variant="tonal" density="compact">
-									{{ __('No mode of payments are configured for this POS Profile.') }}
-								</v-alert>
-							</div>
-							<div v-else class="overflow-x-auto">
-								<v-data-table
-									:headers="paymentHeaders"
-									:items="paymentEntryForm.payments"
-									item-value="mode_of_payment"
-									density="compact"
-									hide-default-footer
-									class="payment-entry-table"
-								>
-									<template #item.mode_of_payment="{ item }">
-										<div class="text-body-2 font-weight-medium py-2">{{ item.mode_of_payment }}</div>
-									</template>
+					<v-alert v-if="!paymentEntryForm.payments.length" type="info" variant="tonal" density="compact">
+						{{ __('No mode of payments are configured for this POS Profile.') }}
+					</v-alert>
 
-									<template #item.note_count="{ item, index }">
-										<v-autocomplete
-											:model-value="item.note_count"
-											:items="item.note_count_options"
-											:item-title="getNoteCountOptionLabel"
-											item-value="name"
-											variant="outlined"
-											density="compact"
-											:loading="isLoadingNoteCounts"
-											hide-details="auto"
-											clearable
-											:placeholder="__('Select Note Count')"
-											class="compact-input py-1"
-											@update:model-value="applyNoteCountSelection(index, $event)"
-										/>
-									</template>
+					<div v-for="(item, index) in paymentEntryForm.payments" :key="item.mode_of_payment" class="pe-row">
+						<div class="pe-row__mode">{{ item.mode_of_payment }}</div>
+						<v-autocomplete
+							v-if="noteCountEnabled"
+							:model-value="item.note_count"
+							:items="item.note_count_options"
+							:item-title="getNoteCountOptionLabel"
+							item-value="name"
+							variant="outlined"
+							density="compact"
+							:loading="isLoadingNoteCounts"
+							hide-details="auto"
+							clearable
+							:placeholder="__('Select Note Count')"
+							class="pe-row__note"
+							@update:model-value="applyNoteCountSelection(index, $event)"
+						/>
+						<v-text-field
+							:model-value="item.amount"
+							type="number"
+							variant="outlined"
+							density="compact"
+							hide-details="auto"
+							:label="__('Amount')"
+							:min="0"
+							:readonly="noteCountEnabled"
+							class="pe-row__amount"
+							@update:model-value="updateAmount(index, $event)"
+						/>
+					</div>
 
-									<template #item.amount="{ item, index }">
-										<v-text-field
-											:model-value="item.amount"
-											type="number"
-											variant="outlined"
-											density="compact"
-											hide-details="auto"
-											:min="0"
-											:readonly="noteCountEnabled"
-											class="amount-input ms-auto py-1"
-											@update:model-value="updateAmount(index, $event)"
-										/>
-									</template>
-								</v-data-table>
-							</div>
-						</v-card-text>
-					</SurfaceCard>
+					<div class="dialog-total">
+						<span class="text-medium-emphasis">{{ __('Total') }}</span>
+						<span class="dialog-total__value">{{ formatAmount(totalAmount) }}</span>
+					</div>
+				</v-form>
+			</v-card-text>
 
-					<v-row dense class="mt-3">
-						<v-col cols="12" sm="4">
-							<v-sheet class="summary-card" color="warning" rounded="lg" variant="tonal">
-								<div class="text-caption text-medium-emphasis">{{ __('Total') }}</div>
-								<div class="text-body-1 font-weight-bold">{{ formatAmount(totalAmount) }}</div>
-							</v-sheet>
-						</v-col>
-					</v-row>
-				</v-card-text>
-
-				<v-card-actions class="px-4 pb-4 pt-0 d-flex gap-2 flex-wrap">
-					<v-spacer />
-					<v-btn
-						color="primary"
-						variant="elevated"
-						prepend-icon="mdi-content-save"
-						:loading="isSubmittingPaymentEntries"
-						:disabled="!isPaymentEntryFormSubmittable"
-						type="submit"
-					>
-						{{ __('Submit') }}
-					</v-btn>
-					<v-btn variant="tonal" @click="emit('update:modelValue', false)">
-						{{ __('Close') }}
-					</v-btn>
-				</v-card-actions>
-			</v-card>
-		</v-form>
+			<v-card-actions class="px-4 pb-4 pt-2 ga-2">
+				<v-spacer />
+				<v-btn variant="tonal" @click="emit('update:modelValue', false)">
+					{{ __('Close') }}
+				</v-btn>
+				<v-btn
+					color="primary"
+					variant="elevated"
+					prepend-icon="mdi-content-save"
+					:loading="isSubmittingPaymentEntries"
+					:disabled="!isPaymentEntryFormSubmittable"
+					@click="submitPaymentEntries"
+				>
+					{{ __('Submit') }}
+				</v-btn>
+			</v-card-actions>
+		</v-card>
 	</v-dialog>
 </template>
 
 <script setup>
 	import { computed, reactive, ref, watch } from 'vue';
-	import SurfaceCard from '../ui/SurfaceCard.vue';
+	import { useDisplay } from 'vuetify';
 
 	const props = defineProps({
 		modelValue: {
@@ -158,23 +134,11 @@
 	const isPaymentEntryFormValid = ref(false);
 	const isSubmittingPaymentEntries = ref(false);
 	const isLoadingNoteCounts = ref(false);
+	const { xs } = useDisplay();
 
 	const paymentEntryForm = reactive({
 		posting_date: getToday(),
 		payments: [],
-	});
-
-	const paymentHeaders = computed(() => {
-		const headers = [
-			{ title: __('Mode of Payment'), key: 'mode_of_payment', sortable: false },
-		];
-
-		if (props.noteCountEnabled) {
-			headers.push({ title: __('Note Count'), key: 'note_count', sortable: false, width: '260px' });
-		}
-
-		headers.push({ title: __('Amount'), key: 'amount', sortable: false, align: 'end', width: '140px' });
-		return headers;
 	});
 
 	const totalAmount = computed(() => {
@@ -343,7 +307,7 @@
 	}
 
 	function formatAmount(value) {
-		return Number(value || 0).toFixed(2);
+		return format_number(value || 0);
 	}
 
 	async function submitPaymentEntries() {
@@ -391,39 +355,78 @@
 <style scoped>
 	.payment-entry-dialog {
 		border: 1px solid var(--v-pos-panel-border);
-		background: var(--v-pos-panel-background);
+		background: rgb(var(--v-theme-surface));
 		box-shadow: var(--v-pos-panel-shadow);
 		transition: var(--v-theme-transition);
 	}
 
-	.section-card {
-		border-color: var(--v-pos-panel-border-strong) !important;
+	.pe-form {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
 	}
 
-	.payment-entry-table {
+	.pe-form__date {
+		max-width: 220px;
+	}
+
+	.section-title {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 8px;
+		font-size: 0.875rem;
+		font-weight: 700;
+	}
+
+	.pe-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px;
+		padding: 8px;
 		border: 1px solid var(--v-pos-panel-border-soft);
-		border-radius: 12px;
-		overflow: hidden;
+		border-radius: 10px;
+		background: var(--v-pos-field-background);
 	}
 
-	.payment-entry-table :deep(table) {
-		min-width: 700px;
+	.pe-row__mode {
+		flex: 1 1 140px;
+		min-width: 0;
+		font-size: 0.875rem;
+		font-weight: 600;
 	}
 
-	.payment-entry-table :deep(th) {
-		white-space: nowrap;
+	.pe-row__note {
+		flex: 2 1 220px;
 	}
 
-	.compact-input {
-		min-width: 220px;
+	.pe-row__amount {
+		flex: 0 1 130px;
 	}
 
-	.amount-input {
-		max-width: 120px;
+	.dialog-total {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 10px 12px;
+		border-radius: 10px;
+		background: rgba(var(--v-theme-primary), 0.08);
 	}
 
-	.summary-card {
-		border: 1px solid var(--v-pos-panel-border-soft);
-		padding: 12px;
+	.dialog-total__value {
+		font-size: 1.125rem;
+		font-weight: 800;
+	}
+
+	@media (max-width: 599px) {
+		.pe-form__date {
+			max-width: none;
+		}
+
+		.pe-row__amount {
+			flex: 1 1 120px;
+		}
 	}
 </style>

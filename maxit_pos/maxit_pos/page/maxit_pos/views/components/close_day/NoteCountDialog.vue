@@ -1,225 +1,178 @@
 <template>
-	<v-dialog :model-value="modelValue" max-width="980" @update:model-value="emit('update:modelValue', $event)">
-		<v-form ref="noteCountFormRef" v-model="isNoteCountFormValid" @submit.prevent="submitNoteCount">
-			<v-card class="note-dialog" rounded="xl">
-				<v-card-item class="pb-2">
-					<div class="d-flex align-center justify-space-between flex-wrap gap-2">
-						<div>
-							<div class="text-overline text-medium-emphasis">{{ __('Close Day') }}</div>
-							<div class="text-h6 font-weight-bold">{{ __('Create Note Count') }}</div>
-						</div>
+	<v-dialog
+		:model-value="modelValue"
+		max-width="720"
+		:fullscreen="xs"
+		scrollable
+		@update:model-value="emit('update:modelValue', $event)"
+	>
+		<v-card class="note-dialog" :rounded="xs ? 0 : 'xl'">
+			<v-card-item class="pb-2">
+				<div class="text-h6 font-weight-bold">{{ __('Create Note Count') }}</div>
+			</v-card-item>
+
+			<v-divider />
+
+			<v-card-text ref="dialogBody" class="dialog-body">
+				<v-form ref="noteCountFormRef" v-model="isNoteCountFormValid" class="note-form" @submit.prevent="submitNoteCount">
+					<div class="note-form__fields">
+						<v-text-field
+							v-model="noteCountForm.posting_date"
+							type="date"
+							:label="__('Posting Date')"
+							variant="outlined"
+							density="compact"
+							:rules="[requiredRule]"
+							hide-details="auto"
+						/>
+						<v-select
+							v-model="noteCountForm.mode_of_payment"
+							:items="modeOfPayments"
+							item-title="name"
+							item-value="name"
+							:label="__('Mode of Payment')"
+							variant="outlined"
+							density="compact"
+							:rules="[requiredRule]"
+							hide-details="auto"
+						/>
+						<v-text-field
+							:model-value="noteCountForm.type"
+							:label="__('Type')"
+							variant="outlined"
+							density="compact"
+							:rules="[requiredRule]"
+							hide-details="auto"
+							readonly
+						/>
 					</div>
-				</v-card-item>
 
-				<v-divider />
-
-				<v-card-text class="pt-4">
-					<v-row dense>
-						<v-col cols="12" md="4">
-							<v-text-field
-								v-model="noteCountForm.posting_date"
-								type="date"
-								:label="__('Posting Date')"
+					<template v-if="noteCountForm.type === 'Cash'">
+						<div class="section-title">{{ __('Cash Breakdown') }}</div>
+						<div v-for="(row, index) in noteCountForm.cash" :key="row.note" class="cash-row">
+							<div class="cash-row__note">{{ row.note }}</div>
+							<span class="text-medium-emphasis">×</span>
+							<v-number-input
+								:model-value="row.count"
+								control-variant="hidden"
 								variant="outlined"
 								density="compact"
-								:rules="[requiredRule]"
+								:label="__('Count')"
+								:rules="[positiveIntegerRule]"
 								hide-details="auto"
+								:min="0"
+								class="cash-row__count"
+								@update:model-value="updateCashCount(index, $event)"
 							/>
-						</v-col>
+							<div class="cash-row__amount">{{ formatAmount(row.amount) }}</div>
+						</div>
+					</template>
 
-						<v-col cols="12" md="4">
-							<v-select
-								v-model="noteCountForm.mode_of_payment"
-								:items="modeOfPayments"
-								item-title="name"
-								item-value="name"
-								:label="__('Mode of Payment')"
-								variant="outlined"
-								density="compact"
-								:rules="[requiredRule]"
-								hide-details="auto"
-							/>
-						</v-col>
-
-						<v-col cols="12" md="4">
-							<v-text-field
-								:model-value="noteCountForm.type"
-								:label="__('Type')"
-								variant="outlined"
-								density="compact"
-								:rules="[requiredRule]"
-								hide-details="auto"
-								readonly
-							/>
-						</v-col>
-					</v-row>
-
-					<SurfaceCard v-if="noteCountForm.type === 'Cash'" surface="section" class="section-card mt-4">
-						<v-card-item class="pb-1">
-							<div class="text-subtitle-1 font-weight-bold">{{ __('Cash Breakdown') }}</div>
-						</v-card-item>
-						<v-card-text>
-							<v-table density="compact" class="note-create-table">
-								<thead>
-									<tr>
-										<th>{{ __('Note') }}</th>
-										<th class="text-right">{{ __('Count') }}</th>
-										<th class="text-right">{{ __('Amount') }}</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr v-for="(row, index) in noteCountForm.cash" :key="row.note">
-										<td class="font-weight-medium">{{ row.note }}</td>
-										<td>
-											<v-number-input
-												:model-value="row.count"
-												control-variant="hidden"
-												variant="outlined"
-												density="compact"
-												:rules="[positiveIntegerRule]"
-												hide-details="auto"
-												:min="0"
-												@update:model-value="updateCashCount(index, $event)"
-											/>
-										</td>
-										<td class="text-right font-weight-medium">{{ formatAmount(row.amount) }}</td>
-									</tr>
-								</tbody>
-							</v-table>
-						</v-card-text>
-					</SurfaceCard>
-
-					<SurfaceCard v-else-if="noteCountForm.type === 'Bank'" surface="section" class="section-card mt-4">
-						<v-card-item class="pb-1">
-							<div class="d-flex align-center justify-space-between gap-2 flex-wrap">
-								<div class="text-subtitle-1 font-weight-bold">{{ __('Bank Breakdown') }}</div>
-								<v-btn color="primary" variant="tonal" size="small" prepend-icon="mdi-plus" @click="addBankRow">
-									{{ __('Add Row') }}
-								</v-btn>
+					<template v-else-if="noteCountForm.type === 'Bank'">
+						<div class="section-title">{{ __('Bank Breakdown') }}</div>
+						<v-alert v-if="!noteCountForm.bank.length" type="info" variant="tonal" density="compact">
+							{{ __('Add a bank row to enter reference and amount details.') }}
+						</v-alert>
+						<div v-for="(row, index) in noteCountForm.bank" :key="`bank-${index}`" class="bank-row-card">
+							<div class="bank-row-card__head">
+								<span class="text-medium-emphasis font-weight-bold">{{ index + 1 }}</span>
+								<v-btn
+									icon="mdi-delete-outline"
+									variant="text"
+									color="error"
+									size="small"
+									:aria-label="__('Delete')"
+									@click="removeBankRow(index)"
+								/>
 							</div>
-						</v-card-item>
-						<v-card-text>
-							<div v-if="!noteCountForm.bank.length" class="pa-2">
-								<v-alert type="info" variant="tonal" density="compact">
-									{{ __('Add a bank row to enter reference and amount details.') }}
-								</v-alert>
+							<div class="bank-row-card__fields">
+								<v-text-field
+									v-model="row.reference_number"
+									:label="__('Reference Number')"
+									variant="outlined"
+									density="compact"
+									:rules="[requiredTrimmedRule]"
+									hide-details="auto"
+								/>
+								<v-number-input
+									v-model="row.amount"
+									control-variant="hidden"
+									:label="__('Amount')"
+									variant="outlined"
+									density="compact"
+									:rules="[positiveNumberRule]"
+									hide-details="auto"
+									:min="0.01"
+								/>
+								<v-text-field v-model="row.bank" :label="__('Bank')" variant="outlined" density="compact" hide-details="auto" />
+								<v-text-field
+									v-model="row.bank_branch"
+									:label="__('Bank Branch')"
+									:readonly="!row.bank"
+									variant="outlined"
+									density="compact"
+									:rules="[requiredWhenBankRule(row)]"
+									hide-details="auto"
+								/>
+								<v-text-field
+									v-model="row.account_number"
+									:label="__('Account Number')"
+									:readonly="!row.bank"
+									variant="outlined"
+									density="compact"
+									:rules="[requiredWhenBankRule(row)]"
+									hide-details="auto"
+								/>
+								<v-text-field
+									v-model="row.mobile_no"
+									:label="__('Mobile No')"
+									:readonly="!row.bank"
+									variant="outlined"
+									density="compact"
+									:rules="[requiredWhenBankRule(row)]"
+									hide-details="auto"
+								/>
 							</div>
-							<div v-else class="overflow-x-auto">
-								<v-table density="compact" class="note-create-table bank-create-table">
-									<thead>
-										<tr>
-											<th>{{ __('Reference Number') }}</th>
-											<th>{{ __('Amount') }}</th>
-											<th>{{ __('Bank') }}</th>
-											<th>{{ __('Bank Branch') }}</th>
-											<th>{{ __('Account Number') }}</th>
-											<th>{{ __('Mobile No') }}</th>
-											<th></th>
-										</tr>
-									</thead>
-									<tbody>
-										<tr v-for="(row, index) in noteCountForm.bank" :key="`bank-${index}`">
-											<td>
-												<v-text-field
-													v-model="row.reference_number"
-													variant="outlined"
-													density="compact"
-													:rules="[requiredTrimmedRule]"
-													hide-details="auto"
-												/>
-											</td>
-											<td>
-												<v-number-input
-													v-model="row.amount"
-													control-variant="hidden"
-													variant="outlined"
-													density="compact"
-													:rules="[positiveNumberRule]"
-													hide-details="auto"
-													:min="0.01"
-												/>
-											</td>
-											<td>
-												<v-text-field v-model="row.bank" variant="outlined" density="compact" hide-details="auto" />
-											</td>
-											<td>
-												<v-text-field
-													v-model="row.bank_branch"
-													:readonly="!row.bank"
-													variant="outlined"
-													density="compact"
-													:rules="[requiredWhenBankRule(row)]"
-													hide-details="auto"
-												/>
-											</td>
-											<td>
-												<v-text-field
-													v-model="row.account_number"
-													:readonly="!row.bank"
-													variant="outlined"
-													density="compact"
-													:rules="[requiredWhenBankRule(row)]"
-													hide-details="auto"
-												/>
-											</td>
-											<td>
-												<v-text-field
-													v-model="row.mobile_no"
-													:readonly="!row.bank"
-													variant="outlined"
-													density="compact"
-													:rules="[requiredWhenBankRule(row)]"
-													hide-details="auto"
-												/>
-											</td>
-											<td class="text-right">
-												<v-btn icon="mdi-delete-outline" variant="text" color="error" size="small" @click="removeBankRow(index)" />
-											</td>
-										</tr>
-									</tbody>
-								</v-table>
-							</div>
-						</v-card-text>
-						</SurfaceCard>
+						</div>
+						<v-btn color="primary" variant="tonal" prepend-icon="mdi-plus" class="align-self-start" @click="addBankRow">
+							{{ __('Add Row') }}
+						</v-btn>
+					</template>
 
-					<v-alert v-else type="info" variant="tonal" density="compact" class="mt-4">
+					<v-alert v-else type="info" variant="tonal" density="compact">
 						{{ __('Select a mode of payment to continue.') }}
 					</v-alert>
 
-					<v-row dense class="mt-3">
-						<v-col cols="12" sm="4">
-							<v-sheet class="summary-card" color="warning" rounded="lg" variant="tonal">
-								<div class="text-caption text-medium-emphasis">{{ __('Total') }}</div>
-								<div class="text-body-1 font-weight-bold">{{ formatAmount(createDialogTotal) }}</div>
-							</v-sheet>
-						</v-col>
-					</v-row>
-				</v-card-text>
+					<div class="dialog-total">
+						<span class="text-medium-emphasis">{{ __('Total') }}</span>
+						<span class="dialog-total__value">{{ formatAmount(createDialogTotal) }}</span>
+					</div>
+				</v-form>
+			</v-card-text>
 
-				<v-card-actions class="px-4 pb-4 pt-0 d-flex gap-2 flex-wrap">
-					<v-spacer />
-					<v-btn
-						color="primary"
-						variant="elevated"
-						prepend-icon="mdi-content-save"
-						:loading="isSubmittingNoteCount"
-						:disabled="!isNoteCountFormSubmittable"
-						type="submit"
-					>
-						{{ __('Submit') }}
-					</v-btn>
-					<v-btn variant="tonal" @click="emit('update:modelValue', false)">
-						{{ __('Close') }}
-					</v-btn>
-				</v-card-actions>
-			</v-card>
-		</v-form>
+			<v-card-actions class="px-4 pb-4 pt-2 ga-2">
+				<v-spacer />
+				<v-btn variant="tonal" @click="emit('update:modelValue', false)">
+					{{ __('Close') }}
+				</v-btn>
+				<v-btn
+					color="primary"
+					variant="elevated"
+					prepend-icon="mdi-content-save"
+					:loading="isSubmittingNoteCount"
+					:disabled="!isNoteCountFormSubmittable"
+					@click="submitNoteCount"
+				>
+					{{ __('Submit') }}
+				</v-btn>
+			</v-card-actions>
+		</v-card>
 	</v-dialog>
 </template>
 
 <script setup>
-	import { computed, reactive, ref, watch } from 'vue';
-	import SurfaceCard from '../ui/SurfaceCard.vue';
+	import { computed, nextTick, reactive, ref, watch } from 'vue';
+	import { useDisplay } from 'vuetify';
 
 	const props = defineProps({
 		modelValue: {
@@ -246,6 +199,8 @@
 	const isSubmittingNoteCount = ref(false);
 	const noteCountFormRef = ref(null);
 	const isNoteCountFormValid = ref(false);
+	const dialogBody = ref(null);
+	const { xs } = useDisplay();
 
 	const noteCountForm = reactive({
 		posting_date: getToday(),
@@ -322,7 +277,7 @@
 	}
 
 	function formatAmount(value) {
-		return Number(value || 0).toFixed(2);
+		return format_number(value || 0);
 	}
 
 	function seedCashRows() {
@@ -359,8 +314,14 @@
 		noteCountFormRef.value?.resetValidation();
 	}
 
-	function addBankRow() {
+	async function addBankRow() {
 		noteCountForm.bank.push(createEmptyBankRow());
+		// the dialog body is the scroll container; keep the new row in view
+		await nextTick();
+		const bodyEl = dialogBody.value?.$el;
+		if (bodyEl) {
+			bodyEl.scrollTop = bodyEl.scrollHeight;
+		}
 	}
 
 	function removeBankRow(index) {
@@ -416,26 +377,98 @@
 <style scoped>
 	.note-dialog {
 		border: 1px solid var(--v-pos-panel-border);
-		background: var(--v-pos-panel-background);
+		background: rgb(var(--v-theme-surface));
 		box-shadow: var(--v-pos-panel-shadow);
 		transition: var(--v-theme-transition);
 	}
 
-	.section-card {
-		border-color: var(--v-pos-panel-border-strong) !important;
+	.note-form {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
 	}
 
-	.note-create-table {
+	.note-form__fields {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+		gap: 8px;
+	}
+
+	.section-title {
+		font-size: 0.875rem;
+		font-weight: 700;
+	}
+
+	.cash-row {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 6px 8px;
 		border: 1px solid var(--v-pos-panel-border-soft);
-		border-radius: 12px;
+		border-radius: 10px;
+		background: var(--v-pos-field-background);
 	}
 
-	.bank-create-table {
-		min-width: 980px;
+	.cash-row__note {
+		min-width: 40px;
+		font-size: 1rem;
+		font-weight: 700;
+		text-align: center;
 	}
 
-	.summary-card {
+	.cash-row__count {
+		flex: 1 1 120px;
+		max-width: 180px;
+	}
+
+	.cash-row__amount {
+		flex: 1;
+		text-align: end;
+		font-weight: 700;
+	}
+
+	.bank-row-card {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		padding: 8px;
 		border: 1px solid var(--v-pos-panel-border-soft);
-		padding: 12px;
+		border-radius: 10px;
+		background: var(--v-pos-field-background);
+	}
+
+	.bank-row-card__head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding-inline-start: 4px;
+	}
+
+	.bank-row-card__fields {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+		gap: 8px;
+	}
+
+	/* six bank fields: 2 columns on phones, 3 + 3 elsewhere */
+	@media (min-width: 600px) {
+		.bank-row-card__fields {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+		}
+	}
+
+	.dialog-total {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 10px 12px;
+		border-radius: 10px;
+		background: rgba(var(--v-theme-primary), 0.08);
+	}
+
+	.dialog-total__value {
+		font-size: 1.125rem;
+		font-weight: 800;
 	}
 </style>
