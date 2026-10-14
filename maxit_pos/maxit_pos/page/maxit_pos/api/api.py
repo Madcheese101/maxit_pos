@@ -1228,6 +1228,7 @@ def process_items_data(result: list, items_uoms: list, items_data: list, hide_un
                 "rate": item_uom_price.get("price_list_rate"),
                 "currency": item_uom_price.get("currency"),
                 "uom": item_uom,
+                "conversion_factor": item_conversion_factor,
                 "batch_no": item_uom_price.get("batch_no"),
             }
         )

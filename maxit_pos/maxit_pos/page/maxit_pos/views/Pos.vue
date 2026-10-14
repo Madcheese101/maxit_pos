@@ -15,8 +15,8 @@
   import StatMetricCard from './components/ui/StatMetricCard.vue';
   
   const posStore = usePosStore();
-  const {posProfileData, pos_profile, pos_opening, posFrm, returnAgainst} = storeToRefs(posStore);
-  const {make_new_invoice, update_cart, edit_invoice, setPosOpening, sales_order_to_invoice, buildPrintViewUrl, toggle_is_return} = posStore;
+  const {posProfileData, pos_profile, pos_opening, invoice, returnAgainst} = storeToRefs(posStore);
+  const {make_new_invoice, update_cart, edit_invoice, setPosOpening, sales_order_to_invoice, buildPrintViewUrl, toggle_is_return, set_customer, calculate_paid_amount, save_invoice} = posStore;
   // Local State
   const activeTab = ref('pos')
   const customerSearch = ref('')
@@ -37,17 +37,17 @@
   const loading = ref(false)
   const LoadInvoiceDialogToggle = ref(false);
   const customer = ref(posProfileData.value.customer);
-  const posPayments = computed(() => posFrm.value?.doc?.payments || [])
-  const priceListCurrency = computed(() => posFrm.value?.doc?.price_list_currency || "")
-  const hasCartItems = computed(() => (posFrm.value?.doc?.items || []).length > 0)
+  const posPayments = computed(() => invoice.value?.payments || [])
+  const priceListCurrency = computed(() => invoice.value?.currency || "")
+  const hasCartItems = computed(() => (invoice.value?.items || []).length > 0)
   const isReturnInvoice = computed(() => {
-    return posFrm.value?.doc?.is_return || false;
+    return invoice.value?.is_return || false;
   });
 
   const isLinkedReturn = computed(() => isReturnInvoice.value && returnAgainst.value);
 
   const isReturn = computed({
-    get: () => !!posFrm.value?.doc?.is_return,
+    get: () => !!invoice.value?.is_return,
     set: (val) => toggle_is_return(val),
   });
 
@@ -60,8 +60,8 @@
   const salesPersonUsers = computed(() =>
     (posProfileData.value?.applicable_for_users || []).map(r => r.user).filter(Boolean));
   const salesPerson = computed({
-    get: () => posFrm.value?.doc?.sales_person || null,
-    set: (val) => { if (posFrm.value) posFrm.value.doc.sales_person = val || ''; },
+    get: () => invoice.value?.sales_person || null,
+    set: (val) => { if (invoice.value) invoice.value.sales_person = val || ''; },
   });
   const salesPersonRules = computed(() =>
     salesPersonRequired.value ? [v => !!v || __('Sales Person is required')] : []);
@@ -116,7 +116,7 @@
   if (showSalesPerson.value) loadSalesPersonOptions();
 
   // when a return invoice loads its source's sales person, surface it in the field
-  watch(() => posFrm.value?.doc?.sales_person, (val) => {
+  watch(() => invoice.value?.sales_person, (val) => {
     if (showSalesPerson.value) ensureSalesPersonOption(val);
   });
 
@@ -135,7 +135,8 @@
     const response = await frappe.call({
 			method: "maxit_pos.maxit_pos.page.maxit_pos.api.api.get_items",
 			freeze: true,
-			args: {pos_profile_data: posProfileData.value,
+			// list prices from the invoice's price list (customer specific when set)
+			args: {pos_profile_data: {...posProfileData.value, selling_price_list: invoice.value?.selling_price_list || posProfileData.value.selling_price_list},
         search_term: search_term,
         item_group: item_group,
         custom_filters: custom_filters,
@@ -150,6 +151,11 @@
   watch(isReturnInvoice, () => {
     if (returnAgainst.value) return;
     searchItems()
+  });
+
+  // re-fetch items when the customer changes the invoice price list
+  watch(() => invoice.value?.selling_price_list, (val, oldVal) => {
+    if (oldVal) searchItems();
   });
 
   const fetchCustomers = async (query = '') => {
@@ -218,23 +224,19 @@
 
   const updateSelection = async () => {
     const val = customer.value || '';
-    if(val == posFrm.value.doc.customer) return;
-    posFrm.value.doc.customer = val?.name || '';
-    await posFrm.value.script_manager.trigger("customer", "Sales Invoice", posFrm.value.doc.name);
+    if(val == invoice.value.customer) return;
+    await set_customer(val?.name || '');
   }
 
   const prepareCheckout = async () => {
     if (!hasCartItems.value) return;
     if (!validate()) return;
-    const save_error = await posFrm.value.save();
-    if(save_error) return;
-    posFrm.value.refresh_field("payments");
     activeTab.value = 'checkout';
   }
 
   const validate = () => {
     var value = true;
-    posFrm.value.doc.items.forEach((item, index) => {
+    invoice.value.items.forEach((item, index) => {
       if(!item.item_code) {
         frappe.show_alert({
           indicator: "red",
@@ -257,60 +259,64 @@
         value = false;
       }
     });
-    if (salesPersonRequired.value && !posFrm.value.doc.sales_person) {
+    if (salesPersonRequired.value && !invoice.value.sales_person) {
       frappe.show_alert({ indicator: 'red', message: __('Sales Person is required') });
       value = false;
     }
     return value;
   }
 
-  const changePaymentAmount = async (item_name) => {
-    if (isReturnInvoice.value) {
-      const payment = posPayments.value.find(p => p.item_name === item_name);
-      if (payment && Number(payment.amount) > 0) {
-        payment.amount = 0;
-        frappe.show_alert({ indicator: "red", message: __("Return payment amount cannot be positive") });
-      }
+  const changePaymentAmount = (payment) => {
+    if (isReturnInvoice.value && Number(payment.amount) > 0) {
+      payment.amount = 0;
+      frappe.show_alert({ indicator: "red", message: __("Return payment amount cannot be positive") });
     }
-    await posFrm.value.script_manager.trigger("amount", "Sales Invoice Payment", item_name);
+    calculate_paid_amount();
   }
 
-  const ChangePayment = async (item) => {
-      item.amount = posFrm.value.doc.grand_total;
+  const ChangePayment = (item) => {
+      item.amount = invoice.value.grand_total;
       posPayments.value.forEach(payment => {
-        if (payment.name !== item.name) {
+        if (payment !== item) {
           payment.amount = 0;
         }
       });
-      await posFrm.value.script_manager.trigger("amount", "Sales Invoice Payment", item.name);
+      calculate_paid_amount();
   }
 
-  const submitInvoice = async (print=false) =>{
-    // Standalone return left fully unpaid: clear payments so ERPNext's
-    // set_total_amount_to_default_mop (runs on the submit-time recalc) has no
-    // default row to refill, leaving the return as an outstanding credit note
-    // instead of auto-refunding the total to the default mode of payment.
-    if (isReturnInvoice.value) {
-      const enteredPaid = posPayments.value.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
-      if (!enteredPaid) posFrm.value.doc.payments = [];
-    }
-    await posFrm.value.savesubmit();
-    activeTab.value = 'pos';
-    frappe.show_alert({
-      indicator: "green",
-      message: __("Sales invoice {0} created successfully", [posFrm.value.doc.name]),
+  const submitInvoice = (print=false) => {
+    frappe.confirm(__("Permanently Submit {0}?", [invoice.value.name || __("Sales Invoice")]), async () => {
+      // Standalone return left fully unpaid: clear payments so ERPNext's
+      // set_total_amount_to_default_mop (runs on the submit-time recalc) has no
+      // default row to refill, leaving the return as an outstanding credit note
+      // instead of auto-refunding the total to the default mode of payment.
+      if (isReturnInvoice.value) {
+        const enteredPaid = posPayments.value.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+        if (!enteredPaid) invoice.value.payments = [];
+      }
+      const doc = await save_invoice(1);
+      activeTab.value = 'pos';
+      frappe.show_alert({
+        indicator: "green",
+        message: __("Sales invoice {0} created successfully", [doc.name]),
+      });
+      if(print) printInvoice(doc.name);
+      await make_new_invoice();
+      await fetchCustomers();
     });
-    if(print) printInvoice(posFrm.value.doc.name);    
-    await make_new_invoice();
-    await fetchCustomers();
+  }
+
+  const saveInvoice = async () => {
+    await save_invoice();
+    frappe.show_alert({ indicator: "green", message: __("Saved") });
   }
 
   const saveAsSalesOrder = async () => {
-    await posFrm.value.save();
+    await save_invoice();
     frappe.call({
       method: "maxit_pos.maxit_pos.page.maxit_pos.api.api.save_invoice_as_sales_order",
       args: {
-        invoice_name: posFrm.value.doc.name
+        invoice_name: invoice.value.name
       },
       freeze: true,
     }).then((response) => {
@@ -359,7 +365,7 @@
     make_new_invoice().then(() => {
       // isLoading.value = false;
       activeTab.value = 'pos';
-      customer.value = posFrm.value.doc.customer;
+      customer.value = invoice.value.customer;
       fetchCustomers()
       searchItems();
     })
@@ -387,13 +393,13 @@
       if(invoice.doctype == "Sales Order") {
         sales_order_to_invoice(invoice.name).then(() => {
           activeTab.value = 'pos';
-          customer.value = posFrm.value.doc.customer;
+          customer.value = posStore.invoice.customer;
         });
       }
       else{
         edit_invoice(invoice.name).then(() => {
           activeTab.value = 'pos';
-          customer.value = posFrm.value.doc.customer;
+          customer.value = posStore.invoice.customer;
         })
       }
   }
@@ -523,7 +529,7 @@
   }
 
   const initialize_Invoice = async () => {
-    if (!posFrm.value || posFrm.value.is_new()) {
+    if (!invoice.value) {
       make_new_invoice().then(() => {
         // isLoading.value = false;
         activeTab.value = 'pos';
@@ -532,7 +538,7 @@
     } else {
       activeTab.value = 'pos';
       fetchCustomers()
-      customer.value = posFrm.value.doc.customer;
+      customer.value = invoice.value.customer;
     }
     searchItems();
   };
@@ -704,7 +710,7 @@
                             color="primary"
                             variant="tonal"
                             :disabled="!hasCartItems"
-                            @click="posFrm.save()"
+                            @click="saveInvoice()"
                           >
                             {{ __('Save') }}
                           </v-btn>
@@ -758,7 +764,7 @@
                                   :precision="2"
                                   :max="isReturnInvoice ? 0 : undefined"
                                   :label="priceListCurrency"
-                                  @change="changePaymentAmount(payment.item_name)"
+                                  @change="changePaymentAmount(payment)"
                                 />
                               </v-col>
                               <v-col cols="3" sm="2" align-self="center" align="end">
@@ -781,7 +787,7 @@
                           class="stat-card"
                           color="primary"
                           :label="__('Customer')"
-                          :value="posFrm?.doc?.customer_name || ''"
+                          :value="invoice?.customer_name || ''"
                           truncate
                           compact
                         />
@@ -791,7 +797,7 @@
                           class="stat-card"
                           color="success"
                           :label="__('Total')"
-                          :value="`${posFrm?.doc?.grand_total || 0} ${posFrm?.doc?.price_list_currency || ''}`"
+                          :value="`${invoice?.grand_total || 0} ${priceListCurrency}`"
                           compact
                         />
                       </v-col>
@@ -800,7 +806,7 @@
                           class="stat-card"
                           color="info"
                           :label="__('Paid Amount')"
-                          :value="`${(posFrm?.doc?.grand_total || 0) - (posFrm?.doc?.outstanding_amount || 0)} ${posFrm?.doc?.price_list_currency || ''}`"
+                          :value="`${(invoice?.grand_total || 0) - (invoice?.outstanding_amount || 0)} ${priceListCurrency}`"
                           compact
                         />
                       </v-col>
@@ -809,7 +815,7 @@
                           class="stat-card"
                           color="warning"
                           :label="__('Remaining')"
-                          :value="`${posFrm?.doc?.outstanding_amount || 0} ${posFrm?.doc?.price_list_currency || ''}`"
+                          :value="`${invoice?.outstanding_amount || 0} ${priceListCurrency}`"
                           compact
                         />
                       </v-col>

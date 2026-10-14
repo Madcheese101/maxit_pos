@@ -123,15 +123,15 @@
 
         <div class="d-flex justify-space-between align-center">
             <div class="text-subtitle-1">{{ __('Total') }}</div>
-            <div class="text-h6" v-html="frappe_.format(posFrm?.doc?.total, {'fieldtype': 'Currency'})"></div>
+            <div class="text-h6" v-html="frappe_.format(invoice?.total, {'fieldtype': 'Currency'})"></div>
         </div>
 
-        <div v-if="allow_discount_change && posFrm?.doc" class="d-flex justify-space-between align-center mt-2 gap-3" @click.stop>
+        <div v-if="allow_discount_change && invoice" class="d-flex justify-space-between align-center mt-2 gap-3" @click.stop>
             <div class="text-subtitle-2 text-medium-emphasis flex-shrink-0">{{ __('Discount') }}</div>
             <div class="invoice-discount-input">
                 <v-number-input
                     v-if="invoiceDiscountType === 'Amount'"
-                    v-model="posFrm.doc.discount_amount"
+                    v-model="invoice.discount_amount"
                     control-variant="hidden"
                     variant="outlined"
                     density="compact"
@@ -148,7 +148,7 @@
                 </v-number-input>
                 <v-number-input
                     v-else
-                    v-model="posFrm.doc.additional_discount_percentage"
+                    v-model="invoice.additional_discount_percentage"
                     control-variant="hidden"
                     variant="outlined"
                     density="compact"
@@ -167,7 +167,7 @@
 
         <div class="d-flex justify-space-between align-center mt-1">
             <div class="text-subtitle-1 font-weight-bold">{{ __('Net Total') }}</div>
-            <div class="text-h6 font-weight-bold" v-html="frappe_.format(posFrm?.doc?.grand_total, {'fieldtype': 'Currency'})"></div>
+            <div class="text-h6 font-weight-bold" v-html="frappe_.format(invoice?.grand_total, {'fieldtype': 'Currency'})"></div>
         </div>
 
         <v-btn color="green-lighten-1" class="mt-3" block @click="emit('checkout')">
@@ -177,21 +177,21 @@
 </template>
 
 <script setup>
-    import { computed, ref, triggerRef } from 'vue'
+    import { computed, ref } from 'vue'
     import { usePosStore } from '../../../store/posStore';
     import {storeToRefs} from 'pinia';
     import { VCard } from 'vuetify/components';
     const __ = window.__;
     const frappe_ = frappe;
     const posStore = usePosStore();
-    const {posFrm, posProfileData} = storeToRefs(posStore);
-    const {update_cart} = posStore;
+    const {invoice, posProfileData} = storeToRefs(posStore);
+    const {update_cart, remove_item, calculate_totals} = posStore;
     const expanded = ref([]);
 
     const emit = defineEmits(['checkout']);
-    const posCartItems = computed(() => posFrm.value?.doc?.items || [])
+    const posCartItems = computed(() => invoice.value?.items || [])
     const cartItemsPerPage = computed(() => posCartItems.value.length || 1)
-    const priceListCurrency = computed(() => posFrm.value?.doc?.price_list_currency || "")
+    const priceListCurrency = computed(() => invoice.value?.currency || "")
     const allow_discount_change = computed(() => posProfileData.value?.allow_discount_change)
     const allow_rate_change = computed(() => posProfileData.value?.allow_rate_change)
     const cartHeaders = computed(() => [
@@ -211,16 +211,9 @@
         });
     }
 
-    const deleteItemFromCart = async (item) => {
+    const deleteItemFromCart = (item) => {
         expanded.value = expanded.value.filter((value) => value !== item.idx);
-        const index = posFrm.value.doc.items.indexOf(item);
-        if (index === -1) {
-            return;
-        }
-        posFrm.value.doc.items.splice(index, 1);
-        posFrm.value.refresh_field('items');
-        await posFrm.value.script_manager.trigger("calculate_taxes_and_totals");
-        posFrm.value.trigger('refresh_totals');
+        remove_item(item);
     }
 
     function toggleDiscountType(item) {
@@ -235,18 +228,17 @@
 
     const invoiceDiscountType = ref('Amount')
 
-    async function applyInvoiceDiscount() {
-        await posFrm.value.script_manager.trigger("calculate_taxes_and_totals");
-        triggerRef(posFrm);
+    function applyInvoiceDiscount() {
+        calculate_totals();
     }
 
     function toggleInvoiceDiscountType() {
         if (invoiceDiscountType.value === 'Percentage') {
             invoiceDiscountType.value = 'Amount'
-            posFrm.value.doc.additional_discount_percentage = 0
+            invoice.value.additional_discount_percentage = 0
         } else {
             invoiceDiscountType.value = 'Percentage'
-            posFrm.value.doc.discount_amount = 0
+            invoice.value.discount_amount = 0
         }
         applyInvoiceDiscount()
     }
