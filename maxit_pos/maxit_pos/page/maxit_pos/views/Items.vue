@@ -1,136 +1,125 @@
 <template>
-	<PageSurface glow="info-success" class="items-view pa-2 pa-md-4" :style="layoutVars">
-		<SurfaceCard surface="filter" class="pa-3 pa-md-4 items-filters-card">
-			<v-row dense>
-				<v-col cols="12" md="4">
+	<PageSurface glow="info-success" class="items-view pa-2">
+		<SurfaceCard class="items-pane">
+			<div class="items-pane__body">
+				<div class="pane-header">
+					<div class="pane-header__title">{{ __('Items Browser') }}</div>
+					<v-chip size="x-small" color="primary" variant="tonal">{{ rawItems.length }}</v-chip>
+				</div>
+
+				<div class="filters-row">
 					<v-text-field
 						v-model="searchTerm"
-						:label="__('Search Items')"
 						:placeholder="__('Search by code or name')"
 						prepend-inner-icon="mdi-magnify"
-						variant="solo-filled"
-						density="comfortable"
+						variant="outlined"
+						density="compact"
 						hide-details
 						single-line
 						clearable
+						class="filters-row__search"
 						@keydown.enter="triggerImmediateSearch"
 					/>
-				</v-col>
-
-				<v-col
-					v-for="filter in dynamicFilters"
-					:key="filter.fieldname"
-					:sm="filter.field_type === 'Check' ? 1 : 2"
-					:md="filter.field_type === 'Check' ? 1 : 2"
-					:class="filter.field_type === 'Check' ? 'd-flex align-center' : ''"
-				>
-					<v-select
-						v-if="filter.field_type === 'Select' || filter.field_type === 'Link'"
-						v-model="filter.selected"
-						:label="filter.label"
-						:items="filter.options || []"
-						variant="solo-filled"
-						density="comfortable"
-						hide-details
-						clearable
-					/>
-					<v-checkbox
-						v-else-if="filter.field_type === 'Check'"
-						:label="filter.label"
-						v-model="filter.selected"
-						density="compact"
-						hide-details
-						class="mt-0 pt-0"
-					/>
-					<v-text-field
-						v-else
-						v-model="filter.selected"
-						:label="filter.label"
-						variant="solo-filled"
-						density="comfortable"
-						hide-details
-						clearable
-					/>
-				</v-col>
-
-				<v-col cols="12" md="2" class="d-flex align-center">
 					<v-btn
+						v-if="dynamicFilters.length"
+						icon
+						size="small"
 						variant="tonal"
-						color="primary"
-						block
-						@click="resetLocalFilters"
+						:color="showFilters ? 'primary' : undefined"
+						:title="__('Filter')"
+						:aria-label="__('Filter')"
+						@click="showFilters = !showFilters"
 					>
-						{{ __('Reset Filters') }}
+						<v-badge v-if="activeFilterCount" :content="activeFilterCount" color="primary" floating>
+							<v-icon icon="mdi-filter-variant" />
+						</v-badge>
+						<v-icon v-else icon="mdi-filter-variant" />
 					</v-btn>
-				</v-col>
-			</v-row>
-		</SurfaceCard>
-
-		<SurfaceCard surface="results" class="mt-4 items-results-card">
-			<v-card-item>
-				<div class="d-flex justify-space-between align-center flex-wrap ga-2">
-					<div>
-						<div class="text-overline text-medium-emphasis">{{ __('Items Browser') }}</div>
-						<div class="text-h6 font-weight-bold">{{ __('Search Results') }}</div>
-					</div>
-					<v-chip size="small" color="primary" variant="tonal">
-						{{ rawItems.length }}
-					</v-chip>
+					<v-btn
+						v-if="activeFilterCount"
+						icon="mdi-filter-remove-outline"
+						size="small"
+						variant="text"
+						:title="__('Reset Filters')"
+						:aria-label="__('Reset Filters')"
+						@click="resetLocalFilters"
+					/>
 				</div>
-			</v-card-item>
 
-			<v-card-text class="items-results-body">
-				<v-alert
-					v-if="errorMessage"
-					type="error"
-					variant="tonal"
-					class="mb-3 items-state-message"
-				>
+				<v-expand-transition>
+					<div v-show="showFilters && dynamicFilters.length" class="filters-panel">
+						<template v-for="filter in dynamicFilters" :key="filter.fieldname">
+							<v-select
+								v-if="filter.field_type === 'Select' || filter.field_type === 'Link'"
+								v-model="filter.selected"
+								:label="filter.label"
+								:items="filter.options || []"
+								variant="outlined"
+								density="compact"
+								hide-details
+								clearable
+							/>
+							<v-checkbox
+								v-else-if="filter.field_type === 'Check'"
+								v-model="filter.selected"
+								:label="filter.label"
+								density="compact"
+								hide-details
+							/>
+							<v-text-field
+								v-else
+								v-model="filter.selected"
+								:label="filter.label"
+								variant="outlined"
+								density="compact"
+								hide-details
+								clearable
+							/>
+						</template>
+					</div>
+				</v-expand-transition>
+
+				<v-alert v-if="errorMessage" type="error" variant="tonal" density="compact">
 					{{ errorMessage }}
 				</v-alert>
 
-				<v-skeleton-loader
-					v-if="isLoading"
-					type="table"
-					class="items-state-loader"
-				/>
+				<v-progress-linear v-if="isLoading" indeterminate color="primary" />
 
-				<v-alert
-					v-else-if="!searchTerm.trim()"
-					type="info"
-					variant="tonal"
-					class="items-state-message"
-				>
-					{{ __('Type in search to load items from database.') }}
-				</v-alert>
+				<div v-if="!searchTerm?.trim()" class="items-empty text-medium-emphasis">
+					<v-icon icon="mdi-magnify" size="32" />
+					<div>{{ __('Type in search to load items from database.') }}</div>
+				</div>
 
-				<v-alert
-					v-else-if="!rawItems.length"
-					type="warning"
-					variant="tonal"
-					class="items-state-message"
-				>
+				<div v-else-if="!rawItems.length && !isLoading" class="items-empty text-medium-emphasis">
 					{{ __('No items found for this search/filter combination.') }}
-				</v-alert>
+				</div>
 
-				<div v-else class="items-table-wrap">
-					<v-data-table-virtual
-						:headers="headers"
-						:items="rawItems"
-						item-value="item_code"
-						density="comfortable"
-						class="items-table"
-						height="100%"
-						fixed-header
-					>
-						<template #item.item_name="{ item }">
-							<div class="font-weight-bold">{{ item.item_name }}</div>
-						</template>
-						<template #item.rate="{ item }">
-							<div class="font-weight-bold">{{ item.rate }} {{ item.currency }}</div>
-						</template>
-						<template #item.get_stock_btn="{ item }">
-							<v-menu location="bottom end" offset="8">
+				<!-- searches can return thousands of items, so only visible rows are rendered -->
+				<v-virtual-scroll v-else :items="rawItems" item-key="item_code" class="items-list">
+					<template #default="{ item }">
+						<div class="item-row">
+							<div class="item-row__main">
+								<div class="item-row__line">
+									<span class="item-row__name">{{ item.item_name }}</span>
+									<v-chip
+										size="small"
+										variant="flat"
+										:color="item.actual_qty > 0 ? 'success' : 'error'"
+										prepend-icon="mdi-package-variant-closed"
+										class="item-row__qty"
+										:title="__('Qty')"
+									>
+										{{ item.actual_qty }}
+									</v-chip>
+								</div>
+								<div class="item-row__line item-row__line--sub">
+									<span class="item-row__meta">
+										{{ item.item_code }}<template v-for="attribute in attributeFields" :key="attribute.fieldname"><template v-if="item[attribute.fieldname]"> · {{ attribute.label }}: {{ item[attribute.fieldname] }}</template></template>
+									</span>
+									<span class="item-row__rate">{{ item.rate }} {{ item.currency }}</span>
+								</div>
+							</div>
+							<v-menu location="bottom end" offset="4">
 								<template #activator="{ props }">
 									<v-btn
 										v-bind="props"
@@ -138,48 +127,19 @@
 										variant="text"
 										size="small"
 										color="primary"
+										:aria-label="__('Actions')"
 									/>
 								</template>
-
-								<SurfaceCard surface="menu" min-width="220">
-									<v-card-text class="pa-2 d-flex flex-column ga-2">
-										<v-btn
-											color="primary"
-											variant="text"
-											prepend-icon="mdi-package-variant"
-											justify="start"
-											@click="getItemStock(item)"
-										>
-											{{ __('Get Stock') }}
-										</v-btn>
-
-										<v-btn
-											color="secondary"
-											variant="text"
-											prepend-icon="mdi-swap-horizontal"
-											justify="start"
-											@click="openStockEntry(item)"
-										>
-											{{ __('Stock Entry') }}
-										</v-btn>
-
-										<v-btn
-											color="secondary"
-											variant="text"
-											prepend-icon="mdi-receipt-text-outline"
-											justify="start"
-											@click="openOrders(item)"
-										>
-											{{ __('Orders') }}
-										</v-btn>
-									</v-card-text>
-								</SurfaceCard>
+								<v-list density="compact">
+									<v-list-item prepend-icon="mdi-package-variant" :title="__('Get Stock')" @click="getItemStock(item)" />
+									<v-list-item prepend-icon="mdi-swap-horizontal" :title="__('Stock Entry')" @click="openStockEntry(item)" />
+									<v-list-item prepend-icon="mdi-receipt-text-outline" :title="__('Orders')" @click="openOrders(item)" />
+								</v-list>
 							</v-menu>
-						</template>
-					</v-data-table-virtual>
-				</div>
-
-			</v-card-text>
+						</div>
+					</template>
+				</v-virtual-scroll>
+			</div>
 		</SurfaceCard>
 	</PageSurface>
 </template>
@@ -214,55 +174,18 @@ const errorMessage = ref('');
 const searchRequestId = ref(0);
 let searchTimer = null;
 let filterTimer = null;
-const { smAndDown, height: viewportHeight } = useDisplay();
-const isMobile = computed(() => smAndDown.value);
+// filters start open on laptops, collapsed on phones and tablets
+const { mdAndUp } = useDisplay();
+const showFilters = ref(mdAndUp.value);
+const activeFilterCount = computed(() => dynamicFilters.value.filter((filter) => filter.selected).length);
 
-const viewportHeightPx = computed(() => viewportHeight.value || window.innerHeight || 800);
-const itemsTableHeight = computed(() => {
-	const reserved = isMobile.value ? 420 : 340;
-	return Math.max(150, viewportHeightPx.value - reserved);
-});
-
-const layoutVars = computed(() => ({
-	'--items-table-height': `${itemsTableHeight.value}px`,
-}));
-
-const baseHeaders = [
-	{ title: __('Item Code'), key: 'item_code' },
-	{ title: __('Item Name'), key: 'item_name' },
-	// { title: __('Item Group'), key: 'item_group' },
-	{ title: __('Rate'), key: 'rate' },
-	{ title: __('Qty'), key: 'actual_qty' },
-	{ title: __(''), key: 'get_stock_btn', width: '50px', sortable: false },
-];
-
-const headers = computed(() => {
-	const attributeHeaders = [];
+// attribute filters double as the attribute values shown on each item row
+const attributeFields = computed(() => {
 	const seenKeys = new Set();
-
-	dynamicFilters.value.forEach((filter) => {
-		if (filter.doctype !== 'Item Attribute Value' || !filter.fieldname) {
-			return;
-		}
-		if (seenKeys.has(filter.fieldname)) {
-			return;
-		}
-		seenKeys.add(filter.fieldname);
-		attributeHeaders.push({
-			title: __(filter.label || filter.fieldname),
-			key: filter.fieldname,
-		});
-	});
-
-	return [
-		baseHeaders[0],
-		baseHeaders[1],
-		// baseHeaders[2],
-		...attributeHeaders,
-		baseHeaders[2],
-		baseHeaders[3],
-		baseHeaders[4],
-	];
+	return dynamicFilters.value
+		.filter((filter) => filter.doctype === 'Item Attribute Value' && filter.fieldname)
+		.filter((filter) => !seenKeys.has(filter.fieldname) && seenKeys.add(filter.fieldname))
+		.map((filter) => ({ fieldname: filter.fieldname, label: __(filter.label || filter.fieldname) }));
 });
 
 const getItemStock = async (item) => {
@@ -313,7 +236,7 @@ const loadDynamicFilters = async () => {
 };
 
 const fetchItems = async () => {
-	const term = searchTerm.value.trim();
+	const term = (searchTerm.value || '').trim();
 	errorMessage.value = '';
 
 	if (!posProfileData.value?.warehouse || !posProfileData.value?.selling_price_list) {
@@ -376,7 +299,7 @@ const resetLocalFilters = () => {
 };
 
 const scheduleFilterFetch = () => {
-	if (!searchTerm.value.trim()) {
+	if (!(searchTerm.value || '').trim()) {
 		return;
 	}
 
@@ -421,72 +344,127 @@ watch(
 </script>
 
 <style scoped>
-.items-view {
-	min-height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
-	height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
+.items-pane {
 	display: flex;
 	flex-direction: column;
-	overflow-y: auto;
-	overflow-x: hidden;
-}
-
-.items-filters-card {
-	flex: 0 0 auto;
-}
-
-.items-results-card {
 	flex: 1;
 	min-height: 0;
-	display: flex;
-	flex-direction: column;
+	border: 1px solid var(--v-pos-panel-border);
+	background: var(--v-pos-panel-background);
+	box-shadow: var(--v-pos-panel-shadow);
+	transition: var(--v-theme-transition);
 }
 
-.items-results-body {
+.items-pane__body {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
 	flex: 1;
 	min-height: 0;
+	padding: 10px;
+}
+
+.pane-header {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	min-height: 36px;
+}
+
+.pane-header__title {
+	font-size: 1rem;
+	font-weight: 700;
+	padding-inline: 4px;
+}
+
+.filters-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.filters-row__search {
+	flex: 1;
+	max-width: 480px;
+}
+
+.filters-panel {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+	gap: 8px;
+}
+
+@media (max-width: 599px) {
+	.filters-row__search {
+		max-width: none;
+	}
+}
+
+.items-empty {
 	display: flex;
 	flex-direction: column;
-	overflow: hidden;
+	align-items: center;
+	gap: 4px;
+	padding: 32px 8px;
+	text-align: center;
 }
 
-.items-state-message,
-.items-state-loader {
-	flex: 0 0 auto;
-}
-
-.items-table-wrap {
+.items-list {
 	flex: 1;
-	min-height: 150px;
-	height: min(var(--items-table-height), 100%);
-	max-height: 100%;
-	overflow: hidden;
+	min-height: 0;
 }
 
-.items-table {
-	border-radius: 14px;
-	height: 100%;
+.item-row {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	margin-block-end: 4px;
+	padding: 6px 4px 6px 10px;
+	border: 1px solid var(--v-pos-panel-border-soft);
+	border-radius: 10px;
+	background: var(--v-pos-field-background);
 }
 
-.items-table :deep(.v-table__wrapper) {
-	height: 100%;
-	max-height: 100%;
-	overflow-y: auto;
+.item-row__main {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
 }
 
-@media (max-width: 960px) {
-	.items-view {
-		padding: 10px;
-	}
-
-	.items-table-wrap {
-		min-height: 130px;
-	}
+.item-row__line {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
 }
 
-@media (max-height: 720px) {
-	.items-view {
-		padding-top: 8px;
-		padding-bottom: 8px;
-	}
+.item-row__name {
+	min-width: 0;
+	font-size: 0.875rem;
+	font-weight: 700;
+	line-height: 1.35;
+}
+
+.item-row__qty {
+	flex-shrink: 0;
+	font-weight: 700;
+}
+
+.item-row__line--sub {
+	font-size: 0.8125rem;
+}
+
+.item-row__meta {
+	min-width: 0;
+	color: rgba(var(--v-theme-on-surface), 0.72);
+	font-weight: 500;
+	overflow-wrap: anywhere;
+}
+
+.item-row__rate {
+	flex-shrink: 0;
+	font-weight: 700;
 }
 </style>
