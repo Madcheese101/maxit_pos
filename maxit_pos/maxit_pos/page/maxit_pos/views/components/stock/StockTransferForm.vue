@@ -286,8 +286,8 @@
 	.form-header {
 		display: flex;
 		align-items: center;
-		gap: 4px;
-		padding: 8px 10px;
+		gap: var(--maxit-gap-sm);
+		padding: 10px var(--maxit-pane-padding);
 	}
 
 	.form-header__title {
@@ -300,8 +300,8 @@
 		min-height: 0;
 		display: flex;
 		flex-direction: column;
-		gap: 10px;
-		padding: 12px;
+		gap: var(--maxit-gap);
+		padding: var(--maxit-pane-padding);
 		overflow-y: auto;
 	}
 
@@ -319,8 +319,8 @@
 		display: flex;
 		flex-wrap: wrap;
 		align-items: flex-start;
-		gap: 8px;
-		padding: 8px;
+		gap: var(--maxit-gap-sm);
+		padding: 10px;
 		border: 1px solid var(--v-pos-panel-border-soft);
 		border-radius: 10px;
 		background: var(--v-pos-field-background);

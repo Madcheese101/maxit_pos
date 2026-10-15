@@ -15,9 +15,8 @@
 
 			<v-card-text ref="dialogBody" class="dialog-body">
 				<v-form ref="expenseFormRef" v-model="isExpenseFormValid" class="expense-form" @submit.prevent="submitExpense">
-					<v-text-field
+					<DateField
 						v-model="expenseForm.posting_date"
-						type="date"
 						:label="__('Posting Date')"
 						variant="outlined"
 						density="compact"
@@ -126,6 +125,7 @@
 <script setup>
 	import { nextTick, reactive, ref, watch } from 'vue';
 	import { useDisplay } from 'vuetify';
+	import DateField from '../ui/DateField.vue';
 
 	const props = defineProps({
 		modelValue: {
@@ -326,7 +326,7 @@
 	.expense-form {
 		display: flex;
 		flex-direction: column;
-		gap: 12px;
+		gap: var(--maxit-gap);
 	}
 
 	.expense-form__date {
@@ -336,15 +336,15 @@
 	.expense-rows {
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
+		gap: var(--maxit-gap-sm);
 	}
 
 	.expense-row-card {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: flex-start;
-		gap: 8px;
-		padding: 8px;
+		gap: var(--maxit-gap-sm);
+		padding: 10px;
 		border: 1px solid var(--v-pos-panel-border-soft);
 		border-radius: 10px;
 		background: var(--v-pos-field-background);

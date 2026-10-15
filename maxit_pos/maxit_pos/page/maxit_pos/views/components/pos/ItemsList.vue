@@ -93,7 +93,7 @@
   /* cards clip overflow, so auto rows would shrink to 0 inside the scroll area */
   grid-auto-rows: max-content;
   align-content: start;
-  gap: 8px;
+  gap: var(--maxit-gap-sm);
   padding: 2px;
 }
 

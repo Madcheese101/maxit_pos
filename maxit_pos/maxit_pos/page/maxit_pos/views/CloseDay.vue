@@ -1,5 +1,5 @@
 <template>
-	<PageSurface glow="info-success" class="close-day-view pa-2" v-if="closeDayEnabled">
+	<PageSurface glow="info-success" class="close-day-view pa-3" v-if="closeDayEnabled">
 		<div class="close-day-layout">
 			<SurfaceCard v-show="!smAndDown || !showDetailsOnMobile" class="cd-pane cd-pane--list">
 				<div class="cd-pane__body">
@@ -809,7 +809,7 @@
 
 	.close-day-layout {
 		display: flex;
-		gap: 8px;
+		gap: var(--maxit-gap);
 		flex: 1;
 		min-height: 0;
 	}
@@ -842,16 +842,16 @@
 	.cd-pane__body {
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
+		gap: var(--maxit-gap);
 		flex: 1;
 		min-height: 0;
-		padding: 10px;
+		padding: var(--maxit-pane-padding);
 	}
 
 	.pane-header {
 		display: flex;
 		align-items: center;
-		gap: 6px;
+		gap: var(--maxit-gap-sm);
 		min-height: 36px;
 	}
 
@@ -891,7 +891,7 @@
 	.search-row {
 		display: flex;
 		align-items: center;
-		gap: 2px;
+		gap: var(--maxit-gap-xs);
 	}
 
 	.search-row .v-text-field {
@@ -906,7 +906,7 @@
 	}
 
 	.cd-row {
-		margin-block-end: 2px;
+		margin-block-end: var(--maxit-gap-xs);
 		border: 1px solid var(--v-pos-panel-border-soft);
 	}
 
@@ -997,7 +997,7 @@
 	.details-section {
 		display: flex;
 		flex-direction: column;
-		gap: 4px;
+		gap: var(--maxit-gap-xs);
 	}
 
 	.details-section__title {
@@ -1009,7 +1009,7 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		padding: 6px 8px;
+		padding: 8px 10px;
 		border: 1px solid var(--v-pos-panel-border-soft);
 		border-radius: 8px;
 		background: var(--v-pos-field-background);
@@ -1042,8 +1042,8 @@
 	.details-actions {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 8px;
-		padding-block-start: 8px;
+		gap: var(--maxit-gap-sm);
+		padding-block-start: var(--maxit-gap);
 		border-top: 1px solid var(--v-pos-panel-border-soft);
 	}
 

@@ -144,7 +144,7 @@
 .pay-dialog__body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--maxit-gap);
   flex: 1;
   overflow-y: auto;
 }
@@ -165,7 +165,7 @@
 .payment-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--maxit-gap-sm);
 }
 
 .payment-row__mode {
@@ -181,8 +181,8 @@
 .pay-dialog__summary {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding-block-start: 8px;
+  gap: var(--maxit-gap-xs);
+  padding-block-start: var(--maxit-gap);
   border-top: 1px solid var(--v-pos-panel-border-soft);
 }
 </style>

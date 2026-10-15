@@ -16,9 +16,8 @@
 			<v-card-text ref="dialogBody" class="dialog-body">
 				<v-form ref="noteCountFormRef" v-model="isNoteCountFormValid" class="note-form" @submit.prevent="submitNoteCount">
 					<div class="note-form__fields">
-						<v-text-field
+						<DateField
 							v-model="noteCountForm.posting_date"
-							type="date"
 							:label="__('Posting Date')"
 							variant="outlined"
 							density="compact"
@@ -173,6 +172,7 @@
 <script setup>
 	import { computed, nextTick, reactive, ref, watch } from 'vue';
 	import { useDisplay } from 'vuetify';
+	import DateField from '../ui/DateField.vue';
 
 	const props = defineProps({
 		modelValue: {
@@ -385,13 +385,13 @@
 	.note-form {
 		display: flex;
 		flex-direction: column;
-		gap: 10px;
+		gap: var(--maxit-gap);
 	}
 
 	.note-form__fields {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-		gap: 8px;
+		gap: var(--maxit-gap);
 	}
 
 	.section-title {
@@ -403,7 +403,7 @@
 		display: flex;
 		align-items: center;
 		gap: 10px;
-		padding: 6px 8px;
+		padding: 8px 10px;
 		border: 1px solid var(--v-pos-panel-border-soft);
 		border-radius: 10px;
 		background: var(--v-pos-field-background);
@@ -430,8 +430,8 @@
 	.bank-row-card {
 		display: flex;
 		flex-direction: column;
-		gap: 4px;
-		padding: 8px;
+		gap: var(--maxit-gap-sm);
+		padding: 10px;
 		border: 1px solid var(--v-pos-panel-border-soft);
 		border-radius: 10px;
 		background: var(--v-pos-field-background);
@@ -447,7 +447,7 @@
 	.bank-row-card__fields {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-		gap: 8px;
+		gap: var(--maxit-gap);
 	}
 
 	/* six bank fields: 2 columns on phones, 3 + 3 elsewhere */

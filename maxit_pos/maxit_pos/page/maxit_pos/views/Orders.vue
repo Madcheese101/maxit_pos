@@ -1,5 +1,5 @@
 <template>
-  <PageSurface glow="info-success" class="orders-view pa-2">
+  <PageSurface glow="info-success" class="orders-view pa-3">
     <div class="orders-layout">
       <SurfaceCard v-show="!isMobile || !showDetailsOnMobile" class="orders-pane orders-pane--list">
         <div class="orders-pane__body">
@@ -494,7 +494,7 @@
 
 .orders-layout {
   display: flex;
-  gap: 8px;
+  gap: var(--maxit-gap);
   flex: 1;
   min-height: 0;
 }
@@ -527,16 +527,16 @@
 .orders-pane__body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--maxit-gap);
   flex: 1;
   min-height: 0;
-  padding: 10px;
+  padding: var(--maxit-pane-padding);
 }
 
 .pane-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--maxit-gap-sm);
   min-height: 36px;
 }
 
@@ -569,7 +569,7 @@
 }
 
 .order-row {
-  margin-block-end: 2px;
+  margin-block-end: var(--maxit-gap-xs);
   border: 1px solid var(--v-pos-panel-border-soft);
 }
 
@@ -652,7 +652,7 @@
 .details-section {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--maxit-gap-xs);
 }
 
 .details-section__title {
@@ -664,7 +664,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 8px;
+  padding: 8px 10px;
   border: 1px solid var(--v-pos-panel-border-soft);
   border-radius: 8px;
   background: var(--v-pos-field-background);
@@ -706,8 +706,8 @@
 .details-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  padding-block-start: 8px;
+  gap: var(--maxit-gap-sm);
+  padding-block-start: var(--maxit-gap);
   border-top: 1px solid var(--v-pos-panel-border-soft);
 }
 

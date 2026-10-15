@@ -1,5 +1,5 @@
 <template>
-	<PageSurface glow="info-success" class="items-view pa-2">
+	<PageSurface glow="info-success" class="items-view pa-3">
 		<SurfaceCard class="items-pane">
 			<div class="items-pane__body">
 				<div class="pane-header">
@@ -358,16 +358,16 @@ watch(
 .items-pane__body {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
+	gap: var(--maxit-gap);
 	flex: 1;
 	min-height: 0;
-	padding: 10px;
+	padding: var(--maxit-pane-padding);
 }
 
 .pane-header {
 	display: flex;
 	align-items: center;
-	gap: 6px;
+	gap: var(--maxit-gap-sm);
 	min-height: 36px;
 }
 
@@ -380,7 +380,7 @@ watch(
 .filters-row {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: var(--maxit-gap-sm);
 }
 
 .filters-row__search {
@@ -391,7 +391,7 @@ watch(
 .filters-panel {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-	gap: 8px;
+	gap: var(--maxit-gap);
 }
 
 @media (max-width: 599px) {
@@ -418,8 +418,8 @@ watch(
 	display: flex;
 	align-items: center;
 	gap: 4px;
-	margin-block-end: 4px;
-	padding: 6px 4px 6px 10px;
+	margin-block-end: var(--maxit-gap-xs);
+	padding: 8px 6px 8px 12px;
 	border: 1px solid var(--v-pos-panel-border-soft);
 	border-radius: 10px;
 	background: var(--v-pos-field-background);

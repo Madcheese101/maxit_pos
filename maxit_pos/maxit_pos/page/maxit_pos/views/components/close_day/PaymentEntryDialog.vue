@@ -15,9 +15,8 @@
 
 			<v-card-text class="dialog-body">
 				<v-form ref="paymentEntryFormRef" v-model="isPaymentEntryFormValid" class="pe-form" @submit.prevent="submitPaymentEntries">
-					<v-text-field
+					<DateField
 						v-model="paymentEntryForm.posting_date"
-						type="date"
 						:label="__('Posting Date')"
 						variant="outlined"
 						density="compact"
@@ -98,6 +97,7 @@
 <script setup>
 	import { computed, reactive, ref, watch } from 'vue';
 	import { useDisplay } from 'vuetify';
+	import DateField from '../ui/DateField.vue';
 
 	const props = defineProps({
 		modelValue: {
@@ -363,7 +363,7 @@
 	.pe-form {
 		display: flex;
 		flex-direction: column;
-		gap: 10px;
+		gap: var(--maxit-gap);
 	}
 
 	.pe-form__date {
@@ -383,8 +383,8 @@
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 8px;
-		padding: 8px;
+		gap: var(--maxit-gap-sm);
+		padding: 10px;
 		border: 1px solid var(--v-pos-panel-border-soft);
 		border-radius: 10px;
 		background: var(--v-pos-field-background);

@@ -275,7 +275,7 @@
         overflow-y: auto;
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: var(--maxit-gap-sm);
         padding-block: 2px;
     }
 
@@ -294,7 +294,7 @@
         border: 1px solid var(--v-pos-panel-border-soft);
         border-radius: 10px;
         background: var(--v-pos-field-background);
-        padding: 6px 8px;
+        padding: 8px 10px;
     }
 
     .cart-line--open {
@@ -346,7 +346,7 @@
     .qty-stepper {
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: var(--maxit-gap-xs);
         flex-shrink: 0;
     }
 
@@ -380,9 +380,9 @@
     .cart-footer {
         display: flex;
         flex-direction: column;
-        gap: 6px;
-        padding-block-start: 8px;
-        margin-block-start: 6px;
+        gap: var(--maxit-gap-sm);
+        padding-block-start: var(--maxit-gap);
+        margin-block-start: var(--maxit-gap-xs);
         border-top: 1px solid var(--v-pos-panel-border-soft);
     }
 

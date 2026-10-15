@@ -82,6 +82,20 @@
   </script>
   
   <style>
+  /* spacing for the POS views; on :root so dialogs (teleported to body) get it too */
+  :root {
+    --maxit-gap: 12px;
+    --maxit-gap-sm: 8px;
+    --maxit-gap-xs: 6px;
+    --maxit-pane-padding: 14px;
+  }
+
+  @media (max-width: 599px) {
+    :root {
+      --maxit-pane-padding: 12px;
+    }
+  }
+
   .maxit-pos-app {
     --maxit-page-padding-mobile: 10px;
     --maxit-page-padding-short: 10px;

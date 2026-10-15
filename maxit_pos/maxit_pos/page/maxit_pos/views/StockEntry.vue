@@ -1,5 +1,5 @@
 <template>
-	<PageSurface glow="info-warning" class="stock-entry-view pa-2">
+	<PageSurface glow="info-warning" class="stock-entry-view pa-3">
 		<div v-if="!stockEntryEnabled" class="stock-entry-disabled-state">
 			<v-alert type="warning" variant="tonal">
 				{{ __('You do not have permission to manage stock transfers.') }}
@@ -80,20 +80,20 @@
 
 					<v-expand-transition>
 						<div v-show="showFilters" class="filters-panel">
-							<v-text-field
+							<DateField
 								v-model="fromDate"
-								type="date"
 								:label="__('From Date')"
 								variant="outlined"
 								density="compact"
+								clearable
 								hide-details
 							/>
-							<v-text-field
+							<DateField
 								v-model="toDate"
-								type="date"
 								:label="__('To Date')"
 								variant="outlined"
 								density="compact"
+								clearable
 								hide-details
 							/>
 							<!-- outgoing transfers always leave this branch, incoming ones always arrive here -->
@@ -212,6 +212,7 @@
 	import StockEntryViewDialog from './components/stock/StockEntryViewDialog.vue';
 	import PageSurface from './components/ui/PageSurface.vue';
 	import SurfaceCard from './components/ui/SurfaceCard.vue';
+	import DateField from './components/ui/DateField.vue';
 
 	const __ = window.__;
 	const frappe_ = window.frappe;
@@ -534,16 +535,16 @@
 	.se-pane__body {
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
+		gap: var(--maxit-gap);
 		flex: 1;
 		min-height: 0;
-		padding: 10px;
+		padding: var(--maxit-pane-padding);
 	}
 
 	.pane-header {
 		display: flex;
 		align-items: center;
-		gap: 6px;
+		gap: var(--maxit-gap-sm);
 		min-height: 36px;
 	}
 
@@ -569,8 +570,8 @@
 
 	.filters-panel {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-		gap: 8px;
+		grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+		gap: var(--maxit-gap);
 	}
 
 	.filters-panel__wide {
@@ -599,7 +600,7 @@
 	}
 
 	.se-row {
-		margin-block-end: 2px;
+		margin-block-end: var(--maxit-gap-xs);
 		border: 1px solid var(--v-pos-panel-border-soft);
 	}
 

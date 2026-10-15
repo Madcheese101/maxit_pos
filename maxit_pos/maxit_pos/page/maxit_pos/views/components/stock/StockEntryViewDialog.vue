@@ -290,13 +290,13 @@
 	.dialog-body {
 		display: flex;
 		flex-direction: column;
-		gap: 12px;
+		gap: var(--maxit-gap);
 	}
 
 	.meta-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-		gap: 8px 16px;
+		gap: var(--maxit-gap) 16px;
 		padding: 10px 12px;
 		border-radius: 10px;
 		background: rgba(var(--v-theme-primary), 0.06);
@@ -322,7 +322,7 @@
 	.entry-lines {
 		display: flex;
 		flex-direction: column;
-		gap: 4px;
+		gap: var(--maxit-gap-xs);
 	}
 
 	.entry-lines__title {
@@ -334,7 +334,7 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		padding: 6px 8px;
+		padding: 8px 10px;
 		border: 1px solid var(--v-pos-panel-border-soft);
 		border-radius: 8px;
 		background: var(--v-pos-field-background);

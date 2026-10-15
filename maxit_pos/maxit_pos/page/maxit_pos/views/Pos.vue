@@ -565,7 +565,7 @@
 </script>
 
 <template>
-  <PageSurface glow="info-success" class="pos-view pa-2">
+  <PageSurface glow="info-success" class="pos-view pa-3">
     <div class="pos-layout" :class="{ 'pos-layout--compact': isCompact }">
       <SurfaceCard
         v-show="!isCompact || mobilePane === 'items'"
@@ -839,7 +839,7 @@
 
 .pos-layout {
   display: flex;
-  gap: 8px;
+  gap: var(--maxit-gap);
   flex: 1;
   min-height: 0;
 }
@@ -870,16 +870,16 @@
 .pos-pane__body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--maxit-gap);
   flex: 1;
   min-height: 0;
-  padding: 10px;
+  padding: var(--maxit-pane-padding);
 }
 
 .side-header {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--maxit-gap-xs);
   min-height: 36px;
 }
 
@@ -896,7 +896,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: var(--maxit-gap-sm);
 }
 
 .side-fields__customer {
@@ -918,7 +918,7 @@
 .checkout-payments {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--maxit-gap-sm);
   min-height: 0;
   overflow-y: auto;
 }
@@ -943,9 +943,9 @@
 .checkout-summary {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--maxit-gap-xs);
   margin-block-start: auto;
-  padding-block-start: 8px;
+  padding-block-start: var(--maxit-gap);
   border-top: 1px solid var(--v-pos-panel-border-soft);
 }
 
@@ -963,8 +963,8 @@
 
 .pos-bottom-bar {
   display: flex;
-  gap: 8px;
-  padding-block-start: 8px;
+  gap: var(--maxit-gap-sm);
+  padding-block-start: var(--maxit-gap-sm);
 }
 
 .pos-bottom-bar__cart {
