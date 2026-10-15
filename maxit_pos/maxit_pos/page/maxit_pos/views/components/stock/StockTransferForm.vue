@@ -1,120 +1,91 @@
 <template>
 	<v-card class="stock-transfer-form">
-		<v-card-item class="pb-2">
-			<template #prepend>
-				<v-btn :icon="backIcon" variant="text" class="me-1" @click="emit('cancel')" />
-			</template>
-			<div>
-				<div class="text-h6 font-weight-bold">{{ __('Create Outgoing Transfer') }}</div>
-			</div>
-		</v-card-item>
+		<div class="form-header">
+			<v-btn :icon="backIcon" variant="text" size="small" :aria-label="__('Back')" @click="emit('cancel')" />
+			<div class="form-header__title">{{ __('Create Outgoing Transfer') }}</div>
+		</div>
 
 		<v-divider />
 
-		<v-card-text class="stock-transfer-form-body pt-4">
-			<div class="transfer-branch-row">
+		<div ref="itemsTableWrap" class="stock-transfer-form-body">
+			<v-autocomplete
+				v-model="toBranch"
+				:items="branchOptions"
+				item-title="label"
+				item-value="value"
+				:label="__('To Branch')"
+				variant="outlined"
+				density="compact"
+				:loading="isLoadingBranches"
+				hide-details="auto"
+				clearable
+				no-filter
+				class="transfer-branch"
+				@update:search="(search) => loadBranchOptions(search)"
+			/>
+
+			<div class="section-title">{{ __('Items') }}</div>
+
+			<div v-for="(row, index) in itemRows" :key="row.id" class="item-row-card">
+				<div class="item-row-card__index text-medium-emphasis">{{ index + 1 }}</div>
 				<v-autocomplete
-					v-model="toBranch"
-					:items="branchOptions"
+					v-model="row.item_code"
+					v-model:search="row.search"
+					:items="row.itemOptions"
 					item-title="label"
 					item-value="value"
-					:label="__('To Branch')"
+					:label="__('Item Code')"
 					variant="outlined"
 					density="compact"
-					:loading="isLoadingBranches"
+					:loading="row.isLoading"
 					hide-details="auto"
 					clearable
 					no-filter
-					@update:search="(search) => loadBranchOptions(search)"
+					class="item-row-card__item"
+					@update:search="(search) => updateRowItemSearch(row, search)"
+				>
+					<template #item="{ props, item }">
+						<v-list-item
+							v-bind="props"
+							:title="item.raw.label"
+							:subtitle="item.raw.description || undefined"
+						/>
+					</template>
+				</v-autocomplete>
+				<v-text-field
+					v-model="row.qty"
+					type="number"
+					min="0.01"
+					step="0.01"
+					:label="__('Qty')"
+					variant="outlined"
+					density="compact"
+					hide-details="auto"
+					class="item-row-card__qty"
+				/>
+				<v-btn
+					icon="mdi-delete-outline"
+					variant="text"
+					color="error"
+					size="small"
+					:aria-label="__('Delete')"
+					:disabled="itemRows.length === 1"
+					@click="removeItemRow(index)"
 				/>
 			</div>
 
-			<div class="d-flex align-center justify-space-between flex-wrap gap-2 mt-3 mb-2">
-				<div class="text-subtitle-1 font-weight-bold">{{ __('Items') }}</div>
-			</div>
+			<v-btn
+				variant="tonal"
+				color="primary"
+				prepend-icon="mdi-plus"
+				class="align-self-start"
+				@click="addItemRow"
+			>
+				{{ __('Add Row') }}
+			</v-btn>
+		</div>
 
-			<div ref="itemsTableWrap" class="transfer-items-table-wrap">
-				<v-table density="comfortable" class="transfer-items-table">
-					<thead>
-						<tr>
-							<th class="transfer-col-index">{{ __('No.') }}</th>
-							<th>{{ __('Item Code') }}</th>
-							<th class="transfer-col-qty">{{ __('Qty') }}</th>
-							<th class="transfer-col-actions">{{ __('Actions') }}</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr v-for="(row, index) in itemRows" :key="row.id">
-							<td class="transfer-col-index text-medium-emphasis">{{ index + 1 }}</td>
-							<td>
-								<v-autocomplete
-									v-model="row.item_code"
-									v-model:search="row.search"
-									:items="row.itemOptions"
-									item-title="label"
-									item-value="value"
-									:label="__('Item Code')"
-									variant="outlined"
-									density="compact"
-									:loading="row.isLoading"
-									hide-details="auto"
-									clearable
-									no-filter
-									@update:search="(search) => updateRowItemSearch(row, search)"
-								>
-									<template #item="{ props, item }">
-
-										<v-list-item
-											v-bind="props"
-											:title="item.raw.label"
-											:subtitle="item.raw.description || undefined"
-										/>
-									</template>
-								</v-autocomplete>
-							</td>
-							<td class="transfer-col-qty">
-								<v-text-field
-									v-model="row.qty"
-									type="number"
-									min="0.01"
-									step="0.01"
-									:label="__('Qty')"
-									variant="outlined"
-									density="compact"
-									hide-details="auto"
-								/>
-							</td>
-							<td class="transfer-col-actions">
-								<v-btn
-									icon="mdi-delete-outline"
-									variant="text"
-									color="error"
-									:disabled="itemRows.length === 1"
-									@click="removeItemRow(index)"
-								/>
-							</td>
-						</tr>
-					</tbody>
-					<tfoot>
-						<tr>
-							<td colspan="4" class="transfer-add-row-cell">
-								<v-btn
-									variant="text"
-									color="primary"
-									prepend-icon="mdi-plus"
-									class="transfer-add-row-btn"
-									@click="addItemRow"
-								>
-									{{ __('Add Row') }}
-								</v-btn>
-							</td>
-						</tr>
-					</tfoot>
-				</v-table>
-			</div>
-		</v-card-text>
-
-		<v-card-actions class="px-4 pb-4 pt-0 d-flex gap-2 flex-wrap">
+		<v-card-actions class="px-4 pb-4 pt-2 ga-2">
 			<v-spacer />
 			<v-btn variant="tonal" @click="emit('cancel')">
 				{{ __('Cancel') }}
@@ -312,9 +283,16 @@
 		transition: var(--v-theme-transition);
 	}
 
-	.transfer-branch-row {
-		max-width: 50%;
-		flex-shrink: 0;
+	.form-header {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		padding: 8px 10px;
+	}
+
+	.form-header__title {
+		font-size: 1rem;
+		font-weight: 700;
 	}
 
 	.stock-transfer-form-body {
@@ -322,63 +300,54 @@
 		min-height: 0;
 		display: flex;
 		flex-direction: column;
-		overflow: hidden;
-	}
-
-	.transfer-items-table-wrap {
-		flex: 1;
-		min-height: 0;
-		overflow-x: auto;
+		gap: 10px;
+		padding: 12px;
 		overflow-y: auto;
-		border: 1px solid var(--v-pos-panel-border-soft);
-		border-radius: 16px;
-		background: var(--v-pos-field-background);
 	}
 
-	.transfer-items-table {
-		background: transparent;
+	.transfer-branch {
+		flex-grow: 0;
+		max-width: 420px;
 	}
 
-	.transfer-items-table :deep(table) {
-		min-width: 760px;
-	}
-
-	.transfer-items-table :deep(th) {
-		white-space: nowrap;
+	.section-title {
+		font-size: 0.875rem;
 		font-weight: 700;
 	}
 
-	.transfer-items-table :deep(td) {
-		vertical-align: top;
-		padding-top: 12px;
-		padding-bottom: 12px;
+	.item-row-card {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-start;
+		gap: 8px;
+		padding: 8px;
+		border: 1px solid var(--v-pos-panel-border-soft);
+		border-radius: 10px;
+		background: var(--v-pos-field-background);
 	}
 
-	.transfer-items-table :deep(tfoot td) {
-		padding-top: 8px;
-		padding-bottom: 8px;
+	.item-row-card__index {
+		width: 20px;
+		padding-block-start: 10px;
+		text-align: center;
+		font-weight: 700;
 	}
 
-	.transfer-col-index {
-		width: 72px;
-		white-space: nowrap;
+	.item-row-card__item {
+		flex: 1 1 240px;
 	}
 
-	.transfer-col-qty {
-		width: 180px;
+	.item-row-card__qty {
+		flex: 0 1 130px;
 	}
 
-	.transfer-col-actions {
-		width: 88px;
-		text-align: end;
-	}
+	@media (max-width: 599px) {
+		.transfer-branch {
+			max-width: none;
+		}
 
-	.transfer-add-row-cell {
-		border-top: 1px dashed var(--v-pos-panel-border-strong);
-		text-align: start;
-	}
-
-	.transfer-add-row-btn {
-		margin-inline-start: -8px;
+		.item-row-card__qty {
+			flex: 1 1 120px;
+		}
 	}
 </style>

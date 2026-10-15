@@ -1,99 +1,72 @@
 <template>
-	<v-dialog :model-value="modelValue" max-width="1100" @update:model-value="emit('update:modelValue', $event)">
-		<v-card class="stock-entry-dialog" rounded="xl">
+	<v-dialog
+		:model-value="modelValue"
+		max-width="680"
+		:fullscreen="xs"
+		scrollable
+		@update:model-value="emit('update:modelValue', $event)"
+	>
+		<v-card class="stock-entry-dialog" :rounded="xs ? 0 : 'xl'">
 			<v-card-item class="pb-2">
-				<div class="d-flex align-center justify-space-between gap-2 flex-wrap">
-					<div>
-						<div class="text-overline text-medium-emphasis">{{ __('Stock Entry') }}</div>
-						<div class="text-h6 font-weight-bold">{{ doc?.name || __('View Transfer') }}</div>
-					</div>
-					<v-chip v-if="doc" size="small" :color="statusChip.color" variant="tonal">
+				<div class="d-flex align-center flex-wrap ga-2">
+					<div class="text-h6 font-weight-bold">{{ doc?.name || __('View Transfer') }}</div>
+					<v-chip v-if="doc" size="small" :color="statusChip.color" variant="flat" class="font-weight-bold">
 						{{ statusChip.label }}
 					</v-chip>
+				</div>
+				<div v-if="doc" class="dialog-subtitle">
+					{{ formatDate(doc.posting_date) }} · {{ doc.from_branch || __('N/A') }}
+					<v-icon :icon="isAppRTL() ? 'mdi-arrow-left' : 'mdi-arrow-right'" size="14" />
+					{{ doc.to_branch || __('N/A') }}
 				</div>
 			</v-card-item>
 
 			<v-divider />
 
-			<v-card-text class="pt-4 dialog-body">
-				<v-skeleton-loader v-if="isLoading" type="article, article, table" />
+			<v-card-text class="dialog-body">
+				<v-skeleton-loader v-if="isLoading" type="article, list-item-two-line, list-item-two-line" />
 
-				<v-alert v-else-if="!doc" type="info" variant="tonal">
+				<v-alert v-else-if="!doc" type="info" variant="tonal" density="compact">
 					{{ __('Select a transfer to view its details.') }}
 				</v-alert>
 
 				<template v-else>
-					<v-row dense class="mb-2">
-						<v-col cols="12" sm="6" md="3">
-							<StatMetricCard
-								class="stat-card"
-								color="primary"
-								:label="__('Posting Date')"
-								:value="doc.posting_date || __('N/A')"
-							/>
-						</v-col>
+					<div class="meta-grid">
+						<div class="meta-item">
+							<span class="meta-item__label">{{ __('Transfer Type') }}</span>
+							<span class="meta-item__value">{{ Number(doc.add_to_transit) === 1 ? __('In Transit') : __('Received') }}</span>
+						</div>
+						<div class="meta-item">
+							<span class="meta-item__label">{{ __('Transferred %') }}</span>
+							<span class="meta-item__value">{{ Number(doc.per_transferred || 0).toFixed(2) }}</span>
+						</div>
+						<div class="meta-item">
+							<span class="meta-item__label">{{ __('From Warehouse') }}</span>
+							<span class="meta-item__value">{{ doc.from_warehouse || __('N/A') }}</span>
+						</div>
+						<div class="meta-item">
+							<span class="meta-item__label">{{ __('To Warehouse') }}</span>
+							<span class="meta-item__value">{{ doc.to_warehouse || __('N/A') }}</span>
+						</div>
+					</div>
 
-						<v-col cols="12" sm="6" md="3">
-							<StatMetricCard
-								class="stat-card"
-								color="success"
-								:label="__('From Branch')"
-								:value="doc.from_branch || __('N/A')"
-							/>
-						</v-col>
-
-						<v-col cols="12" sm="6" md="3">
-							<StatMetricCard
-								class="stat-card"
-								color="warning"
-								:label="__('To Branch')"
-								:value="doc.to_branch || __('N/A')"
-							/>
-						</v-col>
-
-						<v-col cols="12" sm="6" md="3">
-							<StatMetricCard
-								class="stat-card"
-								color="info"
-								:label="__('Transfer Type')"
-								:value="Number(doc.add_to_transit) === 1 ? __('In Transit') : __('Received')"
-							/>
-						</v-col>
-					</v-row>
-
-					<v-row dense class="mb-3">
-						<v-col cols="12" md="6">
-							<div class="meta-row"><strong>{{ __('From Warehouse') }}:</strong> {{ doc.from_warehouse || __('N/A') }}</div>
-							<div class="meta-row"><strong>{{ __('To Warehouse') }}:</strong> {{ doc.to_warehouse || __('N/A') }}</div>
-						</v-col>
-						<v-col cols="12" md="6">
-							<div class="meta-row"><strong>{{ __('Transferred %') }}:</strong> {{ Number(doc.per_transferred || 0).toFixed(2) }}</div>
-							<div class="meta-row"><strong>{{ __('Docstatus') }}:</strong> {{ docstatusLabel }}</div>
-						</v-col>
-					</v-row>
-
-					<SurfaceCard surface="section" class="section-card">
-						<v-card-item class="pb-1">
-							<div class="text-subtitle-1 font-weight-bold">{{ __('Items') }}</div>
-						</v-card-item>
-						<v-card-text>
-							<div class="items-table-wrap">
-								<v-data-table-virtual
-									:headers="itemHeaders"
-									:items="doc.items || []"
-									item-value="name"
-									density="compact"
-									height="260"
-									fixed-header
-									class="stock-entry-items-table"
-								/>
+					<section class="entry-lines">
+						<div class="entry-lines__title">
+							{{ __('Items') }}
+							<span class="text-medium-emphasis">({{ (doc.items || []).length }})</span>
+						</div>
+						<div v-for="item in doc.items || []" :key="item.name" class="entry-line">
+							<div class="entry-line__main">
+								<div class="entry-line__name">{{ item.idx }}. {{ item.item_name }}</div>
+								<div class="entry-line__sub">{{ item.item_code }}</div>
 							</div>
-						</v-card-text>
-					</SurfaceCard>
+							<div class="entry-line__qty">{{ item.qty }} <span class="entry-line__uom">{{ item.uom }}</span></div>
+						</div>
+					</section>
 				</template>
 			</v-card-text>
 
-			<v-card-actions class="px-4 pb-4 pt-0 d-flex gap-2 flex-wrap">
+			<v-card-actions class="px-4 pb-4 pt-2 ga-2 flex-wrap">
 				<v-spacer />
 				<v-btn variant="tonal" @click="emit('update:modelValue', false)">
 					{{ __('Close') }}
@@ -110,7 +83,7 @@
 				<v-btn
 					v-if="canReceive"
 					color="success"
-					variant="tonal"
+					variant="elevated"
 					prepend-icon="mdi-truck-check-outline"
 					:loading="isSubmitting"
 					@click="receiveTransfer"
@@ -134,9 +107,8 @@
 
 <script setup>
 	import { computed, ref, watch } from 'vue';
+	import { useDisplay } from 'vuetify';
 	import { usePosStore } from '../../../store/posStore';
-	import SurfaceCard from '../ui/SurfaceCard.vue';
-	import StatMetricCard from '../ui/StatMetricCard.vue';
 	
 	const props = defineProps({
 		modelValue: {
@@ -157,28 +129,15 @@
 
 	const __ = window.__;
 	const frappe_ = window.frappe;
-	const { buildPrintViewUrl } = usePosStore();
+	const { buildPrintViewUrl, isAppRTL } = usePosStore();
+	const { xs } = useDisplay();
 	const doc = ref(null);
 	const isLoading = ref(false);
 	const isSubmitting = ref(false);
 
-	const itemHeaders = computed(() => [
-		{ title: __('No.'), key: 'idx', width: '70px' },
-		{ title: __('Item Code'), key: 'item_code' },
-		{ title: __('Item Name'), key: 'item_name' },
-		{ title: __('Qty'), key: 'qty' },
-	]);
-
-	const docstatusLabel = computed(() => {
-		switch (Number(doc.value?.docstatus || 0)) {
-			case 1:
-				return __('Submitted');
-			case 2:
-				return __('Cancelled');
-			default:
-				return __('Draft');
-		}
-	});
+	function formatDate(value) {
+		return value ? frappe_.datetime.str_to_user(value) : '';
+	}
 
 	const statusChip = computed(() => {
 		if (Number(doc.value?.docstatus || 0) === 2) {
@@ -318,34 +277,94 @@
 <style scoped>
 	.stock-entry-dialog {
 		border: 1px solid var(--v-pos-panel-border);
-		background: var(--v-pos-panel-background);
+		background: rgb(var(--v-theme-surface));
 		box-shadow: var(--v-pos-panel-shadow);
 		transition: var(--v-theme-transition);
 	}
 
+	.dialog-subtitle {
+		font-size: 0.875rem;
+		color: rgba(var(--v-theme-on-surface), 0.72);
+	}
+
 	.dialog-body {
-		max-height: 70vh;
-		overflow-y: auto;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
 	}
 
-	.stat-card {
+	.meta-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+		gap: 8px 16px;
+		padding: 10px 12px;
+		border-radius: 10px;
+		background: rgba(var(--v-theme-primary), 0.06);
+	}
+
+	.meta-item {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+	}
+
+	.meta-item__label {
+		font-size: 0.75rem;
+		color: rgba(var(--v-theme-on-surface), 0.65);
+	}
+
+	.meta-item__value {
+		font-size: 0.875rem;
+		font-weight: 600;
+		overflow-wrap: anywhere;
+	}
+
+	.entry-lines {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.entry-lines__title {
+		font-size: 0.875rem;
+		font-weight: 700;
+	}
+
+	.entry-line {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 6px 8px;
 		border: 1px solid var(--v-pos-panel-border-soft);
-		transition: var(--v-theme-transition);
+		border-radius: 8px;
+		background: var(--v-pos-field-background);
 	}
 
-	.section-card {
-		border-color: var(--v-pos-panel-border-strong) !important;
+	.entry-line__main {
+		flex: 1;
+		min-width: 0;
 	}
 
-	.meta-row {
-		padding: 4px 0;
+	.entry-line__name {
+		font-size: 0.875rem;
+		font-weight: 600;
 	}
 
-	.items-table-wrap {
-		min-height: 170px;
+	.entry-line__sub {
+		font-size: 0.8125rem;
+		font-weight: 500;
+		color: rgba(var(--v-theme-on-surface), 0.72);
 	}
 
-	.stock-entry-items-table :deep(.v-table__wrapper) {
-		overflow-y: auto;
+	.entry-line__qty {
+		flex-shrink: 0;
+		font-size: 0.9375rem;
+		font-weight: 700;
+	}
+
+	.entry-line__uom {
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: rgba(var(--v-theme-on-surface), 0.65);
 	}
 </style>

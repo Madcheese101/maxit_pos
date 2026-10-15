@@ -1,5 +1,5 @@
 <template>
-	<PageSurface glow="info-warning" class="stock-entry-view pa-3 pa-md-6">
+	<PageSurface glow="info-warning" class="stock-entry-view pa-2">
 		<div v-if="!stockEntryEnabled" class="stock-entry-disabled-state">
 			<v-alert type="warning" variant="tonal">
 				{{ __('You do not have permission to manage stock transfers.') }}
@@ -13,201 +13,183 @@
 				@created="handleTransferCreated"
 			/>
 
-			<template v-else>
-				<SurfaceCard class="stock-entry-panel mb-2">
-					<v-card-item>
-						<div class="d-flex align-center justify-space-between flex-wrap gap-3">
-							<div>
-								<div class="text-h6 font-weight-bold">{{ __('Manage Stock Entry') }}</div>
-							</div>
-							<v-btn
-								color="primary"
-								variant="elevated"
-								prepend-icon="mdi-plus"
-								@click="showCreateForm = true"
+			<SurfaceCard v-else class="se-pane">
+				<div class="se-pane__body">
+					<div class="pane-header">
+						<div class="pane-header__title">{{ __('Manage Stock Entry') }}</div>
+						<v-spacer />
+						<v-btn
+							icon
+							size="small"
+							variant="tonal"
+							:color="showFilters ? 'primary' : undefined"
+							:title="__('Filter')"
+							:aria-label="__('Filter')"
+							@click="showFilters = !showFilters"
+						>
+							<v-badge v-if="activeFilterCount" :content="activeFilterCount" color="primary" floating>
+								<v-icon icon="mdi-filter-variant" />
+							</v-badge>
+							<v-icon v-else icon="mdi-filter-variant" />
+						</v-btn>
+						<v-btn
+							v-if="activeFilterCount"
+							icon="mdi-filter-remove-outline"
+							size="small"
+							variant="text"
+							:title="__('Clear Filters')"
+							:aria-label="__('Clear Filters')"
+							@click="resetFilters"
+						/>
+						<v-btn
+							v-if="xs"
+							icon="mdi-plus"
+							color="primary"
+							variant="elevated"
+							size="small"
+							:aria-label="__('New Outgoing Entry')"
+							@click="showCreateForm = true"
+						/>
+						<v-btn
+							v-else
+							color="primary"
+							variant="elevated"
+							prepend-icon="mdi-plus"
+							@click="showCreateForm = true"
+						>
+							{{ __('New Outgoing Entry') }}
+						</v-btn>
+					</div>
+
+					<v-btn-toggle
+						v-model="activeTab"
+						mandatory
+						divided
+						density="compact"
+						color="primary"
+						variant="outlined"
+						class="se-tabs"
+					>
+						<v-btn value="outgoing" prepend-icon="mdi-upload">
+							{{ xs ? __('Outgoing') : __('Outgoing Transfers') }} ({{ outgoingTransfers.length }})
+						</v-btn>
+						<v-btn value="incoming" prepend-icon="mdi-download">
+							{{ xs ? __('Incoming') : __('Incoming Transfers') }} ({{ incomingTransfers.length }})
+						</v-btn>
+					</v-btn-toggle>
+
+					<v-expand-transition>
+						<div v-show="showFilters" class="filters-panel">
+							<v-text-field
+								v-model="fromDate"
+								type="date"
+								:label="__('From Date')"
+								variant="outlined"
+								density="compact"
+								hide-details
+							/>
+							<v-text-field
+								v-model="toDate"
+								type="date"
+								:label="__('To Date')"
+								variant="outlined"
+								density="compact"
+								hide-details
+							/>
+							<!-- outgoing transfers always leave this branch, incoming ones always arrive here -->
+							<v-autocomplete
+								v-if="activeTab === 'incoming'"
+								v-model="selectedFromBranch"
+								:items="branchOptions"
+								item-title="label"
+								item-value="value"
+								:label="__('From Branch')"
+								variant="outlined"
+								density="compact"
+								:loading="isLoadingBranches"
+								hide-details
+								clearable
+								no-filter
+								@update:search="(search) => loadBranchOptions(search, 'from_branch')"
+							/>
+							<v-autocomplete
+								v-else
+								v-model="selectedToBranch"
+								:items="branchOptions"
+								item-title="label"
+								item-value="value"
+								:label="__('To Branch')"
+								variant="outlined"
+								density="compact"
+								:loading="isLoadingBranches"
+								hide-details
+								clearable
+								no-filter
+								@update:search="(search) => loadBranchOptions(search, 'to_branch')"
+							/>
+							<v-autocomplete
+								v-model="selectedItemCode"
+								:items="itemCodeOptions"
+								item-title="label"
+								item-value="value"
+								:label="__('Item Code')"
+								variant="outlined"
+								density="compact"
+								:loading="isLoadingItems"
+								hide-details
+								clearable
+								no-filter
+								class="filters-panel__wide"
+								@update:search="loadItemCodeOptions"
 							>
-								{{ __('New Outgoing Entry') }}
-							</v-btn>
+								<template #item="{ props, item }">
+									<v-list-item
+										v-bind="props"
+										:title="item.raw.label"
+										:subtitle="item.raw.description || undefined"
+									/>
+								</template>
+							</v-autocomplete>
 						</div>
-					</v-card-item>
+					</v-expand-transition>
 
-					<v-divider />
+					<div class="se-list">
+						<v-progress-linear
+							v-if="activeTab === 'outgoing' ? isLoadingOutgoing : isLoadingIncoming"
+							indeterminate
+							color="primary"
+							class="mb-2"
+						/>
 
-					<v-card-text class="pt-1">
-						<v-row dense>
-							<v-col cols="12" md="2">
-								<v-text-field
-									v-model="fromDate"
-									type="date"
-									:label="__('From Date')"
-									variant="outlined"
-									density="compact"
-									hide-details
-								/>
-							</v-col>
-
-							<v-col cols="12" md="2">
-								<v-text-field
-									v-model="toDate"
-									type="date"
-									:label="__('To Date')"
-									variant="outlined"
-									density="compact"
-									hide-details
-								/>
-							</v-col>
-
-							<v-col cols="12" md="2">
-								<v-autocomplete
-									v-model="selectedFromBranch"
-									:items="branchOptions"
-									item-title="label"
-									item-value="value"
-									:label="__('From Branch')"
-									variant="outlined"
-									density="compact"
-									:loading="isLoadingBranches"
-									hide-details
-									clearable
-									no-filter
-									@update:search="(search) => loadBranchOptions(search, 'from_branch')"
-								/>
-							</v-col>
-
-							<v-col cols="12" md="2">
-								<v-autocomplete
-									v-model="selectedToBranch"
-									:items="branchOptions"
-									item-title="label"
-									item-value="value"
-									:label="__('To Branch')"
-									variant="outlined"
-									density="compact"
-									:loading="isLoadingBranches"
-									hide-details
-									clearable
-									no-filter
-									@update:search="(search) => loadBranchOptions(search, 'to_branch')"
-								/>
-							</v-col>
-
-							<v-col cols="12" md="4">
-								<v-autocomplete
-									v-model="selectedItemCode"
-									:items="itemCodeOptions"
-									item-title="label"
-									item-value="value"
-									:label="__('Item Code')"
-									variant="outlined"
-									density="compact"
-									:loading="isLoadingItems"
-									hide-details
-									clearable
-									no-filter
-									@update:search="loadItemCodeOptions"
-								>
-									<template #item="{ props, item }">
-										<v-list-item
-											v-bind="props"
-											:title="item.raw.label"
-											:subtitle="item.raw.description || undefined"
-										/>
-									</template>
-								</v-autocomplete>
-							</v-col>
-						</v-row>
-
-						<div class="d-flex justify-end flex-wrap ga-2 mt-3">
-							<v-btn color="primary" variant="tonal" prepend-icon="mdi-filter-check" @click="applyFilters">
-								{{ __('Apply Filters') }}
-							</v-btn>
-							<v-btn variant="text" prepend-icon="mdi-filter-remove-outline" @click="resetFilters">
-								{{ __('Clear Filters') }}
-							</v-btn>
+						<div v-if="!currentTransfers.length" class="se-empty text-medium-emphasis">
+							{{ activeTab === 'outgoing'
+								? __('No outgoing transfers found for the selected filters.')
+								: __('No incoming transfers found for the selected filters.') }}
 						</div>
-					</v-card-text>
-				</SurfaceCard>
 
-				<SurfaceCard class="stock-entry-panel stock-entry-table-panel">
-					<v-tabs v-model="activeTab" color="primary" class="px-2 pt-2">
-						<v-tab value="outgoing">
-							<v-icon size="18" class="me-2">mdi-upload</v-icon>
-							{{ __('Outgoing Transfers') }}
-						</v-tab>
-						<v-tab value="incoming">
-							<v-icon size="18" class="me-2">mdi-download</v-icon>
-							{{ __('Incoming Transfers') }}
-						</v-tab>
-					</v-tabs>
-
-					<v-divider />
-
-					<v-window v-model="activeTab" class="stock-entry-window">
-						<v-window-item value="outgoing" class="stock-entry-window-item">
-							<div class="stock-entry-table-wrap">
-								<v-data-table
-									:headers="headers"
-									:items="outgoingTransfers"
-									item-value="name"
-									:loading="isLoadingOutgoing"
-									fixed-header
-									height="100%"
-									class="stock-entry-table"
-								>
-									<template #item.status="{ item }">
-										<v-chip size="small" :color="getStatusColor(item)" variant="tonal">
-											{{ getStatusLabel(item) }}
-										</v-chip>
-									</template>
-
-									<template #item.actions="{ item }">
-										<v-btn size="small" color="primary" variant="tonal" @click="openViewDialog('outgoing', item)">
-											{{ __('View') }}
-										</v-btn>
-									</template>
-
-									<template #no-data>
-										<div class="pa-6 text-medium-emphasis text-center">
-											{{ __('No outgoing transfers found for the selected filters.') }}
-										</div>
-									</template>
-								</v-data-table>
-							</div>
-						</v-window-item>
-
-						<v-window-item value="incoming" class="stock-entry-window-item">
-							<div class="stock-entry-table-wrap">
-								<v-data-table
-									:headers="headers"
-									:items="incomingTransfers"
-									item-value="name"
-									:loading="isLoadingIncoming"
-									fixed-header
-									height="100%"
-									class="stock-entry-table"
-								>
-									<template #item.status="{ item }">
-										<v-chip size="small" :color="getStatusColor(item)" variant="tonal">
-											{{ getStatusLabel(item) }}
-										</v-chip>
-									</template>
-
-									<template #item.actions="{ item }">
-										<v-btn size="small" color="primary" variant="tonal" @click="openViewDialog('incoming', item)">
-											{{ __('View') }}
-										</v-btn>
-									</template>
-
-									<template #no-data>
-										<div class="pa-6 text-medium-emphasis text-center">
-											{{ __('No incoming transfers found for the selected filters.') }}
-										</div>
-									</template>
-								</v-data-table>
-							</div>
-						</v-window-item>
-					</v-window>
-				</SurfaceCard>
+						<v-list v-else nav density="compact" bg-color="transparent" class="pa-0">
+							<v-list-item
+								v-for="item in currentTransfers"
+								:key="item.name"
+								rounded="lg"
+								class="se-row"
+								@click="openViewDialog(activeTab, item)"
+							>
+								<div class="se-row__line">
+									<span class="se-row__title">{{ item.name }}</span>
+									<v-chip size="small" :color="getStatusColor(item)" variant="flat" class="status-chip">
+										{{ getStatusLabel(item) }}
+									</v-chip>
+								</div>
+								<div class="se-row__meta">
+									{{ formatDate(item.posting_date) }} ·
+									<template v-if="activeTab === 'outgoing'">{{ __('To Branch') }}: {{ item.to_branch }}</template>
+									<template v-else>{{ __('From Branch') }}: {{ item.from_branch }}</template>
+								</div>
+							</v-list-item>
+						</v-list>
+					</div>
+				</div>
 
 				<StockEntryViewDialog
 					v-model="viewDialogOpen"
@@ -215,7 +197,7 @@
 					:source-tab="viewSourceTab"
 					@updated="handleTransferUpdated"
 				/>
-			</template>
+			</SurfaceCard>
 		</template>
 	</PageSurface>
 </template>
@@ -224,6 +206,7 @@
 	import { computed, onMounted, ref, watch } from 'vue';
 	import { storeToRefs } from 'pinia';
 	import { useRoute, useRouter } from 'vue-router';
+	import { useDisplay } from 'vuetify';
 	import { usePosStore } from '../store/posStore';
 	import StockTransferForm from './components/stock/StockTransferForm.vue';
 	import StockEntryViewDialog from './components/stock/StockEntryViewDialog.vue';
@@ -263,14 +246,17 @@
 		return (itemCode || '').toString();
 	});
 
-	const headers = computed(() => [
-		{ title: __('Stock Entry'), key: 'name' },
-		{ title: __('Posting Date'), key: 'posting_date' },
-		{ title: __('From Branch'), key: 'from_branch' },
-		{ title: __('To Branch'), key: 'to_branch' },
-		{ title: __('Status'), key: 'status', sortable: false },
-		{ title: __('Actions'), key: 'actions', sortable: false },
-	]);
+	// filters start open on laptops, collapsed on phones and tablets
+	const { mdAndUp, xs } = useDisplay();
+	const showFilters = ref(mdAndUp.value);
+	const currentTransfers = computed(() => activeTab.value === 'outgoing' ? outgoingTransfers.value : incomingTransfers.value);
+	// only the branch filter shown for the active tab counts
+	const activeFilterCount = computed(() => [
+		fromDate.value,
+		toDate.value,
+		activeTab.value === 'incoming' ? selectedFromBranch.value : selectedToBranch.value,
+		selectedItemCode.value,
+	].filter(Boolean).length);
 
 	const stockEntryEnabled = computed(() => {
 		const roles = ['Stock User', 'Stock Manager', 'Administrator', 'System Manager'];
@@ -303,6 +289,23 @@
 		},
 		{ immediate: true }
 	);
+
+	// filters apply on change; the item code goes through the route query
+	watch([fromDate, toDate, selectedFromBranch, selectedToBranch], () => {
+		loadTransfers();
+	});
+
+	watch(selectedItemCode, (itemCode) => {
+		// the route watcher already reloads when the item code came from the route
+		if ((itemCode || '') === routeItemCode.value) {
+			return;
+		}
+		applyFilters();
+	});
+
+	function formatDate(value) {
+		return value ? frappe_.datetime.str_to_user(value) : '';
+	}
 
 	function buildFilters() {
 		return {
@@ -486,13 +489,13 @@
 		await router.replace({ query: nextQuery });
 	}
 
-	async function resetFilters() {
+	// the filter watchers reload the lists
+	function resetFilters() {
 		fromDate.value = '';
 		toDate.value = '';
 		selectedFromBranch.value = '';
 		selectedToBranch.value = '';
 		selectedItemCode.value = '';
-		await applyFilters();
 	}
 
 	function handleTransferCreated() {
@@ -510,18 +513,6 @@
 		background:
 			radial-gradient(circle at top right, var(--v-pos-info-glow), transparent 42%),
 			radial-gradient(circle at left bottom, var(--v-pos-warning-glow), transparent 36%);
-		height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
-		min-height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
-		display: flex;
-		flex-direction: column;
-		overflow: hidden;
-	}
-
-	.stock-entry-panel {
-		border: 1px solid var(--v-pos-panel-border);
-		background: var(--v-pos-panel-background);
-		box-shadow: var(--v-pos-panel-shadow);
-		transition: var(--v-theme-transition);
 	}
 
 	.stock-entry-disabled-state {
@@ -529,45 +520,116 @@
 		width: min(100%, 520px);
 	}
 
-	.stock-entry-table-panel {
-		flex: 1;
-		min-height: 0;
+	.se-pane {
 		display: flex;
 		flex-direction: column;
-	}
-
-	.stock-entry-window {
 		flex: 1;
 		min-height: 0;
-		display: flex;
-		flex-direction: column;
+		border: 1px solid var(--v-pos-panel-border);
+		background: var(--v-pos-panel-background);
+		box-shadow: var(--v-pos-panel-shadow);
+		transition: var(--v-theme-transition);
 	}
 
-	.stock-entry-window-item,
-		.stock-entry-window :deep(.v-window__container),
-		.stock-entry-window :deep(.v-window-item) {
-			height: 100%;
-			min-height: 0;
+	.se-pane__body {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		flex: 1;
+		min-height: 0;
+		padding: 10px;
+	}
+
+	.pane-header {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		min-height: 36px;
+	}
+
+	.pane-header__title {
+		min-width: 0;
+		font-size: 1rem;
+		font-weight: 700;
+		padding-inline: 4px;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.se-tabs {
+		flex-shrink: 0;
+		max-width: 520px;
+	}
+
+	.se-tabs .v-btn {
+		flex: 1;
+		font-weight: 700;
+	}
+
+	.filters-panel {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+		gap: 8px;
+	}
+
+	.filters-panel__wide {
+		grid-column: span 2;
+	}
+
+	@media (max-width: 599px) {
+		.se-tabs {
+			max-width: none;
 		}
 
-	.stock-entry-table-wrap {
-		padding-block-end: 16px;
-		padding-inline: 16px;
-		height: 100%;
+		.filters-panel__wide {
+			grid-column: 1 / -1;
+		}
+	}
+
+	.se-list {
+		flex: 1;
 		min-height: 0;
-	}
-
-	.stock-entry-table {
-		height: 100%;
-	}
-
-	.stock-entry-table :deep(th) {
-		white-space: nowrap;
-	}
-
-	.stock-entry-table :deep(.v-table__wrapper) {
-		height: 100%;
-		max-height: 100%;
 		overflow-y: auto;
+	}
+
+	.se-empty {
+		padding: 24px 8px;
+		text-align: center;
+	}
+
+	.se-row {
+		margin-block-end: 2px;
+		border: 1px solid var(--v-pos-panel-border-soft);
+	}
+
+	.se-row :deep(.v-list-item__content) {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.se-row__line {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+	}
+
+	.se-row__title {
+		min-width: 0;
+		font-size: 0.875rem;
+		font-weight: 700;
+	}
+
+	.se-row__meta {
+		font-size: 0.8125rem;
+		font-weight: 500;
+		color: rgba(var(--v-theme-on-surface), 0.72);
+	}
+
+	.status-chip {
+		flex-shrink: 0;
+		font-weight: 700;
 	}
 </style>
