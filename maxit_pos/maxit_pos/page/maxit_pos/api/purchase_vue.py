@@ -12,6 +12,13 @@ def get_purchase_receipt_list(pos_profile, search_term=""):
 
     purchase_doctype = pos_profile.get("purchase_doctype") or "Purchase Receipt"
     PurchaseDoc = DocType(purchase_doctype)
+    branch_filter = PurchaseDoc.cost_center == pos_profile.get("purchase_cost_center")
+    if pos_profile.get("warehouse"):
+        # invoices entered by hand can lack the header cost center; match those by the branch warehouse
+        branch_filter = branch_filter | (
+            (functions.Coalesce(PurchaseDoc.cost_center, "") == "")
+            & (PurchaseDoc.set_warehouse == pos_profile.get("warehouse"))
+        )
     query = (frappe.qb.from_(PurchaseDoc)
         .select(
             PurchaseDoc.name,
@@ -21,7 +28,7 @@ def get_purchase_receipt_list(pos_profile, search_term=""):
             PurchaseDoc.bill_no,
             PurchaseDoc.bill_date,
         )
-        .where(PurchaseDoc.cost_center == pos_profile.get("purchase_cost_center"))
+        .where(branch_filter)
         .orderby(PurchaseDoc.modified, order=Order.desc)
         .limit(50)
     )
