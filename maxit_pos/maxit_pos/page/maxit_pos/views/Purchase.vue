@@ -1,6 +1,12 @@
 <template>
   <PageSurface glow="info-warning" class="purchase-view pa-3" v-if="purchaseEnabled">
-    <div class="purchase-layout">
+    <PurchaseReturnForm
+      v-if="showReturnForm"
+      @cancel="showReturnForm = false"
+      @created="onReturnCreated"
+    />
+
+    <div v-else class="purchase-layout">
       <SurfaceCard v-show="!isMobile || !showDetailsOnMobile" class="purchase-pane purchase-pane--list">
         <div class="purchase-pane__body">
           <div class="pane-header">
@@ -19,7 +25,7 @@
               color="primary"
               variant="tonal"
               prepend-icon="mdi-file-undo-outline"
-              @click="returnInvoice"
+              @click="showReturnForm = true"
             >
               {{ __('Return') }}
             </v-btn>
@@ -181,7 +187,8 @@
   import { usePosStore } from '../store/posStore';
   import PageSurface from './components/ui/PageSurface.vue';
   import SurfaceCard from './components/ui/SurfaceCard.vue';
-    
+  import PurchaseReturnForm from './components/purchase/PurchaseReturnForm.vue';
+
   const __ = window.__;
   const frappe_ = window.frappe;
   const invoices = ref([]);
@@ -192,6 +199,7 @@
   const { smAndDown } = useDisplay();
   const isMobile = computed(() => smAndDown.value);
   const showDetailsOnMobile = ref(false);
+  const showReturnForm = ref(false);
   const isLoadingList = ref(false);
   const syncJobId = ref(null);
   let isSyncRealtimeBound = false;
@@ -296,87 +304,10 @@
     
   };
 
-  const returnInvoice = async () =>{
-    // await process_return('Sales Invoice', invoice.value.name);
-    const dialog = new frappe.ui.Dialog({
-        title: 'Enter details',
-        fields: [
-            {
-                label: __('Supplier Branch'),
-                fieldname: 'supplier_branch',
-                fieldtype: 'Link',
-                options: 'Supplier Branch',
-                reqd: true
-            },
-            {
-                label: __('Items'),
-                fieldname: 'items',
-                fieldtype: 'Table',
-                fields: [
-                  {
-                    label: __('Item Code'),
-                    fieldname: 'item_code',
-                    fieldtype: 'Link',
-                    options: 'Item',
-                    onchange: function () {
-                      const item_code = this.value;
-                      if (!item_code) {
-                        this.grid_row.on_grid_fields_dict.item_name.set_value('');
-                      };
-                      if (item_code) {
-                        frappe.db.get_value('Item', item_code, ['item_name']).then(res => {
-                          const msg = res.message;
-                          this.grid_row.on_grid_fields_dict.item_name.set_value(msg.item_name);
-                        });
-                      }
-                    },
-                    reqd: true,
-                    in_list_view: true,
-                  },
-                  {
-                    label: __('Item Name'),
-                    fieldname: 'item_name',
-                    fieldtype: 'Data',
-                    read_only: 1,
-                    in_list_view: true,
-                    columns: '6'
-                  },
-                  {
-                    label: __('Qty'),
-                    fieldname: 'qty',
-                    fieldtype: 'Float',
-                    reqd: true,
-                    in_list_view: true,
-                    columns: '2'
-                  }
-                ]
-            }
-        ],
-        size: 'extra-large', // small, large, extra-large 
-        primary_action_label: __('Submit'),
-        primary_action(values) {
-            frappe.call({
-              method: "maxit_pos.maxit_pos.page.maxit_pos.api.purchase_vue.create_return_invoice",
-              args: {
-                supplier_branch: values.supplier_branch,
-                items: values.items,
-                cost_center: posProfileData.value?.cost_center || '',
-                warehouse: posProfileData.value?.warehouse || '',
-                purchase_doctype: posProfileData.value?.purchase_doctype || 'Purchase Receipt',
-              },
-            }).then((res) => {
-              frappe.show_alert({
-                message: __('Return Invoice Created'),
-                indicator: 'green'
-              }, 5);
-              dialog.hide();
-              searchTerm.value = '';
-              getInvoices();
-            });
-            
-        }});   
-
-    dialog.show();
+  const onReturnCreated = () => {
+    showReturnForm.value = false;
+    searchTerm.value = '';
+    getInvoices();
   };
 
   const cancelInvoice = async () => {

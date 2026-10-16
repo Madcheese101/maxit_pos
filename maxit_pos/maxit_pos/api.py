@@ -114,3 +114,44 @@ def custom_search_link(
             row["label"] = labels[value]
 
     return rows
+
+@frappe.whitelist()
+def search_items_with_stock(txt="", warehouse=None, page_length=20):
+    # stock items matching code, name or barcode, with their qty in the warehouse (user's branch by default)
+    warehouse = warehouse or get__warehouse()
+    if not warehouse:
+        frappe.throw(_("No material warehouse set for branch {0}").format(_get_user_branch()))
+
+    txt = (txt or "").strip()
+    Item = DocType("Item")
+    Bin = DocType("Bin")
+    Barcode = DocType("Item Barcode")
+
+    query = (
+        frappe.qb.get_query(
+            "Item",
+            fields=["name as item_code", "item_name"],
+            filters={"disabled": 0, "has_variants": 0, "is_stock_item": 1},
+            limit=frappe.utils.cint(page_length),
+        )
+        .left_join(Bin).on((Bin.item_code == Item.name) & (Bin.warehouse == warehouse))
+        .select(functions.Coalesce(Bin.actual_qty, 0).as_("actual_qty"))
+    )
+
+    if txt:
+        like = f"%{txt}%"
+        is_exact = (Item.name == txt) | Item.name.isin(
+            frappe.qb.from_(Barcode).select(Barcode.parent).where(Barcode.barcode == txt)
+        )
+        query = (
+            query.where(
+                Item.name.like(like)
+                | Item.item_name.like(like)
+                | Item.name.isin(frappe.qb.from_(Barcode).select(Barcode.parent).where(Barcode.barcode.like(like)))
+            )
+            .select(Case().when(is_exact, 1).else_(0).as_("exact"))
+            # exact code/barcode first so a scanned item is never cut off by the limit
+            .orderby(Case().when(is_exact, 0).else_(1))
+        )
+
+    return query.orderby(Item.item_name).run(as_dict=True)
