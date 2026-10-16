@@ -3,7 +3,10 @@ frappe.pages['maxit-pos'].on_page_load = function(wrapper) {
 	var page = frappe.ui.make_app_page({
 		parent: wrapper,
 		title: 'MaxIT POS',
-		single_column: true
+		single_column: true,
+		// the POS has its own sidebar, so keep the desk sidebar and the v16 dock off this page
+		hide_sidebar: true,
+		hide_dock: true
 	});
 
 	$("head").append("<link href='/assets/maxit_pos/node_modules/vuetify/dist/vuetify.min.css' rel='stylesheet'>");

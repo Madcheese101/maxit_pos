@@ -421,7 +421,7 @@ const openContactDialog = () => {
     return;
   }
 
-  window.open(`/app/contact/${encodeURIComponent(contactName)}`, '_blank');
+  window.open(`/desk/contact/${encodeURIComponent(contactName)}`, '_blank');
 };
 
 const openAddressDialog = () => {
@@ -434,7 +434,7 @@ const openAddressDialog = () => {
     return;
   }
 
-  window.open(`/app/address/${encodeURIComponent(addressName)}`, '_blank');
+  window.open(`/desk/address/${encodeURIComponent(addressName)}`, '_blank');
 };
 
 const openCustomerOrders = () => {

@@ -11,15 +11,17 @@ app_license = "bsl-1.0"
 # required_apps = []
 
 # Each item in the list will be shown as an app in the apps page
-# add_to_apps_screen = [
-# 	{
-# 		"name": "maxit_pos",
-# 		"logo": "/assets/maxit_pos/logo.png",
-# 		"title": "MaxIT POS",
-# 		"route": "/maxit_pos",
-# 		"has_permission": "maxit_pos.api.permission.has_app_permission"
-# 	}
-# ]
+add_to_apps_screen = [
+	{
+		"name": app_name,
+		"logo": "/assets/maxit_pos/images/MaxitPosLogoL.svg",
+		"title": app_title,
+		"route": "/desk/maxit-pos",
+		"has_permission": "maxit_pos.check_app_permission",
+		# after ERPNext (1) and Frappe HR (2)
+		"sequence_id": 3,
+	}
+]
 
 # Includes in <head>
 # ------------------
