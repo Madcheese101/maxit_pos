@@ -302,6 +302,7 @@ fixtures = [
                     "POS Profile-custom_allow_unlinked_return_invoice",
                     "POS Profile-custom_allow_set_sales_person",
                     "POS Profile-custom_sales_person_is_mandatory",
+                    "POS Profile-custom_allow_edit_additional_discount",
                     "Sales Invoice Item-custom_max_discount_",
                     "Sales Invoice-custom_sales_person",
                     "Purchase Invoice-custom_supplier_branch",

@@ -117,7 +117,7 @@
                 <span v-html="frappe_.format(invoice?.total, {'fieldtype': 'Currency'})"></span>
             </div>
 
-            <div v-if="allow_discount_change && invoice" class="cart-total-row">
+            <div v-if="allow_edit_additional_discount && invoice" class="cart-total-row">
                 <span class="text-medium-emphasis">{{ __('Discount') }}</span>
                 <div class="invoice-discount-input">
                     <v-number-input
@@ -196,6 +196,7 @@
     const priceListCurrency = computed(() => invoice.value?.currency || "")
     const allow_discount_change = computed(() => posProfileData.value?.allow_discount_change)
     const allow_rate_change = computed(() => posProfileData.value?.allow_rate_change)
+    const allow_edit_additional_discount = computed(() => posProfileData.value?.allow_edit_additional_discount)
 
     // keep the newest line visible after adding an item
     watch(() => posCartItems.value.length, (length, oldLength) => {
